@@ -300,6 +300,21 @@ export async function fetchWikilinkSuggestions({
     .filter((item) => item.label);
 }
 
+export async function fetchWikilinkTargets(userId) {
+  const { data, error } = await supabase
+    .from('items')
+    .select(buildWikilinkTargetFieldsQuery())
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .is('date_trashed', null);
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
 export async function fetchResolvedEditorWikilinks({
   rawMarkdown,
   userId,

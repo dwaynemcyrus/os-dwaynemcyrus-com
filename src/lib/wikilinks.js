@@ -111,6 +111,39 @@ function buildTargetsByNormalizedTitle(targetItems) {
   return targetsByNormalizedTitle;
 }
 
+export function buildWikilinkTargetIndex(targetItems) {
+  return buildTargetsByNormalizedTitle(targetItems);
+}
+
+export function resolveWikilinkLabel({
+  label,
+  targetIndex,
+}) {
+  const matchingTargets = targetIndex.get(normalizeWikilinkLabel(label)) ?? [];
+
+  if (matchingTargets.length === 1) {
+    return {
+      state: 'resolved',
+      target: matchingTargets[0],
+      targets: matchingTargets,
+    };
+  }
+
+  if (matchingTargets.length > 1) {
+    return {
+      state: 'ambiguous',
+      target: null,
+      targets: matchingTargets,
+    };
+  }
+
+  return {
+    state: 'unresolved',
+    target: null,
+    targets: [],
+  };
+}
+
 export function extractDocumentWikilinks(rawMarkdown) {
   const {
     body,
@@ -155,30 +188,24 @@ export function resolveDocumentWikilinks({
   const targetsByNormalizedTitle = buildTargetsByNormalizedTitle(targetItems);
 
   return allLinks.map((link) => {
-    const matchingTargets = targetsByNormalizedTitle.get(link.normalizedLabel) ?? [];
+    const resolution = resolveWikilinkLabel({
+      label: link.label,
+      targetIndex: targetsByNormalizedTitle,
+    });
 
-    if (matchingTargets.length === 1) {
+    if (resolution.state === 'resolved') {
       return {
         ...link,
-        state: 'resolved',
-        target: matchingTargets[0],
-      };
-    }
-
-    if (matchingTargets.length > 1) {
-      return {
-        ...link,
-        state: 'ambiguous',
-        target: null,
-        targets: matchingTargets,
+        state: resolution.state,
+        target: resolution.target,
       };
     }
 
     return {
       ...link,
-      state: 'unresolved',
+      state: resolution.state,
       target: null,
-      targets: [],
+      targets: resolution.targets,
     };
   });
 }

@@ -69,3 +69,35 @@
   color: #7c6754;
   font-style: italic;
 }
+
+.editor :global(.cm-wikilink) {
+  border-radius: 0.25rem;
+  text-decoration-line: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 0.18em;
+}
+
+.editor :global(.cm-wikilinkResolved) {
+  background: rgba(47, 111, 81, 0.08);
+  color: #25543d;
+  cursor: pointer;
+  text-decoration-color: rgba(37, 84, 61, 0.7);
+}
+
+.editor :global(.cm-wikilinkResolved:hover) {
+  background: rgba(47, 111, 81, 0.14);
+}
+
+.editor :global(.cm-wikilinkAmbiguous) {
+  background: rgba(191, 131, 45, 0.08);
+  color: #7c4a03;
+  text-decoration-color: rgba(191, 131, 45, 0.8);
+  text-decoration-style: dashed;
+}
+
+.editor :global(.cm-wikilinkUnresolved) {
+  background: rgba(186, 73, 73, 0.08);
+  color: #8f2d2d;
+  text-decoration-color: rgba(186, 73, 73, 0.8);
+  text-decoration-style: wavy;
+}

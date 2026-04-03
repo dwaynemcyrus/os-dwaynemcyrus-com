@@ -8,6 +8,7 @@ import {
   fetchEditorItem,
   fetchTagSuggestions,
   fetchWikilinkSuggestions,
+  fetchWikilinkTargets,
   saveEditorItem,
 } from '../lib/items';
 import { authenticatedRoute } from './_authenticated';
@@ -31,21 +32,33 @@ export const itemEditorRoute = createRoute({
   component: function ItemEditorRoute() {
     const { id } = itemEditorRoute.useParams();
     const auth = useAuth();
+    const navigate = itemEditorRoute.useNavigate();
     const { setInsertTemplateTarget } = useCommandContext();
     const [item, setItem] = useState(null);
     const [draftValue, setDraftValue] = useState('');
     const [lastSavedValue, setLastSavedValue] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [linkErrorMessage, setLinkErrorMessage] = useState('');
     const [loadErrorMessage, setLoadErrorMessage] = useState('');
     const [saveErrorMessage, setSaveErrorMessage] = useState('');
     const [saveStatusMessage, setSaveStatusMessage] = useState('');
     const [isWorkbenchEnabled, setIsWorkbenchEnabled] = useState(false);
+    const [wikilinkTargets, setWikilinkTargets] = useState([]);
     const [editorSyncVersion, setEditorSyncVersion] = useState(0);
     const editorRef = useRef(null);
     const isReadOnlyTemplate =
       item?.is_template === true && item?.user_id == null;
     const isDirty = draftValue !== lastSavedValue;
+
+    function buildWikilinkTargetRecord(editorItem) {
+      return {
+        id: editorItem.id,
+        subtype: editorItem.subtype ?? null,
+        title: editorItem.title,
+        type: editorItem.type ?? null,
+      };
+    }
 
     const handleSave = useEffectEvent(async () => {
       if (!auth.user?.id || !isDirty || isSaving || isReadOnlyTemplate) {
@@ -67,6 +80,10 @@ export const itemEditorRoute = createRoute({
         setDraftValue(savedEditorItem.rawMarkdown);
         setIsWorkbenchEnabled(savedEditorItem.item.workbench === true);
         setLastSavedValue(savedEditorItem.rawMarkdown);
+        setWikilinkTargets((currentTargets) => [
+          ...currentTargets.filter((target) => target.id !== savedEditorItem.item.id),
+          buildWikilinkTargetRecord(savedEditorItem.item),
+        ]);
         setEditorSyncVersion((currentVersion) => currentVersion + 1);
         setSaveStatusMessage('Saved.');
       } catch (error) {
@@ -75,6 +92,10 @@ export const itemEditorRoute = createRoute({
           setDraftValue(error.rawMarkdown);
           setIsWorkbenchEnabled(error.item.workbench === true);
           setLastSavedValue(error.rawMarkdown);
+          setWikilinkTargets((currentTargets) => [
+            ...currentTargets.filter((target) => target.id !== error.item.id),
+            buildWikilinkTargetRecord(error.item),
+          ]);
           setEditorSyncVersion((currentVersion) => currentVersion + 1);
         }
 
@@ -98,31 +119,49 @@ export const itemEditorRoute = createRoute({
       let cancelled = false;
 
       setIsLoading(true);
+      setLinkErrorMessage('');
       setLoadErrorMessage('');
       setSaveErrorMessage('');
       setSaveStatusMessage('');
 
-      fetchEditorItem({
-        itemId: id,
-        userId: auth.user.id,
-      })
-        .then((editorItem) => {
+      Promise.allSettled([
+        fetchEditorItem({
+          itemId: id,
+          userId: auth.user.id,
+        }),
+        fetchWikilinkTargets(auth.user.id),
+      ])
+        .then(([editorItemResult, wikilinkTargetsResult]) => {
           if (cancelled) {
             return;
           }
 
-          setItem(editorItem.item);
-          setDraftValue(editorItem.rawMarkdown);
-          setIsWorkbenchEnabled(editorItem.item.workbench === true);
-          setLastSavedValue(editorItem.rawMarkdown);
-          setEditorSyncVersion((currentVersion) => currentVersion + 1);
-        })
-        .catch((error) => {
-          if (cancelled) {
-            return;
+          if (editorItemResult.status === 'fulfilled') {
+            setItem(editorItemResult.value.item);
+            setDraftValue(editorItemResult.value.rawMarkdown);
+            setIsWorkbenchEnabled(editorItemResult.value.item.workbench === true);
+            setLastSavedValue(editorItemResult.value.rawMarkdown);
+            setEditorSyncVersion((currentVersion) => currentVersion + 1);
+          } else {
+            setLoadErrorMessage(
+              editorItemResult.reason?.message ??
+                'Unable to load this item right now.',
+            );
           }
 
-          setLoadErrorMessage(error.message ?? 'Unable to load this item right now.');
+          if (wikilinkTargetsResult.status === 'fulfilled') {
+            setWikilinkTargets(wikilinkTargetsResult.value);
+          } else {
+            setWikilinkTargets(
+              editorItemResult.status === 'fulfilled'
+                ? [buildWikilinkTargetRecord(editorItemResult.value.item)]
+                : [],
+            );
+            setLinkErrorMessage(
+              wikilinkTargetsResult.reason?.message ??
+                'Wikilink resolution is unavailable right now.',
+            );
+          }
         })
         .finally(() => {
           if (cancelled) {
@@ -184,6 +223,15 @@ export const itemEditorRoute = createRoute({
       return fetchTagSuggestions({
         query,
         userId: auth.user.id,
+      });
+    }
+
+    async function handleOpenWikilink(targetId) {
+      await navigate({
+        params: {
+          id: targetId,
+        },
+        to: '/items/$id',
       });
     }
 
@@ -383,6 +431,21 @@ export const itemEditorRoute = createRoute({
           </p>
         ) : null}
 
+        {linkErrorMessage ? (
+          <p
+            role="alert"
+            style={{
+              background: 'rgba(191, 131, 45, 0.12)',
+              borderRadius: '1rem',
+              color: '#7c4a03',
+              margin: 0,
+              padding: '1rem',
+            }}
+          >
+            {linkErrorMessage}
+          </p>
+        ) : null}
+
         <div
           style={{
             flex: '1 1 auto',
@@ -399,14 +462,18 @@ export const itemEditorRoute = createRoute({
             onChange(nextValue) {
               updateDraftValue(nextValue);
             },
-          onSave() {
-            handleSave();
-          },
-          placeholderText: 'Write raw markdown with YAML frontmatter here.',
-          ref: editorRef,
-          syncVersion: editorSyncVersion,
-          value: draftValue,
-        })}
+            onOpenWikilink(targetId) {
+              void handleOpenWikilink(targetId);
+            },
+            onSave() {
+              handleSave();
+            },
+            placeholderText: 'Write raw markdown with YAML frontmatter here.',
+            ref: editorRef,
+            syncVersion: editorSyncVersion,
+            value: draftValue,
+            wikilinkTargets,
+          })}
         </div>
       </section>
     );

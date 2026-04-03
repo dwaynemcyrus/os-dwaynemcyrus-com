@@ -4,14 +4,26 @@ import {
   useImperativeHandle,
   useRef,
 } from 'react';
-import { Compartment, EditorState } from '@codemirror/state';
-import { EditorView, keymap, placeholder } from '@codemirror/view';
+import { Compartment, EditorState, StateEffect } from '@codemirror/state';
+import {
+  Decoration,
+  EditorView,
+  MatchDecorator,
+  ViewPlugin,
+  keymap,
+  placeholder,
+} from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { basicSetup } from 'codemirror';
 import { mergeTemplateIntoEditorDocument } from '../../lib/frontmatter';
+import {
+  buildWikilinkTargetIndex,
+  resolveWikilinkLabel,
+} from '../../lib/wikilinks';
 import styles from './ItemEditor.module.css';
 
 const editableCompartment = new Compartment();
+const wikilinkRefreshEffect = StateEffect.define();
 
 function buildWikilinkCompletionSource(loadWikilinkSuggestions, cacheRef) {
   return async function completeWikilinks(context) {
@@ -84,6 +96,115 @@ function buildTagCompletionSource(loadTagSuggestions, cacheRef) {
   };
 }
 
+function shouldOpenResolvedWikilink(event) {
+  if (event.button !== 0) {
+    return false;
+  }
+
+  if (
+    typeof window !== 'undefined' &&
+    window.matchMedia('(pointer: coarse)').matches
+  ) {
+    return true;
+  }
+
+  return event.metaKey || event.ctrlKey;
+}
+
+function buildWikilinkDecoration(match, targetIndex) {
+  const resolution = resolveWikilinkLabel({
+    label: match[1],
+    targetIndex,
+  });
+
+  if (resolution.state === 'resolved') {
+    return Decoration.mark({
+      attributes: {
+        'data-wikilink-target-id': resolution.target.id,
+        title: 'Open linked item',
+      },
+      class: 'cm-wikilink cm-wikilinkResolved',
+    });
+  }
+
+  if (resolution.state === 'ambiguous') {
+    return Decoration.mark({
+      attributes: {
+        title: 'Multiple saved items share this wikilink title.',
+      },
+      class: 'cm-wikilink cm-wikilinkAmbiguous',
+    });
+  }
+
+  return Decoration.mark({
+    attributes: {
+      title: 'No saved item matches this wikilink yet.',
+    },
+    class: 'cm-wikilink cm-wikilinkUnresolved',
+  });
+}
+
+function buildWikilinkDecorationsExtension({
+  onOpenWikilinkRef,
+  targetIndexRef,
+}) {
+  const decorator = new MatchDecorator({
+    decoration(match) {
+      return buildWikilinkDecoration(match, targetIndexRef.current);
+    },
+    regexp: /\[\[([^\]\n]+?)\]\]/g,
+  });
+
+  function maybeOpenResolvedWikilink(event) {
+    const eventTarget =
+      event.target instanceof Element
+        ? event.target.closest('[data-wikilink-target-id]')
+        : null;
+    const targetId = eventTarget?.getAttribute('data-wikilink-target-id');
+
+    if (!targetId || !shouldOpenResolvedWikilink(event)) {
+      return false;
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    onOpenWikilinkRef.current(targetId);
+
+    return true;
+  }
+
+  return ViewPlugin.fromClass(
+    class {
+      constructor(view) {
+        this.decorations = decorator.createDeco(view);
+      }
+
+      update(update) {
+        if (
+          update.transactions.some((transaction) =>
+            transaction.effects.some((effect) => effect.is(wikilinkRefreshEffect)),
+          )
+        ) {
+          this.decorations = decorator.createDeco(update.view);
+          return;
+        }
+
+        if (update.docChanged || update.viewportChanged) {
+          this.decorations = decorator.updateDeco(update, this.decorations);
+        }
+      }
+    },
+    {
+      decorations: (value) => value.decorations,
+      eventHandlers: {
+        click(event) {
+          return maybeOpenResolvedWikilink(event);
+        },
+      },
+    },
+  );
+}
+
 export const ItemEditor = forwardRef(function ItemEditor(
   {
     autocompleteCacheKey,
@@ -91,10 +212,12 @@ export const ItemEditor = forwardRef(function ItemEditor(
     loadTagSuggestions,
     loadWikilinkSuggestions,
     onChange,
+    onOpenWikilink = () => {},
     onSave,
     placeholderText,
     syncVersion,
     value,
+    wikilinkTargets = [],
   },
   ref,
 ) {
@@ -106,13 +229,18 @@ export const ItemEditor = forwardRef(function ItemEditor(
   const latestLoadTagSuggestionsRef = useRef(loadTagSuggestions);
   const latestLoadWikilinkSuggestionsRef = useRef(loadWikilinkSuggestions);
   const latestOnChangeRef = useRef(onChange);
+  const latestOnOpenWikilinkRef = useRef(onOpenWikilink);
   const latestOnSaveRef = useRef(onSave);
+  const latestWikilinkTargetIndexRef = useRef(
+    buildWikilinkTargetIndex(wikilinkTargets),
+  );
   const tagSuggestionsCacheRef = useRef(new Map());
   const wikilinkSuggestionsCacheRef = useRef(new Map());
 
   latestLoadTagSuggestionsRef.current = loadTagSuggestions;
   latestLoadWikilinkSuggestionsRef.current = loadWikilinkSuggestions;
   latestOnChangeRef.current = onChange;
+  latestOnOpenWikilinkRef.current = onOpenWikilink;
   latestOnSaveRef.current = onSave;
 
   useImperativeHandle(
@@ -194,6 +322,10 @@ export const ItemEditor = forwardRef(function ItemEditor(
       async (query) => latestLoadTagSuggestionsRef.current(query),
       tagSuggestionsCacheRef,
     );
+    const wikilinkDecorationsExtension = buildWikilinkDecorationsExtension({
+      onOpenWikilinkRef: latestOnOpenWikilinkRef,
+      targetIndexRef: latestWikilinkTargetIndexRef,
+    });
 
     const editorView = new EditorView({
       parent: hostRef.current,
@@ -207,6 +339,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
             { autocomplete: wikilinkCompletionSource },
             { autocomplete: tagCompletionSource },
           ]),
+          wikilinkDecorationsExtension,
           placeholder(initialPlaceholderTextRef.current),
           editableCompartment.of(
             EditorView.editable.of(!initialDisabledRef.current),
@@ -250,6 +383,22 @@ export const ItemEditor = forwardRef(function ItemEditor(
       effects: editableCompartment.reconfigure(EditorView.editable.of(!disabled)),
     });
   }, [disabled]);
+
+  useEffect(() => {
+    latestWikilinkTargetIndexRef.current = buildWikilinkTargetIndex(
+      wikilinkTargets,
+    );
+
+    const editorView = editorViewRef.current;
+
+    if (!editorView) {
+      return;
+    }
+
+    editorView.dispatch({
+      effects: wikilinkRefreshEffect.of(null),
+    });
+  }, [wikilinkTargets]);
 
   useEffect(() => {
     const editorView = editorViewRef.current;
