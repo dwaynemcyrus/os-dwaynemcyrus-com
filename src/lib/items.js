@@ -13,6 +13,7 @@ const SEARCH_ITEMS_LIMIT = 8;
 const TAG_ITEM_POOL_LIMIT = 200;
 const TAG_SUGGESTIONS_LIMIT = 10;
 const HOME_WORKBENCH_LIMIT = 12;
+const ITEMS_ROUTE_LIMIT = 200;
 const MAX_CUID_RETRIES = 20;
 const pendingDailyNoteRequests = new Map();
 
@@ -70,6 +71,10 @@ function buildDailyNoteFieldsQuery() {
 
 function buildHomeWorkbenchFieldsQuery() {
   return 'id,cuid,type,subtype,title,content,workbench,date_created,date_modified';
+}
+
+function buildItemsIndexFieldsQuery() {
+  return 'id,cuid,type,subtype,title,content,status,workbench,date_created,date_modified';
 }
 
 function isCuidConflictError(error) {
@@ -434,6 +439,107 @@ export async function fetchHomeSummary(userId) {
     inboxCount: count ?? 0,
     workbenchItems: workbenchItems ?? [],
   };
+}
+
+export async function fetchItemsFilters(userId) {
+  const { data, error } = await supabase
+    .from('items')
+    .select('type,subtype')
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .is('date_trashed', null)
+    .order('type', { ascending: true })
+    .order('subtype', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  const typeOptions = [];
+  const subtypeOptions = [];
+  const seenTypes = new Set();
+  const seenSubtypes = new Set();
+
+  (data ?? []).forEach((item) => {
+    const normalizedType = String(item.type ?? '').trim();
+    const normalizedSubtype = String(item.subtype ?? '').trim();
+    const subtypeKey = `${normalizedType}::${normalizedSubtype}`;
+
+    if (normalizedType && !seenTypes.has(normalizedType)) {
+      seenTypes.add(normalizedType);
+      typeOptions.push(normalizedType);
+    }
+
+    if (
+      normalizedType &&
+      normalizedSubtype &&
+      !seenSubtypes.has(subtypeKey)
+    ) {
+      seenSubtypes.add(subtypeKey);
+      subtypeOptions.push({
+        subtype: normalizedSubtype,
+        type: normalizedType,
+      });
+    }
+  });
+
+  return {
+    subtypeOptions,
+    typeOptions,
+  };
+}
+
+export async function fetchItemsIndex({
+  query,
+  sort,
+  subtype,
+  type,
+  userId,
+}) {
+  const trimmedQuery = query.trim();
+  let request = supabase
+    .from('items')
+    .select(buildItemsIndexFieldsQuery())
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .is('date_trashed', null);
+
+  if (type) {
+    request = request.eq('type', type);
+  }
+
+  if (subtype) {
+    request = request.eq('subtype', subtype);
+  }
+
+  if (trimmedQuery) {
+    const escapedQuery = escapeIlikePattern(trimmedQuery);
+    request = request.or(
+      `title.ilike.%${escapedQuery}%,content.ilike.%${escapedQuery}%`,
+    );
+  }
+
+  if (sort === 'date_created') {
+    request = request
+      .order('date_created', { ascending: false, nullsFirst: false })
+      .order('date_modified', { ascending: false, nullsFirst: false });
+  } else if (sort === 'title') {
+    request = request
+      .order('title', { ascending: true, nullsFirst: false })
+      .order('date_modified', { ascending: false, nullsFirst: false });
+  } else {
+    request = request
+      .order('date_modified', { ascending: false, nullsFirst: false })
+      .order('date_created', { ascending: false, nullsFirst: false });
+  }
+
+  const { data, error } = await request.limit(ITEMS_ROUTE_LIMIT);
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
 }
 
 export async function fetchUnprocessedInboxItems(userId) {
