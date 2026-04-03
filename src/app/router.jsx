@@ -1,4 +1,6 @@
 import { createRouter } from '@tanstack/react-router';
+import { forgotPasswordRoute } from '../routes/auth/forgot';
+import { resetPasswordRoute } from '../routes/auth/reset';
 import { signInRoute } from '../routes/auth/signin';
 import { signUpRoute } from '../routes/auth/signup';
 import { rootRoute } from '../routes/__root';
@@ -20,6 +22,8 @@ const routeTree = rootRoute.addChildren([
   trashRoute,
   signInRoute,
   signUpRoute,
+  forgotPasswordRoute,
+  resetPasswordRoute,
 ]);
 
 export const router = createRouter({
