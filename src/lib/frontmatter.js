@@ -199,6 +199,10 @@ function hasOwnValue(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
 }
 
+function createFrontmatterFieldError(key, message) {
+  return new Error(`Frontmatter "${key}" ${message}`);
+}
+
 function cloneDefaultValue(value) {
   if (Array.isArray(value)) {
     return [...value];
@@ -244,7 +248,17 @@ function splitMarkdownDocument(rawMarkdown) {
 function normalizeArrayValue(value) {
   if (Array.isArray(value)) {
     return value
-      .map((entry) => (entry == null ? '' : String(entry).trim()))
+      .map((entry) => {
+        if (entry == null) {
+          return '';
+        }
+
+        if (Array.isArray(entry) || isObjectLike(entry)) {
+          throw new Error('array entries must be plain values.');
+        }
+
+        return String(entry).trim();
+      })
       .filter(Boolean);
   }
 
@@ -252,7 +266,7 @@ function normalizeArrayValue(value) {
     return [];
   }
 
-  return [String(value).trim()].filter(Boolean);
+  throw new Error('must be a YAML list.');
 }
 
 function normalizeBooleanValue(value) {
@@ -272,7 +286,7 @@ function normalizeBooleanValue(value) {
     }
   }
 
-  return Boolean(value);
+  throw new Error('must be true or false.');
 }
 
 function normalizeIntegerValue(value) {
@@ -280,9 +294,20 @@ function normalizeIntegerValue(value) {
     return null;
   }
 
+  if (
+    typeof value !== 'number' &&
+    (typeof value !== 'string' || !/^-?\d+$/.test(value.trim()))
+  ) {
+    throw new Error('must be an integer.');
+  }
+
   const parsedValue = Number.parseInt(String(value), 10);
 
-  return Number.isNaN(parsedValue) ? null : parsedValue;
+  if (Number.isNaN(parsedValue)) {
+    throw new Error('must be an integer.');
+  }
+
+  return parsedValue;
 }
 
 function normalizeNumberValue(value) {
@@ -290,9 +315,21 @@ function normalizeNumberValue(value) {
     return null;
   }
 
+  if (
+    typeof value !== 'number' &&
+    (typeof value !== 'string' ||
+      !/^-?(?:\d+|\d+\.\d+|\.\d+)$/.test(value.trim()))
+  ) {
+    throw new Error('must be a number.');
+  }
+
   const parsedValue = Number.parseFloat(String(value));
 
-  return Number.isNaN(parsedValue) ? null : parsedValue;
+  if (Number.isNaN(parsedValue)) {
+    throw new Error('must be a number.');
+  }
+
+  return parsedValue;
 }
 
 function normalizeScalarStringValue(value) {
@@ -300,27 +337,38 @@ function normalizeScalarStringValue(value) {
     return null;
   }
 
+  if (Array.isArray(value) || isObjectLike(value)) {
+    throw new Error('must be a plain scalar value.');
+  }
+
   return String(value);
 }
 
 function normalizeFrontmatterValue(key, value) {
-  if (ARRAY_FIELDS.has(key)) {
-    return normalizeArrayValue(value);
-  }
+  try {
+    if (ARRAY_FIELDS.has(key)) {
+      return normalizeArrayValue(value);
+    }
 
-  if (BOOLEAN_FIELDS.has(key)) {
-    return normalizeBooleanValue(value);
-  }
+    if (BOOLEAN_FIELDS.has(key)) {
+      return normalizeBooleanValue(value);
+    }
 
-  if (INTEGER_FIELDS.has(key)) {
-    return normalizeIntegerValue(value);
-  }
+    if (INTEGER_FIELDS.has(key)) {
+      return normalizeIntegerValue(value);
+    }
 
-  if (NUMBER_FIELDS.has(key)) {
-    return normalizeNumberValue(value);
-  }
+    if (NUMBER_FIELDS.has(key)) {
+      return normalizeNumberValue(value);
+    }
 
-  return normalizeScalarStringValue(value);
+    return normalizeScalarStringValue(value);
+  } catch (error) {
+    throw createFrontmatterFieldError(
+      key,
+      error.message ?? 'has an invalid value.',
+    );
+  }
 }
 
 function parseFrontmatterText(frontmatterText) {
