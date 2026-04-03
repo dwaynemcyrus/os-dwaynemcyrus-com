@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
-import { fetchManagedTemplates } from '../lib/items';
+import {
+  createUserTemplateFromSubtype,
+  fetchManagedTemplates,
+} from '../lib/items';
 import {
   formatSubtypeLabel,
   groupTemplatesByType,
+  getTemplateSubtypeOptions,
   isSystemTemplate,
 } from '../lib/templates';
 import { authenticatedRoute } from './_authenticated';
@@ -66,10 +70,17 @@ export const templatesRoute = createRoute({
     const auth = useAuth();
     const navigate = templatesRoute.useNavigate();
     const [templateItems, setTemplateItems] = useState([]);
+    const [createErrorMessage, setCreateErrorMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [selectedSubtype, setSelectedSubtype] = useState('');
     const templateGroups = useMemo(
       () => groupTemplatesByType(templateItems),
+      [templateItems],
+    );
+    const templateSubtypeOptions = useMemo(
+      () => getTemplateSubtypeOptions(templateItems),
       [templateItems],
     );
     const templateCountLabel = useMemo(() => {
@@ -120,6 +131,26 @@ export const templatesRoute = createRoute({
       };
     }, [auth.user?.id]);
 
+    useEffect(() => {
+      if (!templateSubtypeOptions.length) {
+        setSelectedSubtype('');
+        return;
+      }
+
+      setSelectedSubtype((currentSubtype) => {
+        if (
+          currentSubtype &&
+          templateSubtypeOptions.some(
+            (option) => option.subtype === currentSubtype,
+          )
+        ) {
+          return currentSubtype;
+        }
+
+        return templateSubtypeOptions[0].subtype;
+      });
+    }, [templateSubtypeOptions]);
+
     async function openTemplate(templateId) {
       await navigate({
         params: {
@@ -127,6 +158,44 @@ export const templatesRoute = createRoute({
         },
         to: '/items/$id',
       });
+    }
+
+    async function handleCreateTemplate(event) {
+      event.preventDefault();
+
+      if (!auth.user?.id) {
+        setCreateErrorMessage('Your session is missing a user id.');
+        return;
+      }
+
+      if (!selectedSubtype) {
+        setCreateErrorMessage('Choose a subtype before creating a template.');
+        return;
+      }
+
+      setIsCreating(true);
+      setCreateErrorMessage('');
+
+      try {
+        const createdTemplate = await createUserTemplateFromSubtype({
+          subtype: selectedSubtype,
+          userId: auth.user.id,
+        });
+
+        setTemplateItems((currentItems) => [createdTemplate, ...currentItems]);
+        await navigate({
+          params: {
+            id: createdTemplate.id,
+          },
+          to: '/items/$id',
+        });
+      } catch (error) {
+        setCreateErrorMessage(
+          error.message ?? 'Unable to create a template right now.',
+        );
+      } finally {
+        setIsCreating(false);
+      }
     }
 
     return (
@@ -158,6 +227,148 @@ export const templatesRoute = createRoute({
             {isLoading ? 'Loading templates...' : templateCountLabel}
           </p>
         </header>
+
+        <section
+          style={{
+            background: 'rgba(255, 250, 243, 0.92)',
+            border: '1px solid rgba(124, 103, 84, 0.16)',
+            borderRadius: '1rem',
+            display: 'grid',
+            gap: '1rem',
+            padding: '1.25rem',
+          }}
+        >
+          <header
+            style={{
+              display: 'grid',
+              gap: '0.45rem',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '1.05rem',
+                margin: 0,
+              }}
+            >
+              Create a New Template
+            </h2>
+            <p style={{ margin: 0 }}>
+              Start from any seeded subtype template, then refine it in the
+              editor as your own reusable version.
+            </p>
+          </header>
+
+          <form
+            onSubmit={(event) => {
+              void handleCreateTemplate(event);
+            }}
+            style={{
+              alignItems: 'end',
+              display: 'grid',
+              gap: '1rem',
+              gridTemplateColumns: 'minmax(0, 1fr) auto',
+            }}
+          >
+            <label
+              style={{
+                display: 'grid',
+                gap: '0.45rem',
+              }}
+            >
+              <span
+                style={{
+                  fontSize: '0.92rem',
+                  fontWeight: 700,
+                }}
+              >
+                Template subtype
+              </span>
+              <select
+                disabled={isLoading || isCreating || templateSubtypeOptions.length === 0}
+                onChange={(event) => {
+                  setSelectedSubtype(event.target.value);
+                  setCreateErrorMessage('');
+                }}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.94)',
+                  border: '1px solid rgba(82, 96, 109, 0.18)',
+                  borderRadius: '0.875rem',
+                  color: 'inherit',
+                  font: 'inherit',
+                  minHeight: '3rem',
+                  padding: '0 0.9rem',
+                }}
+                value={selectedSubtype}
+              >
+                {templateSubtypeOptions.length === 0 ? (
+                  <option value="">No seeded subtypes available</option>
+                ) : null}
+                {templateSubtypeOptions.map((option) => (
+                  <option key={option.subtype} value={option.subtype}>
+                    {option.type} · {option.subtypeLabel}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <button
+              disabled={
+                isLoading ||
+                isCreating ||
+                !selectedSubtype ||
+                templateSubtypeOptions.length === 0
+              }
+              style={{
+                background:
+                  isLoading ||
+                  isCreating ||
+                  !selectedSubtype ||
+                  templateSubtypeOptions.length === 0
+                    ? 'rgba(82, 96, 109, 0.18)'
+                    : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
+                border: 'none',
+                borderRadius: '0.875rem',
+                color:
+                  isLoading ||
+                  isCreating ||
+                  !selectedSubtype ||
+                  templateSubtypeOptions.length === 0
+                    ? '#52606d'
+                    : '#f8fafc',
+                cursor:
+                  isLoading ||
+                  isCreating ||
+                  !selectedSubtype ||
+                  templateSubtypeOptions.length === 0
+                    ? 'not-allowed'
+                    : 'pointer',
+                font: 'inherit',
+                fontWeight: 700,
+                minHeight: '3rem',
+                minWidth: '11rem',
+                padding: '0 1.25rem',
+              }}
+              type="submit"
+            >
+              {isCreating ? 'Creating...' : 'Create Template'}
+            </button>
+          </form>
+
+          {createErrorMessage ? (
+            <p
+              role="alert"
+              style={{
+                background: 'rgba(186, 73, 73, 0.1)',
+                borderRadius: '1rem',
+                color: '#8f2d2d',
+                margin: 0,
+                padding: '1rem',
+              }}
+            >
+              {createErrorMessage}
+            </p>
+          ) : null}
+        </section>
 
         {errorMessage ? (
           <p
@@ -238,7 +449,7 @@ export const templatesRoute = createRoute({
             </h2>
             <p style={{ margin: 0 }}>
               Seeded templates are missing or you do not have access to them
-              yet. Template creation lands in the next chunk.
+              yet.
             </p>
           </section>
         ) : null}
