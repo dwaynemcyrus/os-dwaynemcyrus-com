@@ -1,5 +1,6 @@
 import { createElement } from 'react';
 import { Outlet, createRoute, redirect } from '@tanstack/react-router';
+import { CommandSheet } from '../components/command/CommandSheet';
 import { useAuth } from '../lib/auth';
 import { rootRoute } from './__root';
 
@@ -32,6 +33,6 @@ export const authenticatedRoute = createRoute({
       );
     }
 
-    return createElement(Outlet);
+    return createElement(CommandSheet, null, createElement(Outlet));
   },
 });

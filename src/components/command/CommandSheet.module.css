@@ -1,0 +1,156 @@
+.commandSheetShell {
+  position: relative;
+}
+
+.commandSheetShell__content {
+  min-height: 100vh;
+  padding: 1.25rem 1.25rem calc(6.5rem + env(safe-area-inset-bottom));
+}
+
+.commandSheet {
+  align-items: flex-end;
+  background: rgba(31, 41, 51, 0.35);
+  backdrop-filter: blur(10px);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem 1rem calc(6rem + env(safe-area-inset-bottom));
+  position: fixed;
+  z-index: 15;
+}
+
+.commandSheet__panel {
+  background:
+    radial-gradient(circle at top, rgba(233, 217, 193, 0.82), transparent 34%),
+    linear-gradient(180deg, #fffaf3 0%, #f2e7d7 100%);
+  border: 1px solid rgba(104, 85, 63, 0.14);
+  border-radius: 1.25rem;
+  box-shadow: 0 28px 64px rgba(45, 32, 20, 0.2);
+  color: #1f2933;
+  max-width: 40rem;
+  padding: 1.25rem;
+  width: 100%;
+}
+
+.commandSheet__header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.commandSheet__eyebrow {
+  color: #7c6754;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  margin: 0 0 0.5rem;
+  text-transform: uppercase;
+}
+
+.commandSheet__title {
+  font-size: 1.75rem;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.commandSheet__close {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px solid rgba(82, 96, 109, 0.18);
+  border-radius: 999px;
+  color: #52606d;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  min-height: 2.75rem;
+  padding: 0 1rem;
+}
+
+.commandSheet__close:focus-visible {
+  box-shadow: 0 0 0 3px rgba(58, 124, 165, 0.2);
+  outline: none;
+}
+
+.commandSheet__description {
+  color: #52606d;
+  line-height: 1.5;
+  margin: 0.75rem 0 1rem;
+}
+
+.commandSheet__field {
+  display: grid;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.commandSheet__label {
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.commandSheet__input {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid rgba(82, 96, 109, 0.22);
+  border-radius: 0.875rem;
+  color: inherit;
+  font: inherit;
+  min-height: 3rem;
+  padding: 0 1rem;
+}
+
+.commandSheet__input:focus-visible {
+  border-color: #3a7ca5;
+  box-shadow: 0 0 0 3px rgba(58, 124, 165, 0.18);
+  outline: none;
+}
+
+.commandSheet__section {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(82, 96, 109, 0.1);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.commandSheet__section + .commandSheet__section {
+  margin-top: 0.75rem;
+}
+
+.commandSheet__sectionTitle {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem;
+}
+
+.commandSheet__emptyState {
+  color: #52606d;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.commandSheet__hintList {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.125rem;
+}
+
+.commandSheet__hintItem {
+  color: #52606d;
+  line-height: 1.5;
+}
+
+@media (min-width: 46.5rem) {
+  .commandSheetShell__content {
+    padding: 1.5rem 1.5rem 7rem;
+  }
+
+  .commandSheet {
+    align-items: center;
+    padding: 1.5rem;
+  }
+
+  .commandSheet__panel {
+    padding: 1.5rem;
+  }
+}
