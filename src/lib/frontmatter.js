@@ -643,7 +643,9 @@ export function parseEditorMarkdownDocument(rawMarkdown) {
 
   return {
     body: splitDocument.body,
+    bodyStartIndex: splitDocument.bodyStartIndex,
     frontmatter: parseFrontmatterText(splitDocument.frontmatterText),
+    frontmatterText: splitDocument.frontmatterText,
     normalizedRawMarkdown: splitDocument.normalizedRawMarkdown,
   };
 }

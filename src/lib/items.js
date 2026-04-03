@@ -7,6 +7,7 @@ import {
 } from './frontmatter';
 import { fetchResolvedDailyTemplateId } from './settings';
 import { supabase } from './supabase';
+import { buildBacklinkGroups, resolveDocumentWikilinks } from './wikilinks';
 
 const RECENT_ITEMS_LIMIT = 8;
 const SEARCH_ITEMS_LIMIT = 8;
@@ -59,6 +60,10 @@ function buildEditorItemFieldsQuery() {
 
 function buildEditorAutocompleteItemFieldsQuery() {
   return 'id,cuid,title,content,date_created,date_modified';
+}
+
+function buildWikilinkTargetFieldsQuery() {
+  return 'id,title,type,subtype';
 }
 
 function buildManagedTemplateFieldsQuery() {
@@ -293,6 +298,65 @@ export async function fetchWikilinkSuggestions({
         item.title?.trim() || item.content?.split('\n')[0]?.trim() || item.cuid,
     }))
     .filter((item) => item.label);
+}
+
+export async function fetchResolvedEditorWikilinks({
+  rawMarkdown,
+  userId,
+}) {
+  const resolvedLinks = resolveDocumentWikilinks({
+    rawMarkdown,
+    targetItems: [],
+  });
+
+  if (resolvedLinks.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('items')
+    .select(buildWikilinkTargetFieldsQuery())
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .is('date_trashed', null);
+
+  if (error) {
+    throw error;
+  }
+
+  return resolveDocumentWikilinks({
+    rawMarkdown,
+    targetItems: data ?? [],
+  });
+}
+
+export async function fetchItemBacklinkGroups({
+  itemId,
+  title,
+  userId,
+}) {
+  if (!String(title ?? '').trim()) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from('items')
+    .select(buildEditorItemFieldsQuery())
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .is('date_trashed', null)
+    .neq('id', itemId)
+    .order('date_modified', { ascending: false, nullsFirst: false })
+    .order('date_created', { ascending: false, nullsFirst: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return buildBacklinkGroups({
+    candidateItems: data ?? [],
+    currentTitle: title,
+  });
 }
 
 export async function fetchTagSuggestions({ query, userId }) {
