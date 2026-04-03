@@ -134,6 +134,7 @@ All tables live in Supabase. Do not add tables without disclosure and approval.
 | item_history | Full markdown snapshot on every save | change_type: created, updated, trashed, restored |
 | habit_logs | Individual habit log entries | Companion table for log: habit items |
 | finance_entries | Individual revenue and expense entries | Companion table for log: finance items |
+| user_settings | Persisted user preferences | Stores the selected daily note template per user |
 
 ### items table columns
 ```sql
