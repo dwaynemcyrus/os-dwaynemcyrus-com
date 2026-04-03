@@ -40,6 +40,7 @@ export const router = createRouter({
       isAuthenticated: false,
       isLoading: true,
       error: null,
+      lastEvent: null,
     },
   },
 });
