@@ -1,7 +1,6 @@
 import {
   forwardRef,
   useEffect,
-  useEffectEvent,
   useImperativeHandle,
   useRef,
 } from 'react';
@@ -103,20 +102,17 @@ export const ItemEditor = forwardRef(function ItemEditor(
   const initialDisabledRef = useRef(disabled);
   const initialPlaceholderTextRef = useRef(placeholderText);
   const initialValueRef = useRef(value);
+  const latestLoadTagSuggestionsRef = useRef(loadTagSuggestions);
+  const latestLoadWikilinkSuggestionsRef = useRef(loadWikilinkSuggestions);
+  const latestOnChangeRef = useRef(onChange);
+  const latestOnSaveRef = useRef(onSave);
   const tagSuggestionsCacheRef = useRef(new Map());
   const wikilinkSuggestionsCacheRef = useRef(new Map());
-  const handleChange = useEffectEvent((nextValue) => {
-    onChange(nextValue);
-  });
-  const handleTagSuggestions = useEffectEvent(async (query) => {
-    return loadTagSuggestions(query);
-  });
-  const handleSave = useEffectEvent(() => {
-    onSave();
-  });
-  const handleWikilinkSuggestions = useEffectEvent(async (query) => {
-    return loadWikilinkSuggestions(query);
-  });
+
+  latestLoadTagSuggestionsRef.current = loadTagSuggestions;
+  latestLoadWikilinkSuggestionsRef.current = loadWikilinkSuggestions;
+  latestOnChangeRef.current = onChange;
+  latestOnSaveRef.current = onSave;
 
   useImperativeHandle(
     ref,
@@ -162,11 +158,11 @@ export const ItemEditor = forwardRef(function ItemEditor(
     }
 
     const wikilinkCompletionSource = buildWikilinkCompletionSource(
-      handleWikilinkSuggestions,
+      async (query) => latestLoadWikilinkSuggestionsRef.current(query),
       wikilinkSuggestionsCacheRef,
     );
     const tagCompletionSource = buildTagCompletionSource(
-      handleTagSuggestions,
+      async (query) => latestLoadTagSuggestionsRef.current(query),
       tagSuggestionsCacheRef,
     );
 
@@ -190,7 +186,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
             {
               key: 'Mod-s',
               run() {
-                handleSave();
+                latestOnSaveRef.current();
                 return true;
               },
             },
@@ -200,7 +196,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
               return;
             }
 
-            handleChange(update.state.doc.toString());
+            latestOnChangeRef.current(update.state.doc.toString());
           }),
         ],
       }),
@@ -212,12 +208,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
       editorView.destroy();
       editorViewRef.current = null;
     };
-  }, [
-    handleChange,
-    handleSave,
-    handleTagSuggestions,
-    handleWikilinkSuggestions,
-  ]);
+  }, []);
 
   useEffect(() => {
     const editorView = editorViewRef.current;
