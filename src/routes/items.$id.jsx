@@ -43,10 +43,12 @@ export const itemEditorRoute = createRoute({
     const [isWorkbenchEnabled, setIsWorkbenchEnabled] = useState(false);
     const [editorSyncVersion, setEditorSyncVersion] = useState(0);
     const editorRef = useRef(null);
+    const isReadOnlyTemplate =
+      item?.is_template === true && item?.user_id == null;
     const isDirty = draftValue !== lastSavedValue;
 
     const handleSave = useEffectEvent(async () => {
-      if (!auth.user?.id || !isDirty || isSaving) {
+      if (!auth.user?.id || !isDirty || isSaving || isReadOnlyTemplate) {
         return;
       }
 
@@ -136,6 +138,10 @@ export const itemEditorRoute = createRoute({
     }, [auth.user?.id, id]);
 
     function handleWorkbenchToggle() {
+      if (isReadOnlyTemplate) {
+        return;
+      }
+
       try {
         const nextWorkbenchValue = !isWorkbenchEnabled;
         const nextDraftValue = replaceEditorFrontmatterField({
@@ -182,6 +188,11 @@ export const itemEditorRoute = createRoute({
     }
 
     useEffect(() => {
+      if (isReadOnlyTemplate) {
+        setInsertTemplateTarget(null);
+        return undefined;
+      }
+
       setInsertTemplateTarget({
         itemId: id,
         onInsertTemplate(payload) {
@@ -200,7 +211,7 @@ export const itemEditorRoute = createRoute({
       return () => {
         setInsertTemplateTarget(null);
       };
-    }, [setInsertTemplateTarget, id]);
+    }, [setInsertTemplateTarget, id, isReadOnlyTemplate]);
 
     return (
       <section
@@ -233,10 +244,9 @@ export const itemEditorRoute = createRoute({
           >
             <h1 style={{ margin: 0 }}>{item?.title || 'Item Editor'}</h1>
             <p style={{ margin: 0 }}>
-              Raw markdown editing is now active for item {id}. Use the save
-              button or Cmd/Ctrl+S, and use the FAB to merge template
-              frontmatter while inserting template body content at the current
-              cursor position.
+              {isReadOnlyTemplate
+                ? `This system template opens in the shared editor surface for review, but it is read only.`
+                : `Raw markdown editing is now active for item ${id}. Use the save button or Cmd/Ctrl+S, and use the FAB to merge template frontmatter while inserting template body content at the current cursor position.`}
             </p>
             <p
               style={{
@@ -260,7 +270,9 @@ export const itemEditorRoute = createRoute({
           >
             <button
               aria-pressed={isWorkbenchEnabled}
-              disabled={isLoading || Boolean(loadErrorMessage)}
+              disabled={
+                isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate
+              }
               onClick={handleWorkbenchToggle}
               style={{
                 background: isWorkbenchEnabled
@@ -272,7 +284,7 @@ export const itemEditorRoute = createRoute({
                 borderRadius: '0.875rem',
                 color: 'inherit',
                 cursor:
-                  isLoading || Boolean(loadErrorMessage)
+                  isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate
                     ? 'not-allowed'
                     : 'pointer',
                 font: 'inherit',
@@ -287,20 +299,27 @@ export const itemEditorRoute = createRoute({
             </button>
 
             <button
-              disabled={isLoading || isSaving || !isDirty}
+              disabled={
+                isLoading || isSaving || !isDirty || isReadOnlyTemplate
+              }
               onClick={() => {
                 handleSave();
               }}
               style={{
                 background:
-                  isLoading || isSaving || !isDirty
+                  isLoading || isSaving || !isDirty || isReadOnlyTemplate
                     ? 'rgba(82, 96, 109, 0.18)'
                     : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
                 border: 'none',
                 borderRadius: '0.875rem',
-                color: isLoading || isSaving || !isDirty ? '#52606d' : '#f8fafc',
+                color:
+                  isLoading || isSaving || !isDirty || isReadOnlyTemplate
+                    ? '#52606d'
+                    : '#f8fafc',
                 cursor:
-                  isLoading || isSaving || !isDirty ? 'not-allowed' : 'pointer',
+                  isLoading || isSaving || !isDirty || isReadOnlyTemplate
+                    ? 'not-allowed'
+                    : 'pointer',
                 font: 'inherit',
                 fontWeight: 700,
                 minHeight: '3rem',
@@ -309,7 +328,13 @@ export const itemEditorRoute = createRoute({
               }}
               type="button"
             >
-              {isSaving ? 'Saving...' : isDirty ? 'Save' : 'Saved'}
+              {isReadOnlyTemplate
+                ? 'Read Only'
+                : isSaving
+                  ? 'Saving...'
+                  : isDirty
+                    ? 'Save'
+                    : 'Saved'}
             </button>
           </div>
         </header>
@@ -367,7 +392,8 @@ export const itemEditorRoute = createRoute({
         >
           {createElement(ItemEditor, {
             autocompleteCacheKey: `${auth.user?.id ?? 'anonymous'}:${id}`,
-            disabled: isLoading || Boolean(loadErrorMessage),
+            disabled:
+              isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate,
             loadTagSuggestions: loadTagOptions,
             loadWikilinkSuggestions: loadWikilinkOptions,
             onChange(nextValue) {

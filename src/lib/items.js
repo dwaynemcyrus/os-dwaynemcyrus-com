@@ -207,8 +207,8 @@ export async function fetchEditorItem({ itemId, userId }) {
     .from('items')
     .select(buildEditorItemFieldsQuery())
     .eq('id', itemId)
-    .eq('user_id', userId)
     .is('date_trashed', null)
+    .or(`user_id.eq.${userId},and(is_template.eq.true,user_id.is.null)`)
     .single();
 
   if (error) {
