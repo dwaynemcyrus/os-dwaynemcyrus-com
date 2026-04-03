@@ -1,7 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
-import { fetchTrashedItems } from '../lib/items';
+import {
+  fetchTrashedItems,
+  permanentlyDeleteTrashedItem,
+  restoreTrashedItem,
+} from '../lib/items';
 import styles from './TrashRoute.module.css';
 import { authenticatedRoute } from './_authenticated';
 
@@ -70,7 +74,12 @@ export const trashRoute = createRoute({
   component: function TrashRoute() {
     const auth = useAuth();
     const [errorMessage, setErrorMessage] = useState('');
+    const [actionErrorMessage, setActionErrorMessage] = useState('');
+    const [actionStatusMessage, setActionStatusMessage] = useState('');
+    const [deleteConfirmationValue, setDeleteConfirmationValue] = useState('');
     const [isLoading, setIsLoading] = useState(true);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [isRestoring, setIsRestoring] = useState(false);
     const [selectedItemId, setSelectedItemId] = useState('');
     const [trashedItems, setTrashedItems] = useState([]);
     const trashCountLabel = useMemo(
@@ -79,6 +88,9 @@ export const trashRoute = createRoute({
     );
     const selectedItem =
       trashedItems.find((item) => item.id === selectedItemId) ?? null;
+    const deleteConfirmationLabel = selectedItem
+      ? selectedItem.title?.trim() || formatItemLabel(selectedItem)
+      : '';
 
     useEffect(() => {
       if (!auth.user?.id) {
@@ -132,6 +144,87 @@ export const trashRoute = createRoute({
         return trashedItems[0].id;
       });
     }, [trashedItems]);
+
+    useEffect(() => {
+      setDeleteConfirmationValue('');
+      setActionErrorMessage('');
+      setActionStatusMessage('');
+    }, [selectedItemId]);
+
+    async function handleRestoreItem() {
+      if (!auth.user?.id || !selectedItem) {
+        setActionErrorMessage('Select a trashed item before restoring it.');
+        return;
+      }
+
+      setIsRestoring(true);
+      setActionErrorMessage('');
+      setActionStatusMessage('');
+
+      try {
+        const restoredItem = await restoreTrashedItem({
+          itemId: selectedItem.id,
+          userId: auth.user.id,
+        });
+
+        setTrashedItems((currentItems) =>
+          currentItems.filter((item) => item.id !== restoredItem.id),
+        );
+        setActionStatusMessage('Item restored from trash.');
+      } catch (error) {
+        if (error.item?.id) {
+          setTrashedItems((currentItems) =>
+            currentItems.filter((item) => item.id !== error.item.id),
+          );
+          setActionStatusMessage(
+            'Item restored from trash, but the history snapshot failed.',
+          );
+          return;
+        }
+
+        setActionErrorMessage(
+          error.message ?? 'Unable to restore that item right now.',
+        );
+      } finally {
+        setIsRestoring(false);
+      }
+    }
+
+    async function handlePermanentDelete(event) {
+      event.preventDefault();
+
+      if (!auth.user?.id || !selectedItem) {
+        setActionErrorMessage('Select a trashed item before deleting it.');
+        return;
+      }
+
+      if (deleteConfirmationValue !== deleteConfirmationLabel) {
+        setActionErrorMessage('Type the exact item title to confirm deletion.');
+        return;
+      }
+
+      setIsDeleting(true);
+      setActionErrorMessage('');
+      setActionStatusMessage('');
+
+      try {
+        const deletedItem = await permanentlyDeleteTrashedItem({
+          itemId: selectedItem.id,
+          userId: auth.user.id,
+        });
+
+        setTrashedItems((currentItems) =>
+          currentItems.filter((item) => item.id !== deletedItem.id),
+        );
+        setActionStatusMessage('Item deleted permanently.');
+      } catch (error) {
+        setActionErrorMessage(
+          error.message ?? 'Unable to permanently delete that item right now.',
+        );
+      } finally {
+        setIsDeleting(false);
+      }
+    }
 
     return (
       <section className={styles.trashRoute}>
@@ -219,9 +312,76 @@ export const trashRoute = createRoute({
                 <p className={styles.trashRoute__detailCopy}>
                   {formatPreview(selectedItem)}
                 </p>
-                <p className={styles.trashRoute__detailCopy}>
-                  Restore and permanent delete controls land here next.
-                </p>
+                {actionErrorMessage ? (
+                  <p
+                    className={`${styles.trashRoute__message} ${styles['trashRoute__message--error']}`}
+                    role="alert"
+                  >
+                    {actionErrorMessage}
+                  </p>
+                ) : null}
+
+                {actionStatusMessage ? (
+                  <p
+                    className={`${styles.trashRoute__message} ${styles['trashRoute__message--success']}`}
+                    role="status"
+                  >
+                    {actionStatusMessage}
+                  </p>
+                ) : null}
+
+                <div className={styles.trashRoute__actions}>
+                  <button
+                    className={styles.trashRoute__restoreButton}
+                    disabled={isRestoring || isDeleting}
+                    onClick={() => {
+                      void handleRestoreItem();
+                    }}
+                    type="button"
+                  >
+                    {isRestoring ? 'Restoring...' : 'Restore Item'}
+                  </button>
+
+                  <form
+                    className={styles.trashRoute__deleteBlock}
+                    onSubmit={(event) => {
+                      void handlePermanentDelete(event);
+                    }}
+                  >
+                    <label className={styles.trashRoute__deleteLabel}>
+                      Type the exact title to permanently delete
+                      <input
+                        className={styles.trashRoute__deleteInput}
+                        onChange={(event) => {
+                          setDeleteConfirmationValue(event.target.value);
+                          setActionErrorMessage('');
+                          setActionStatusMessage('');
+                        }}
+                        placeholder={deleteConfirmationLabel}
+                        spellCheck={false}
+                        type="text"
+                        value={deleteConfirmationValue}
+                      />
+                    </label>
+
+                    <p className={styles.trashRoute__deleteHelp}>
+                      This removes the item permanently and cascades deletion to
+                      any related history or log-entry records.
+                    </p>
+
+                    <button
+                      className={styles.trashRoute__deleteButton}
+                      disabled={
+                        isDeleting ||
+                        isRestoring ||
+                        deleteConfirmationValue !== deleteConfirmationLabel
+                      }
+                      type="submit"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+                    </button>
+                  </form>
+                </div>
               </div>
             ) : (
               <p className={styles.trashRoute__detailEmpty}>

@@ -179,6 +179,98 @@
   padding: 1rem;
 }
 
+.trashRoute__message {
+  border-radius: 0.95rem;
+  line-height: 1.55;
+  margin: 0;
+  padding: 0.9rem 1rem;
+}
+
+.trashRoute__message--error {
+  background: rgba(255, 248, 248, 0.98);
+  border: 1px solid rgba(186, 73, 73, 0.18);
+  color: #8f2d2d;
+}
+
+.trashRoute__message--success {
+  background: rgba(47, 111, 81, 0.12);
+  color: #24563d;
+}
+
+.trashRoute__actions {
+  display: grid;
+  gap: 1rem;
+}
+
+.trashRoute__restoreButton,
+.trashRoute__deleteButton {
+  border: none;
+  border-radius: 0.9rem;
+  color: #f8fafc;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 3rem;
+  padding: 0 1rem;
+}
+
+.trashRoute__restoreButton {
+  background: linear-gradient(135deg, #2f6f51 0%, #25543d 100%);
+}
+
+.trashRoute__deleteButton {
+  background: linear-gradient(135deg, #8f2d2d 0%, #6d1f1f 100%);
+}
+
+.trashRoute__restoreButton:disabled,
+.trashRoute__deleteButton:disabled {
+  background: rgba(82, 96, 109, 0.18);
+  color: #52606d;
+  cursor: not-allowed;
+}
+
+.trashRoute__restoreButton:focus-visible,
+.trashRoute__deleteButton:focus-visible,
+.trashRoute__deleteInput:focus-visible {
+  box-shadow: 0 0 0 3px rgba(58, 124, 165, 0.18);
+  outline: none;
+}
+
+.trashRoute__deleteBlock {
+  background: rgba(255, 248, 248, 0.78);
+  border: 1px solid rgba(186, 73, 73, 0.14);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+}
+
+.trashRoute__deleteLabel {
+  color: #243b53;
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+}
+
+.trashRoute__deleteInput {
+  appearance: none;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(82, 96, 109, 0.18);
+  border-radius: 0.9rem;
+  color: #1f2933;
+  font: inherit;
+  min-height: 3rem;
+  padding: 0 1rem;
+  width: 100%;
+}
+
+.trashRoute__deleteHelp {
+  color: #7c4a03;
+  line-height: 1.5;
+  margin: 0;
+}
+
 @media (min-width: 56rem) {
   .trashRoute__layout {
     align-items: start;
