@@ -478,8 +478,9 @@ When command sheet opened while editing an item:
 - Daily note template picker
 - Keyboard shortcuts reference — complete list
 - Slash commands reference — complete list
-- Account — email display, change password, sign out
-- Danger zone — trash view link, delete account with confirmation
+- Account — email display, sign out
+- Workspace — trash view link
+- Change password and account deletion are not part of the current build sequence.
 
 ---
 
