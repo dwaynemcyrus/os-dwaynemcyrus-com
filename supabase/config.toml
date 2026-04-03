@@ -1,0 +1,8 @@
+# Minimal Supabase CLI config for Personal OS.
+project_id = "ugotbvrrxifevflfzzky"
+
+[db]
+major_version = 17
+
+[db.migrations]
+enabled = true
