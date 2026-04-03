@@ -1,4 +1,21 @@
-import { createElement, useEffect, useId, useRef, useState } from 'react';
+import {
+  createElement,
+  useDeferredValue,
+  useEffect,
+  useEffectEvent,
+  useId,
+  useRef,
+  useState,
+} from 'react';
+import { useNavigate } from '@tanstack/react-router';
+import { useAuth } from '../../lib/auth';
+import {
+  createInboxItemFromCapture,
+  fetchCommandTemplates,
+  fetchRecentCommandItems,
+  getCapturePreview,
+  searchCommandItemsByTitle,
+} from '../../lib/items';
 import { FabButton } from './FabButton';
 import styles from './CommandSheet.module.css';
 
@@ -7,6 +24,64 @@ const DIRECT_CREATE_HINTS = [
   'Touch hold opens this mode on mobile.',
   'Secondary click opens this mode on desktop.',
 ];
+
+const RECENT_SKELETON_ROWS = ['recent-1', 'recent-2', 'recent-3'];
+const TEMPLATE_SKELETON_ROWS = ['template-1', 'template-2', 'template-3'];
+
+function formatItemLabel(item) {
+  if (item.title) {
+    return item.title;
+  }
+
+  if (item.content) {
+    const firstLine = item.content.split('\n')[0]?.trim();
+
+    if (firstLine) {
+      return firstLine;
+    }
+  }
+
+  return 'Untitled item';
+}
+
+function formatTemplateLabel(item) {
+  if (item.title) {
+    return item.title;
+  }
+
+  if (item.subtype) {
+    return item.subtype.replaceAll('_', ' ');
+  }
+
+  return 'Untitled template';
+}
+
+function formatDateLabel(value) {
+  if (!value) {
+    return 'No date';
+  }
+
+  return new Intl.DateTimeFormat(undefined, {
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(value));
+}
+
+function formatItemMeta(item) {
+  const metaParts = [];
+
+  if (item.type) {
+    metaParts.push(item.type);
+  }
+
+  if (item.subtype) {
+    metaParts.push(item.subtype.replaceAll('_', ' '));
+  }
+
+  metaParts.push(formatDateLabel(item.date_modified ?? item.date_created));
+
+  return metaParts.join(' · ');
+}
 
 function getSheetCopy(mode) {
   if (mode === 'direct-create') {
@@ -27,13 +102,46 @@ function getSheetCopy(mode) {
 }
 
 export function CommandSheet({ children }) {
+  const auth = useAuth();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
+  const [isRapidLogEnabled, setIsRapidLogEnabled] = useState(false);
   const [mode, setMode] = useState('search');
   const [query, setQuery] = useState('');
+  const [recentItems, setRecentItems] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [sheetError, setSheetError] = useState('');
+  const [sheetStatus, setSheetStatus] = useState('');
+  const [templateItems, setTemplateItems] = useState([]);
+  const [isLoadingDefaultState, setIsLoadingDefaultState] = useState(false);
+  const [isLoadingSearchResults, setIsLoadingSearchResults] = useState(false);
+  const [isSavingCapture, setIsSavingCapture] = useState(false);
   const inputRef = useRef(null);
   const titleId = useId();
   const inputId = useId();
   const descriptionId = useId();
+  const deferredQuery = useDeferredValue(query);
+  const trimmedQuery = deferredQuery.trim();
+  const capturePreview = getCapturePreview(query);
+  const handleEscapeClose = useEffectEvent(() => {
+    void requestClose();
+  });
+
+  function updateComposerValue(nextValue) {
+    setQuery(nextValue);
+    setSheetError('');
+    setSheetStatus('');
+  }
+
+  function closeSheet() {
+    setIsOpen(false);
+    setIsRapidLogEnabled(false);
+    setMode('search');
+    setQuery('');
+    setSearchResults([]);
+    setSheetError('');
+    setSheetStatus('');
+  }
 
   function openSearchMode() {
     setMode('search');
@@ -45,15 +153,68 @@ export function CommandSheet({ children }) {
     setIsOpen(true);
   }
 
-  function closeSheet() {
-    setIsOpen(false);
-    setMode('search');
-    setQuery('');
+  async function handleCapture(closeAfterCapture) {
+    const normalizedQuery = query.trim();
+
+    if (!normalizedQuery) {
+      closeSheet();
+      return true;
+    }
+
+    if (mode !== 'search' || normalizedQuery.startsWith('/')) {
+      closeSheet();
+      return true;
+    }
+
+    if (!auth.user?.id) {
+      setSheetError('Your session is missing a user id.');
+      return false;
+    }
+
+    setIsSavingCapture(true);
+    setSheetError('');
+    setSheetStatus('');
+
+    try {
+      const createdItem = await createInboxItemFromCapture({
+        rawValue: normalizedQuery,
+        userId: auth.user.id,
+      });
+
+      setRecentItems((previousItems) => [createdItem, ...previousItems].slice(0, 8));
+      setSheetStatus('Saved to inbox.');
+
+      if (closeAfterCapture) {
+        closeSheet();
+      } else {
+        setQuery('');
+        setSearchResults([]);
+        inputRef.current?.focus();
+      }
+
+      return true;
+    } catch (error) {
+      setSheetError(error.message ?? 'Unable to save to inbox right now.');
+      return false;
+    } finally {
+      setIsSavingCapture(false);
+    }
+  }
+
+  async function requestClose() {
+    const normalizedQuery = query.trim();
+
+    if (normalizedQuery) {
+      await handleCapture(true);
+      return;
+    }
+
+    closeSheet();
   }
 
   function handleBackdropClick(event) {
     if (event.target === event.currentTarget) {
-      closeSheet();
+      void requestClose();
     }
   }
 
@@ -66,13 +227,22 @@ export function CommandSheet({ children }) {
   }, [isOpen, mode]);
 
   useEffect(() => {
+    if (!inputRef.current) {
+      return;
+    }
+
+    inputRef.current.style.height = '0px';
+    inputRef.current.style.height = `${inputRef.current.scrollHeight}px`;
+  }, [query, isOpen]);
+
+  useEffect(() => {
     if (!isOpen) {
       return;
     }
 
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
-        closeSheet();
+        handleEscapeClose();
       }
     }
 
@@ -81,7 +251,7 @@ export function CommandSheet({ children }) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen]);
+  }, [isOpen, handleEscapeClose]);
 
   useEffect(() => {
     if (!isOpen) {
@@ -96,7 +266,117 @@ export function CommandSheet({ children }) {
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen || mode !== 'search' || !auth.user?.id) {
+      return;
+    }
+
+    if (trimmedQuery && !trimmedQuery.startsWith('/')) {
+      return;
+    }
+
+    let cancelled = false;
+
+    setIsLoadingDefaultState(true);
+    setSheetError('');
+
+    Promise.all([
+      fetchRecentCommandItems(auth.user.id),
+      fetchCommandTemplates(),
+    ])
+      .then(([nextRecentItems, nextTemplateItems]) => {
+        if (cancelled) {
+          return;
+        }
+
+        setRecentItems(nextRecentItems);
+        setTemplateItems(nextTemplateItems);
+      })
+      .catch((error) => {
+        if (cancelled) {
+          return;
+        }
+
+        setSheetError(
+          error.message ?? 'Unable to load command sheet items right now.',
+        );
+      })
+      .finally(() => {
+        if (cancelled) {
+          return;
+        }
+
+        setIsLoadingDefaultState(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOpen, mode, trimmedQuery, auth.user?.id]);
+
+  useEffect(() => {
+    if (!isOpen || mode !== 'search' || !auth.user?.id) {
+      return;
+    }
+
+    if (!trimmedQuery || trimmedQuery.startsWith('/')) {
+      setSearchResults([]);
+      setIsLoadingSearchResults(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    setIsLoadingSearchResults(true);
+    setSheetError('');
+
+    const timeoutId = window.setTimeout(() => {
+      searchCommandItemsByTitle(auth.user.id, trimmedQuery)
+        .then((results) => {
+          if (cancelled) {
+            return;
+          }
+
+          setSearchResults(results);
+        })
+        .catch((error) => {
+          if (cancelled) {
+            return;
+          }
+
+          setSheetError(error.message ?? 'Unable to search item titles right now.');
+        })
+        .finally(() => {
+          if (cancelled) {
+            return;
+          }
+
+          setIsLoadingSearchResults(false);
+        });
+    }, 180);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timeoutId);
+    };
+  }, [isOpen, mode, trimmedQuery, auth.user?.id]);
+
   const sheetCopy = getSheetCopy(mode);
+  const isSlashQuery = Boolean(trimmedQuery) && trimmedQuery.startsWith('/');
+  const isSearchMode = mode === 'search';
+  const shouldShowDefaultState = isSearchMode && !trimmedQuery;
+  const shouldShowSearchState = isSearchMode && Boolean(trimmedQuery) && !isSlashQuery;
+  const shouldShowCaptureState = shouldShowSearchState && Boolean(capturePreview);
+
+  async function handleOpenItem(itemId) {
+    closeSheet();
+    await navigate({
+      params: {
+        id: itemId,
+      },
+      to: '/items/$id',
+    });
+  }
 
   return (
     <div className={styles.commandSheetShell}>
@@ -132,7 +412,9 @@ export function CommandSheet({ children }) {
               <button
                 aria-label="Close command sheet"
                 className={styles.commandSheet__close}
-                onClick={closeSheet}
+                onClick={() => {
+                  void requestClose();
+                }}
                 type="button"
               >
                 Close
@@ -145,15 +427,27 @@ export function CommandSheet({ children }) {
 
             <label className={styles.commandSheet__field} htmlFor={inputId}>
               <span className={styles.commandSheet__label}>Input</span>
-              <input
+              <textarea
                 className={styles.commandSheet__input}
                 id={inputId}
                 onChange={(event) => {
-                  setQuery(event.target.value);
+                  updateComposerValue(event.target.value);
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.key === 'Enter' &&
+                    !event.shiftKey &&
+                    isSearchMode &&
+                    !isSlashQuery
+                  ) {
+                    event.preventDefault();
+                    void handleCapture(!isRapidLogEnabled);
+                  }
                 }}
                 placeholder={sheetCopy.placeholder}
                 ref={inputRef}
-                type="text"
+                rows={1}
+                spellCheck={false}
                 value={query}
               />
             </label>
@@ -173,21 +467,206 @@ export function CommandSheet({ children }) {
               </section>
             ) : (
               <>
-                <section className={styles.commandSheet__section}>
-                  <h3 className={styles.commandSheet__sectionTitle}>Recent</h3>
-                  <p className={styles.commandSheet__emptyState}>
-                    Recent items will appear here in the next chunk.
-                  </p>
+                <section className={styles.commandSheet__controls}>
+                  <button
+                    aria-pressed={isRapidLogEnabled}
+                    className={`${styles.commandSheet__modeToggle} ${
+                      isRapidLogEnabled
+                        ? styles['commandSheet__modeToggle--active']
+                        : ''
+                    }`}
+                    onClick={() => {
+                      setIsRapidLogEnabled((currentValue) => !currentValue);
+                    }}
+                    type="button"
+                  >
+                    Rapid log {isRapidLogEnabled ? 'On' : 'Off'}
+                  </button>
+
+                  <button
+                    className={styles.commandSheet__captureButton}
+                    disabled={!capturePreview || isSavingCapture || isSlashQuery}
+                    onClick={() => {
+                      void handleCapture(!isRapidLogEnabled);
+                    }}
+                    type="button"
+                  >
+                    {isSavingCapture
+                      ? 'Saving...'
+                      : isRapidLogEnabled
+                        ? 'Capture and Keep Open'
+                        : 'Capture to Inbox'}
+                  </button>
                 </section>
 
-                <section className={styles.commandSheet__section}>
-                  <h3 className={styles.commandSheet__sectionTitle}>
-                    Templates
-                  </h3>
-                  <p className={styles.commandSheet__emptyState}>
-                    Template shortcuts will appear here in the next chunk.
+                {sheetError ? (
+                  <p
+                    className={`${styles.commandSheet__message} ${styles['commandSheet__message--error']}`}
+                    role="alert"
+                  >
+                    {sheetError}
                   </p>
-                </section>
+                ) : null}
+
+                {sheetStatus ? (
+                  <p
+                    className={`${styles.commandSheet__message} ${styles['commandSheet__message--success']}`}
+                    role="status"
+                  >
+                    {sheetStatus}
+                  </p>
+                ) : null}
+
+                {isSlashQuery ? (
+                  <section className={styles.commandSheet__section}>
+                    <h3 className={styles.commandSheet__sectionTitle}>
+                      Slash Commands
+                    </h3>
+                    <p className={styles.commandSheet__emptyState}>
+                      Slash actions arrive in the next chunk.
+                    </p>
+                  </section>
+                ) : null}
+
+                {shouldShowCaptureState ? (
+                  <section className={styles.commandSheet__section}>
+                    <h3 className={styles.commandSheet__sectionTitle}>
+                      Quick Capture
+                    </h3>
+                    <p className={styles.commandSheet__previewTitle}>
+                      {capturePreview.title}
+                    </p>
+                    <p className={styles.commandSheet__previewCopy}>
+                      {capturePreview.content || 'No overflow content.'}
+                    </p>
+                  </section>
+                ) : null}
+
+                {shouldShowSearchState ? (
+                  <section className={styles.commandSheet__section}>
+                    <h3 className={styles.commandSheet__sectionTitle}>
+                      Search Results
+                    </h3>
+
+                    {isLoadingSearchResults ? (
+                      <div className={styles.commandSheet__skeletonList}>
+                        {RECENT_SKELETON_ROWS.map((rowId) => (
+                          <div
+                            className={styles.commandSheet__skeletonRow}
+                            key={rowId}
+                          />
+                        ))}
+                      </div>
+                    ) : searchResults.length > 0 ? (
+                      <ul className={styles.commandSheet__list}>
+                        {searchResults.map((item) => (
+                          <li className={styles.commandSheet__listItem} key={item.id}>
+                            <button
+                              className={styles.commandSheet__itemButton}
+                              onClick={() => {
+                                void handleOpenItem(item.id);
+                              }}
+                              type="button"
+                            >
+                              <span className={styles.commandSheet__itemTitle}>
+                                {formatItemLabel(item)}
+                              </span>
+                              <span className={styles.commandSheet__itemMeta}>
+                                {formatItemMeta(item)}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={styles.commandSheet__emptyState}>
+                        No item titles match yet. Capture this text into inbox or
+                        keep typing.
+                      </p>
+                    )}
+                  </section>
+                ) : null}
+
+                {shouldShowDefaultState ? (
+                  <>
+                    <section className={styles.commandSheet__section}>
+                      <h3 className={styles.commandSheet__sectionTitle}>Recent</h3>
+
+                      {isLoadingDefaultState ? (
+                        <div className={styles.commandSheet__skeletonList}>
+                          {RECENT_SKELETON_ROWS.map((rowId) => (
+                            <div
+                              className={styles.commandSheet__skeletonRow}
+                              key={rowId}
+                            />
+                          ))}
+                        </div>
+                      ) : recentItems.length > 0 ? (
+                        <ul className={styles.commandSheet__list}>
+                          {recentItems.map((item) => (
+                            <li className={styles.commandSheet__listItem} key={item.id}>
+                              <button
+                                className={styles.commandSheet__itemButton}
+                                onClick={() => {
+                                  void handleOpenItem(item.id);
+                                }}
+                                type="button"
+                              >
+                                <span className={styles.commandSheet__itemTitle}>
+                                  {formatItemLabel(item)}
+                                </span>
+                                <span className={styles.commandSheet__itemMeta}>
+                                  {formatItemMeta(item)}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className={styles.commandSheet__emptyState}>
+                          No recent items yet. Your next capture will land here.
+                        </p>
+                      )}
+                    </section>
+
+                    <section className={styles.commandSheet__section}>
+                      <h3 className={styles.commandSheet__sectionTitle}>
+                        Templates
+                      </h3>
+
+                      {isLoadingDefaultState ? (
+                        <div className={styles.commandSheet__skeletonList}>
+                          {TEMPLATE_SKELETON_ROWS.map((rowId) => (
+                            <div
+                              className={styles.commandSheet__skeletonRow}
+                              key={rowId}
+                            />
+                          ))}
+                        </div>
+                      ) : templateItems.length > 0 ? (
+                        <ul className={styles.commandSheet__templateList}>
+                          {templateItems.map((templateItem) => (
+                            <li
+                              className={styles.commandSheet__templateItem}
+                              key={templateItem.id}
+                            >
+                              <span className={styles.commandSheet__templateTitle}>
+                                {formatTemplateLabel(templateItem)}
+                              </span>
+                              <span className={styles.commandSheet__templateMeta}>
+                                {formatItemMeta(templateItem)}
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className={styles.commandSheet__emptyState}>
+                          No templates are available yet.
+                        </p>
+                      )}
+                    </section>
+                  </>
+                ) : null}
               </>
             )}
           </section>
