@@ -1,0 +1,65 @@
+.editor {
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(82, 96, 109, 0.2);
+  border-radius: 1rem;
+  min-height: 24rem;
+  overflow: hidden;
+}
+
+.editorDisabled {
+  opacity: 0.72;
+}
+
+.editor :global(.cm-editor) {
+  background: transparent;
+  height: 100%;
+  min-height: 24rem;
+}
+
+.editor :global(.cm-scroller) {
+  font-family:
+    ui-monospace,
+    SFMono-Regular,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    Liberation Mono,
+    monospace;
+  min-height: 24rem;
+}
+
+.editor :global(.cm-content),
+.editor :global(.cm-gutter) {
+  min-height: 24rem;
+  padding-bottom: 1rem;
+  padding-top: 1rem;
+}
+
+.editor :global(.cm-content) {
+  caret-color: #25543d;
+  line-height: 1.6;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.editor :global(.cm-gutters) {
+  background: rgba(245, 241, 236, 0.92);
+  border-right: 1px solid rgba(82, 96, 109, 0.08);
+  color: #7c6754;
+}
+
+.editor :global(.cm-activeLine),
+.editor :global(.cm-activeLineGutter) {
+  background: rgba(255, 250, 243, 0.88);
+}
+
+.editor :global(.cm-focused) {
+  outline: 2px solid rgba(37, 84, 61, 0.2);
+  outline-offset: -2px;
+}
+
+.editor :global(.cm-placeholder) {
+  color: #7c6754;
+  font-style: italic;
+}

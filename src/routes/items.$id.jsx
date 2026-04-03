@@ -1,5 +1,6 @@
-import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { createElement, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { ItemEditor } from '../components/editor/ItemEditor';
 import { useAuth } from '../lib/auth';
 import { useCommandContext } from '../lib/command-context';
 import { fetchEditorItem, saveEditorItem } from '../lib/items';
@@ -33,8 +34,7 @@ export const itemEditorRoute = createRoute({
     const [loadErrorMessage, setLoadErrorMessage] = useState('');
     const [saveErrorMessage, setSaveErrorMessage] = useState('');
     const [saveStatusMessage, setSaveStatusMessage] = useState('');
-    const textareaRef = useRef(null);
-    const insertHandlerRef = useRef(null);
+    const editorRef = useRef(null);
     const isDirty = draftValue !== lastSavedValue;
 
     const handleSave = useEffectEvent(async () => {
@@ -75,29 +75,6 @@ export const itemEditorRoute = createRoute({
       setSaveErrorMessage('');
       setSaveStatusMessage('');
     }
-
-    insertHandlerRef.current = ({ body }) => {
-      const textareaElement = textareaRef.current;
-      const currentValue = textareaElement?.value ?? draftValue;
-      const selectionStart = textareaElement?.selectionStart ?? currentValue.length;
-      const selectionEnd = textareaElement?.selectionEnd ?? currentValue.length;
-      const nextValue = `${currentValue.slice(0, selectionStart)}${body}${currentValue.slice(selectionEnd)}`;
-      const nextCursorPosition = selectionStart + body.length;
-
-      updateDraftValue(nextValue);
-
-      window.requestAnimationFrame(() => {
-        if (!textareaRef.current) {
-          return;
-        }
-
-        textareaRef.current.focus();
-        textareaRef.current.setSelectionRange(
-          nextCursorPosition,
-          nextCursorPosition,
-        );
-      });
-    };
 
     useEffect(() => {
       if (!auth.user?.id) {
@@ -148,7 +125,7 @@ export const itemEditorRoute = createRoute({
       setInsertTemplateTarget({
         itemId: id,
         onInsertTemplate(payload) {
-          insertHandlerRef.current?.(payload);
+          editorRef.current?.insertText(payload.body);
         },
       });
 
@@ -156,27 +133,6 @@ export const itemEditorRoute = createRoute({
         setInsertTemplateTarget(null);
       };
     }, [setInsertTemplateTarget, id]);
-
-    useEffect(() => {
-      function handleKeyDown(event) {
-        const isSaveShortcut =
-          (event.metaKey || event.ctrlKey) &&
-          event.key.toLowerCase() === 's';
-
-        if (!isSaveShortcut) {
-          return;
-        }
-
-        event.preventDefault();
-        handleSave();
-      }
-
-      window.addEventListener('keydown', handleKeyDown);
-
-      return () => {
-        window.removeEventListener('keydown', handleKeyDown);
-      };
-    }, [handleSave]);
 
     return (
       <section
@@ -203,9 +159,9 @@ export const itemEditorRoute = createRoute({
           >
             <h1 style={{ margin: 0 }}>{item?.title || 'Item Editor'}</h1>
             <p style={{ margin: 0 }}>
-              Markdown save path is now active for item {id}. Use the FAB to
-              open the command sheet and insert a template body at the cursor
-              position.
+              Raw markdown editing is now active for item {id}. Use the save
+              button or Cmd/Ctrl+S, and use the FAB to insert a template body
+              at the current cursor position.
             </p>
             <p
               style={{
@@ -291,30 +247,18 @@ export const itemEditorRoute = createRoute({
           </p>
         ) : null}
 
-        <textarea
-          aria-label="Item markdown"
-          disabled={isLoading || Boolean(loadErrorMessage)}
-          onChange={(event) => {
-            updateDraftValue(event.target.value);
-          }}
-          placeholder="Raw markdown editing will render here in the CodeMirror phase."
-          ref={textareaRef}
-          rows={18}
-          style={{
-            background: 'rgba(255, 255, 255, 0.92)',
-            border: '1px solid rgba(82, 96, 109, 0.2)',
-            borderRadius: '1rem',
-            color: '#1f2933',
-            font: 'inherit',
-            lineHeight: 1.6,
-            minHeight: '24rem',
-            opacity: isLoading ? 0.7 : 1,
-            padding: '1rem',
-            resize: 'vertical',
-            width: '100%',
-          }}
-          value={draftValue}
-        />
+        {createElement(ItemEditor, {
+          disabled: isLoading || Boolean(loadErrorMessage),
+          onChange(nextValue) {
+            updateDraftValue(nextValue);
+          },
+          onSave() {
+            handleSave();
+          },
+          placeholderText: 'Write raw markdown with YAML frontmatter here.',
+          ref: editorRef,
+          value: draftValue,
+        })}
       </section>
     );
   },

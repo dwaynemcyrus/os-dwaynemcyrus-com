@@ -10,9 +10,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@codemirror/lang-markdown": "^6.5.0",
     "@supabase/supabase-js": "^2.49.8",
     "@tanstack/react-query": "^5.74.4",
     "@tanstack/react-router": "^1.120.5",
+    "codemirror": "^6.0.2",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "yaml": "^2.8.3"
