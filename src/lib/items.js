@@ -37,11 +37,15 @@ function buildCommandItemFieldsQuery() {
   return 'id,cuid,type,subtype,title,content,date_created,date_modified,is_template';
 }
 
+function buildInboxItemFieldsQuery() {
+  return 'id,cuid,type,subtype,title,content,status,date_created,date_modified';
+}
+
 function isCuidConflictError(error) {
   return error?.code === '23505' && error?.message?.includes('cuid');
 }
 
-function buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex) {
+function sanitizeTemplateFields(templateItem) {
   const templateFields = { ...templateItem };
 
   delete templateFields.id;
@@ -50,6 +54,12 @@ function buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex
   delete templateFields.is_template;
   delete templateFields.created_at;
   delete templateFields.updated_at;
+
+  return templateFields;
+}
+
+function buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex) {
+  const templateFields = sanitizeTemplateFields(templateItem);
 
   return {
     ...templateFields,
@@ -92,6 +102,24 @@ export async function fetchCommandTemplates() {
     .is('date_trashed', null)
     .order('type', { ascending: true })
     .order('subtype', { ascending: true });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function fetchUnprocessedInboxItems(userId) {
+  const { data, error } = await supabase
+    .from('items')
+    .select(buildInboxItemFieldsQuery())
+    .eq('user_id', userId)
+    .eq('type', 'inbox')
+    .eq('status', 'unprocessed')
+    .is('date_trashed', null)
+    .order('date_created', { ascending: false, nullsFirst: false })
+    .order('date_modified', { ascending: false, nullsFirst: false });
 
   if (error) {
     throw error;
@@ -196,4 +224,66 @@ export async function createItemFromTemplate({ templateId, userId }) {
   }
 
   throw new Error('Unable to create a unique timestamp id right now.');
+}
+
+export async function processInboxItem({
+  itemId,
+  templateId,
+  title,
+  userId,
+}) {
+  const [{ data: inboxItem, error: inboxError }, { data: templateItem, error: templateError }] =
+    await Promise.all([
+      supabase
+        .from('items')
+        .select(buildInboxItemFieldsQuery())
+        .eq('id', itemId)
+        .eq('user_id', userId)
+        .eq('type', 'inbox')
+        .eq('status', 'unprocessed')
+        .is('date_trashed', null)
+        .single(),
+      supabase
+        .from('items')
+        .select('*')
+        .eq('id', templateId)
+        .eq('is_template', true)
+        .single(),
+    ]);
+
+  if (inboxError) {
+    throw inboxError;
+  }
+
+  if (templateError) {
+    throw templateError;
+  }
+
+  const normalizedTitle = title?.trim() || inboxItem.title || null;
+  const timestamp = new Date().toISOString();
+  const templateFields = sanitizeTemplateFields(templateItem);
+  const { data, error } = await supabase
+    .from('items')
+    .update({
+      ...templateFields,
+      content: inboxItem.content,
+      date_modified: timestamp,
+      date_trashed: null,
+      is_template: false,
+      status: 'backlog',
+      title: normalizedTitle,
+      user_id: userId,
+    })
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .eq('type', 'inbox')
+    .eq('status', 'unprocessed')
+    .select(buildInboxItemFieldsQuery())
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 }
