@@ -1,11 +1,13 @@
 import { createElement, useEffect, useEffectEvent, useRef, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { BacklinksPanel } from '../components/editor/BacklinksPanel';
 import { ItemEditor } from '../components/editor/ItemEditor';
 import { useAuth } from '../lib/auth';
 import { useCommandContext } from '../lib/command-context';
 import { replaceEditorFrontmatterField } from '../lib/frontmatter';
 import {
   fetchEditorItem,
+  fetchItemBacklinkGroups,
   fetchTagSuggestions,
   fetchWikilinkSuggestions,
   fetchWikilinkTargets,
@@ -37,7 +39,10 @@ export const itemEditorRoute = createRoute({
     const [item, setItem] = useState(null);
     const [draftValue, setDraftValue] = useState('');
     const [lastSavedValue, setLastSavedValue] = useState('');
+    const [backlinkErrorMessage, setBacklinkErrorMessage] = useState('');
+    const [backlinkGroups, setBacklinkGroups] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const [linkErrorMessage, setLinkErrorMessage] = useState('');
     const [loadErrorMessage, setLoadErrorMessage] = useState('');
@@ -175,6 +180,57 @@ export const itemEditorRoute = createRoute({
         cancelled = true;
       };
     }, [auth.user?.id, id]);
+
+    useEffect(() => {
+      if (!auth.user?.id || !item?.id) {
+        return;
+      }
+
+      if (isReadOnlyTemplate || !item.title?.trim()) {
+        setBacklinkGroups([]);
+        setBacklinkErrorMessage('');
+        setIsLoadingBacklinks(false);
+        return;
+      }
+
+      let cancelled = false;
+
+      setIsLoadingBacklinks(true);
+      setBacklinkErrorMessage('');
+
+      fetchItemBacklinkGroups({
+        itemId: item.id,
+        title: item.title,
+        userId: auth.user.id,
+      })
+        .then((nextBacklinkGroups) => {
+          if (cancelled) {
+            return;
+          }
+
+          setBacklinkGroups(nextBacklinkGroups);
+        })
+        .catch((error) => {
+          if (cancelled) {
+            return;
+          }
+
+          setBacklinkErrorMessage(
+            error.message ?? 'Unable to load backlinks right now.',
+          );
+        })
+        .finally(() => {
+          if (cancelled) {
+            return;
+          }
+
+          setIsLoadingBacklinks(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [auth.user?.id, item?.id, item?.title, isReadOnlyTemplate]);
 
     function handleWorkbenchToggle() {
       if (isReadOnlyTemplate) {
@@ -475,6 +531,22 @@ export const itemEditorRoute = createRoute({
             wikilinkTargets,
           })}
         </div>
+
+        {createElement(BacklinksPanel, {
+          backlinkGroups,
+          errorMessage: backlinkErrorMessage,
+          isLoading: isLoadingBacklinks,
+          isReadOnlyTemplate,
+          onOpenItem(itemId) {
+            return navigate({
+              params: {
+                id: itemId,
+              },
+              to: '/items/$id',
+            });
+          },
+          savedTitle: item?.title ?? '',
+        })}
       </section>
     );
   },

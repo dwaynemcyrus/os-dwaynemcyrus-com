@@ -1,0 +1,130 @@
+.backlinksPanel {
+  background: rgba(255, 252, 247, 0.94);
+  border: 1px solid rgba(104, 85, 63, 0.14);
+  border-radius: 1rem;
+  box-shadow: 0 24px 60px rgba(84, 61, 37, 0.08);
+  display: grid;
+  gap: 1rem;
+  max-block-size: 18rem;
+  min-block-size: 0;
+  overflow-y: auto;
+  padding: 1.25rem;
+}
+
+.backlinksPanel__header {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.backlinksPanel__eyebrow {
+  color: #7c6754;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.backlinksPanel__title {
+  color: #1f2933;
+  font-size: 1.35rem;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.backlinksPanel__description {
+  color: #52606d;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.backlinksPanel__error,
+.backlinksPanel__emptyState {
+  border-radius: 0.95rem;
+  line-height: 1.55;
+  margin: 0;
+  padding: 0.9rem 1rem;
+}
+
+.backlinksPanel__error {
+  background: rgba(255, 248, 248, 0.98);
+  border: 1px solid rgba(186, 73, 73, 0.18);
+  color: #8f2d2d;
+}
+
+.backlinksPanel__emptyState {
+  background: rgba(249, 246, 241, 0.88);
+  color: #52606d;
+}
+
+.backlinksPanel__skeletonList,
+.backlinksPanel__groups {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.backlinksPanel__skeletonRow {
+  background: rgba(240, 231, 218, 0.88);
+  border-radius: 0.95rem;
+  min-height: 4rem;
+}
+
+.backlinksPanel__group {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.backlinksPanel__groupTitle {
+  color: #243b53;
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0;
+  text-transform: capitalize;
+}
+
+.backlinksPanel__list {
+  display: grid;
+  gap: 0.65rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.backlinksPanel__itemButton {
+  background: rgba(255, 255, 255, 0.82);
+  border: 1px solid rgba(82, 96, 109, 0.12);
+  border-radius: 0.95rem;
+  color: #243b53;
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  transition:
+    box-shadow 160ms ease,
+    transform 160ms ease;
+  width: 100%;
+}
+
+.backlinksPanel__itemButton:hover {
+  box-shadow: 0 14px 30px rgba(84, 61, 37, 0.08);
+  transform: translateY(-1px);
+}
+
+.backlinksPanel__itemButton:focus-visible {
+  box-shadow: 0 0 0 3px rgba(58, 124, 165, 0.18);
+  outline: none;
+}
+
+.backlinksPanel__itemTitle {
+  font-size: 0.98rem;
+  font-weight: 700;
+}
+
+.backlinksPanel__itemMeta {
+  color: #7c6754;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
