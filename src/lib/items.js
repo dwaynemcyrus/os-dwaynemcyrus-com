@@ -3,6 +3,7 @@ import {
   buildEditorMarkdownDocument,
   buildItemUpdatePayloadFromFrontmatter,
   parseEditorMarkdownDocument,
+  replaceEditorFrontmatterField,
 } from './frontmatter';
 import { supabase } from './supabase';
 
@@ -56,6 +57,10 @@ function buildEditorAutocompleteItemFieldsQuery() {
   return 'id,cuid,title,content,date_created,date_modified';
 }
 
+function buildManagedTemplateFieldsQuery() {
+  return 'id,cuid,type,subtype,title,content,date_created,date_modified,date_trashed,is_template,user_id';
+}
+
 function isCuidConflictError(error) {
   return error?.code === '23505' && error?.message?.includes('cuid');
 }
@@ -73,7 +78,13 @@ function sanitizeTemplateFields(templateItem) {
   return templateFields;
 }
 
-function buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex) {
+function buildClonedTemplatePayload({
+  collisionIndex,
+  isTemplate,
+  templateItem,
+  timestamp,
+  userId,
+}) {
   const templateFields = sanitizeTemplateFields(templateItem);
 
   return {
@@ -82,9 +93,23 @@ function buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex
     date_created: timestamp,
     date_modified: timestamp,
     date_trashed: null,
-    is_template: false,
+    is_template: isTemplate,
     user_id: userId,
   };
+}
+
+function buildTrashedItemHistorySnapshot(item, trashedAt) {
+  const snapshotWithUpdatedDate = replaceEditorFrontmatterField({
+    key: 'date_modified',
+    rawMarkdown: buildEditorMarkdownDocument(item),
+    value: trashedAt,
+  });
+
+  return replaceEditorFrontmatterField({
+    key: 'date_trashed',
+    rawMarkdown: snapshotWithUpdatedDate,
+    value: trashedAt,
+  });
 }
 
 export function getCapturePreview(rawValue) {
@@ -230,6 +255,24 @@ export async function fetchCommandTemplates() {
   return data ?? [];
 }
 
+export async function fetchManagedTemplates() {
+  const { data, error } = await supabase
+    .from('items')
+    .select(buildManagedTemplateFieldsQuery())
+    .eq('is_template', true)
+    .is('date_trashed', null)
+    .order('type', { ascending: true })
+    .order('subtype', { ascending: true })
+    .order('title', { ascending: true })
+    .order('date_modified', { ascending: false, nullsFirst: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
 export async function fetchUnprocessedInboxItems(userId) {
   const { data, error } = await supabase
     .from('items')
@@ -330,8 +373,65 @@ export async function createItemFromTemplate({ templateId, userId }) {
   for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
     const { data, error } = await supabase
       .from('items')
-      .insert(buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex))
+      .insert(
+        buildClonedTemplatePayload({
+          collisionIndex,
+          isTemplate: false,
+          templateItem,
+          timestamp,
+          userId,
+        }),
+      )
       .select(buildCommandItemFieldsQuery())
+      .single();
+
+    if (!error) {
+      return data;
+    }
+
+    if (!isCuidConflictError(error) || collisionIndex === MAX_CUID_RETRIES) {
+      throw error;
+    }
+  }
+
+  throw new Error('Unable to create a unique timestamp id right now.');
+}
+
+export async function createUserTemplateFromSubtype({ subtype, userId }) {
+  const normalizedSubtype = subtype?.trim();
+
+  if (!normalizedSubtype) {
+    throw new Error('A template subtype is required.');
+  }
+
+  const { data: seededTemplate, error: seededTemplateError } = await supabase
+    .from('items')
+    .select('*')
+    .eq('is_template', true)
+    .eq('subtype', normalizedSubtype)
+    .is('user_id', null)
+    .is('date_trashed', null)
+    .single();
+
+  if (seededTemplateError) {
+    throw seededTemplateError;
+  }
+
+  const timestamp = new Date().toISOString();
+
+  for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
+    const { data, error } = await supabase
+      .from('items')
+      .insert(
+        buildClonedTemplatePayload({
+          collisionIndex,
+          isTemplate: true,
+          templateItem: seededTemplate,
+          timestamp,
+          userId,
+        }),
+      )
+      .select(buildManagedTemplateFieldsQuery())
       .single();
 
     if (!error) {
@@ -471,4 +571,52 @@ export async function saveEditorItem({
     item: savedItem,
     rawMarkdown: savedSnapshot,
   };
+}
+
+export async function trashTemplate({ templateId, userId }) {
+  const { data: existingTemplate, error: existingTemplateError } = await supabase
+    .from('items')
+    .select(buildEditorItemFieldsQuery())
+    .eq('id', templateId)
+    .eq('user_id', userId)
+    .eq('is_template', true)
+    .is('date_trashed', null)
+    .single();
+
+  if (existingTemplateError) {
+    throw existingTemplateError;
+  }
+
+  const trashedAt = new Date().toISOString();
+  const { data: trashedTemplate, error: trashedTemplateError } = await supabase
+    .from('items')
+    .update({
+      date_modified: trashedAt,
+      date_trashed: trashedAt,
+    })
+    .eq('id', templateId)
+    .eq('user_id', userId)
+    .eq('is_template', true)
+    .is('date_trashed', null)
+    .select(buildManagedTemplateFieldsQuery())
+    .single();
+
+  if (trashedTemplateError) {
+    throw trashedTemplateError;
+  }
+
+  const { error: historyError } = await supabase.from('item_history').insert({
+    change_type: 'trashed',
+    content: buildTrashedItemHistorySnapshot(existingTemplate, trashedAt),
+    item_id: templateId,
+  });
+
+  if (historyError) {
+    const error = new Error('Template deleted, but the history snapshot failed.');
+    error.cause = historyError;
+    error.item = trashedTemplate;
+    throw error;
+  }
+
+  return trashedTemplate;
 }
