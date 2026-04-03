@@ -111,7 +111,6 @@ export async function createInboxItemFromCapture({ rawValue, userId }) {
     cuid: createCuid('item'),
     date_created: timestamp,
     date_modified: timestamp,
-    processed: false,
     status: 'unprocessed',
     title: capturePayload.title,
     type: 'inbox',
