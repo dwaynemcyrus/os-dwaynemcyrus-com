@@ -1,4 +1,9 @@
 import { createCuid } from './cuid';
+import {
+  buildEditorMarkdownDocument,
+  buildItemUpdatePayloadFromFrontmatter,
+  parseEditorMarkdownDocument,
+} from './frontmatter';
 import { supabase } from './supabase';
 
 const RECENT_ITEMS_LIMIT = 8;
@@ -41,6 +46,10 @@ function buildInboxItemFieldsQuery() {
   return 'id,cuid,type,subtype,title,content,status,date_created,date_modified';
 }
 
+function buildEditorItemFieldsQuery() {
+  return '*';
+}
+
 function isCuidConflictError(error) {
   return error?.code === '23505' && error?.message?.includes('cuid');
 }
@@ -74,6 +83,25 @@ function buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex
 
 export function getCapturePreview(rawValue) {
   return formatCapturePayload(rawValue);
+}
+
+export async function fetchEditorItem({ itemId, userId }) {
+  const { data, error } = await supabase
+    .from('items')
+    .select(buildEditorItemFieldsQuery())
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .is('date_trashed', null)
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    item: data,
+    rawMarkdown: buildEditorMarkdownDocument(data),
+  };
 }
 
 export async function fetchRecentCommandItems(userId) {
@@ -286,4 +314,69 @@ export async function processInboxItem({
   }
 
   return data;
+}
+
+export async function saveEditorItem({
+  itemId,
+  rawMarkdown,
+  userId,
+}) {
+  const { data: existingItem, error: existingItemError } = await supabase
+    .from('items')
+    .select(buildEditorItemFieldsQuery())
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .is('date_trashed', null)
+    .single();
+
+  if (existingItemError) {
+    throw existingItemError;
+  }
+
+  const { body, frontmatter } = parseEditorMarkdownDocument(rawMarkdown);
+  const modifiedAt = new Date().toISOString();
+  const updatePayload = {
+    ...buildItemUpdatePayloadFromFrontmatter({
+      existingItem,
+      modifiedAt,
+      parsedFrontmatter: frontmatter,
+    }),
+    content: body,
+    date_modified: modifiedAt,
+  };
+  const savedSnapshot = buildEditorMarkdownDocument({
+    ...existingItem,
+    ...updatePayload,
+  });
+  const { data: savedItem, error: updateError } = await supabase
+    .from('items')
+    .update(updatePayload)
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .is('date_trashed', null)
+    .select(buildEditorItemFieldsQuery())
+    .single();
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  const { error: historyError } = await supabase.from('item_history').insert({
+    change_type: 'updated',
+    content: savedSnapshot,
+    item_id: itemId,
+  });
+
+  if (historyError) {
+    const error = new Error('Item saved, but the history snapshot failed.');
+    error.cause = historyError;
+    error.item = savedItem;
+    error.rawMarkdown = savedSnapshot;
+    throw error;
+  }
+
+  return {
+    item: savedItem,
+    rawMarkdown: savedSnapshot,
+  };
 }
