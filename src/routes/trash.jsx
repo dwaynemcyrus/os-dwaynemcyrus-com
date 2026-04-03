@@ -1,8 +1,8 @@
 import { createRoute } from '@tanstack/react-router';
-import { rootRoute } from './__root';
+import { authenticatedRoute } from './_authenticated';
 
 export const trashRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedRoute,
   path: '/trash',
   component: function TrashRoute() {
     return (

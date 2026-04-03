@@ -4,6 +4,7 @@ import { resetPasswordRoute } from '../routes/auth/reset';
 import { signInRoute } from '../routes/auth/signin';
 import { signUpRoute } from '../routes/auth/signup';
 import { rootRoute } from '../routes/__root';
+import { authenticatedRoute } from '../routes/_authenticated';
 import { inboxRoute } from '../routes/inbox';
 import { indexRoute } from '../routes/index';
 import { itemEditorRoute } from '../routes/items.$id';
@@ -12,7 +13,7 @@ import { settingsRoute } from '../routes/settings';
 import { templatesRoute } from '../routes/templates';
 import { trashRoute } from '../routes/trash';
 
-const routeTree = rootRoute.addChildren([
+const protectedRouteTree = authenticatedRoute.addChildren([
   indexRoute,
   inboxRoute,
   itemsRoute,
@@ -20,6 +21,10 @@ const routeTree = rootRoute.addChildren([
   templatesRoute,
   settingsRoute,
   trashRoute,
+]);
+
+const routeTree = rootRoute.addChildren([
+  protectedRouteTree,
   signInRoute,
   signUpRoute,
   forgotPasswordRoute,

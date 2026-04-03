@@ -1,8 +1,8 @@
 import { createRoute } from '@tanstack/react-router';
-import { rootRoute } from './__root';
+import { authenticatedRoute } from './_authenticated';
 
 export const inboxRoute = createRoute({
-  getParentRoute: () => rootRoute,
+  getParentRoute: () => authenticatedRoute,
   path: '/inbox',
   component: function InboxRoute() {
     return (
