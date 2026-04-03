@@ -107,7 +107,6 @@ create table public.items (
   month_profit_chf numeric not null default 0,
   date_field date,
   mood text,
-  processed boolean not null default false,
   chapter_count integer not null default 0,
   issue integer,
   author text,
