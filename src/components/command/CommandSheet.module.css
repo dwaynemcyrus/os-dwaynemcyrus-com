@@ -12,10 +12,7 @@
   display: flex;
   flex-direction: column;
   min-block-size: 0;
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 1.25rem 1.25rem calc(6.5rem + env(safe-area-inset-bottom));
+  overflow: hidden;
 }
 
 .commandSheet {
