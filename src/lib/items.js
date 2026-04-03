@@ -5,6 +5,7 @@ import {
   parseEditorMarkdownDocument,
   replaceEditorFrontmatterField,
 } from './frontmatter';
+import { fetchResolvedDailyTemplateId } from './settings';
 import { supabase } from './supabase';
 
 const RECENT_ITEMS_LIMIT = 8;
@@ -12,6 +13,7 @@ const SEARCH_ITEMS_LIMIT = 8;
 const TAG_ITEM_POOL_LIMIT = 200;
 const TAG_SUGGESTIONS_LIMIT = 10;
 const MAX_CUID_RETRIES = 20;
+const pendingDailyNoteRequests = new Map();
 
 function escapeIlikePattern(value) {
   return value.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
@@ -61,8 +63,31 @@ function buildManagedTemplateFieldsQuery() {
   return 'id,cuid,type,subtype,title,content,date_created,date_modified,date_trashed,is_template,user_id';
 }
 
+function buildDailyNoteFieldsQuery() {
+  return 'id,cuid,type,subtype,title,status,date_created,date_modified,date_field';
+}
+
 function isCuidConflictError(error) {
   return error?.code === '23505' && error?.message?.includes('cuid');
+}
+
+function formatDatePart(value) {
+  return String(value).padStart(2, '0');
+}
+
+function formatLocalDateParts(date) {
+  const year = date.getFullYear();
+  const month = formatDatePart(date.getMonth() + 1);
+  const day = formatDatePart(date.getDate());
+  const hours = formatDatePart(date.getHours());
+  const minutes = formatDatePart(date.getMinutes());
+  const seconds = formatDatePart(date.getSeconds());
+  const dateField = `${year}-${month}-${day}`;
+
+  return {
+    dateField,
+    localDateTime: `${dateField}T${hours}:${minutes}:${seconds}`,
+  };
 }
 
 function sanitizeTemplateFields(templateItem) {
@@ -110,6 +135,97 @@ function buildTrashedItemHistorySnapshot(item, trashedAt) {
     rawMarkdown: snapshotWithUpdatedDate,
     value: trashedAt,
   });
+}
+
+function materializeDailyTemplateContent({
+  content,
+  cuid,
+  localDateField,
+  localDateTime,
+}) {
+  return String(content ?? '')
+    .replaceAll('{{date:YYYYMMDD}}{{time:HHmmss}}', cuid)
+    .replaceAll('{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}', localDateTime)
+    .replaceAll('{{date:YYYY-MM-DD}}', localDateField);
+}
+
+async function fetchDailyNoteForDate({ dateField, userId }) {
+  const { data, error } = await supabase
+    .from('items')
+    .select(buildDailyNoteFieldsQuery())
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .eq('type', 'journal')
+    .eq('subtype', 'daily')
+    .eq('date_field', dateField)
+    .is('date_trashed', null)
+    .order('date_created', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+async function createDailyNoteForDate({
+  date,
+  templateId,
+  userId,
+}) {
+  const { data: templateItem, error: templateError } = await supabase
+    .from('items')
+    .select('*')
+    .eq('id', templateId)
+    .eq('is_template', true)
+    .eq('subtype', 'daily')
+    .is('date_trashed', null)
+    .single();
+
+  if (templateError) {
+    throw templateError;
+  }
+
+  const timestamp = date.toISOString();
+  const { dateField, localDateTime } = formatLocalDateParts(date);
+
+  for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
+    const cuid = createCuid(date, collisionIndex);
+    const templateFields = sanitizeTemplateFields(templateItem);
+    const { data, error } = await supabase
+      .from('items')
+      .insert({
+        ...templateFields,
+        cuid,
+        date_created: timestamp,
+        date_field: dateField,
+        date_modified: timestamp,
+        date_trashed: null,
+        is_template: false,
+        title: dateField,
+        user_id: userId,
+        content: materializeDailyTemplateContent({
+          content: templateItem.content,
+          cuid,
+          localDateField: dateField,
+          localDateTime,
+        }),
+      })
+      .select(buildDailyNoteFieldsQuery())
+      .single();
+
+    if (!error) {
+      return data;
+    }
+
+    if (!isCuidConflictError(error) || collisionIndex === MAX_CUID_RETRIES) {
+      throw error;
+    }
+  }
+
+  throw new Error('Unable to create today\'s daily note right now.');
 }
 
 export function getCapturePreview(rawValue) {
@@ -619,4 +735,48 @@ export async function trashTemplate({ templateId, userId }) {
   }
 
   return trashedTemplate;
+}
+
+export async function openOrCreateDailyNote({
+  date = new Date(),
+  userId,
+}) {
+  const { dateField } = formatLocalDateParts(date);
+  const requestKey = `${userId}:${dateField}`;
+
+  if (pendingDailyNoteRequests.has(requestKey)) {
+    return pendingDailyNoteRequests.get(requestKey);
+  }
+
+  const pendingRequest = (async () => {
+    const existingDailyNote = await fetchDailyNoteForDate({
+      dateField,
+      userId,
+    });
+
+    if (existingDailyNote) {
+      return {
+        item: existingDailyNote,
+        wasCreated: false,
+      };
+    }
+
+    const templateId = await fetchResolvedDailyTemplateId({ userId });
+    const createdDailyNote = await createDailyNoteForDate({
+      date,
+      templateId,
+      userId,
+    });
+
+    return {
+      item: createdDailyNote,
+      wasCreated: true,
+    };
+  })().finally(() => {
+    pendingDailyNoteRequests.delete(requestKey);
+  });
+
+  pendingDailyNoteRequests.set(requestKey, pendingRequest);
+
+  return pendingRequest;
 }

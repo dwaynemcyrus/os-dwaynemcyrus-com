@@ -112,3 +112,13 @@ export async function saveDailyTemplatePreference({
 
   return data.daily_template_id;
 }
+
+export async function fetchResolvedDailyTemplateId({ userId }) {
+  const { selectedTemplateId } = await fetchDailyTemplateSettings({ userId });
+
+  if (!selectedTemplateId) {
+    throw new Error('No daily template is available for this account.');
+  }
+
+  return selectedTemplateId;
+}
