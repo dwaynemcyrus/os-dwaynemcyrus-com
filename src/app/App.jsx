@@ -1,8 +1,7 @@
+import { createElement } from 'react';
+import { RouterProvider } from '@tanstack/react-router';
+import { router } from './router';
+
 export function App() {
-  return (
-    <main>
-      <h1>Personal OS</h1>
-      <p>Application shell in progress.</p>
-    </main>
-  );
+  return createElement(RouterProvider, { router });
 }
