@@ -23,7 +23,11 @@
   display: flex;
   inset: 0;
   justify-content: center;
-  padding: 1rem 1rem calc(6rem + env(safe-area-inset-bottom));
+  overflow: hidden;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    1rem
+    calc(6rem + env(safe-area-inset-bottom));
   position: fixed;
   z-index: 15;
 }
@@ -36,7 +40,12 @@
   border-radius: 1.25rem;
   box-shadow: 0 28px 64px rgba(45, 32, 20, 0.2);
   color: #1f2933;
+  display: flex;
+  flex-direction: column;
+  max-block-size: 100%;
   max-width: 40rem;
+  min-block-size: 0;
+  overflow: hidden;
   padding: 1.25rem;
   width: 100%;
 }
@@ -82,12 +91,14 @@
 
 .commandSheet__description {
   color: #52606d;
+  flex: none;
   line-height: 1.5;
   margin: 0.75rem 0 1rem;
 }
 
 .commandSheet__field {
   display: grid;
+  flex: none;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
@@ -120,9 +131,18 @@
 
 .commandSheet__controls {
   display: flex;
+  flex: none;
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-bottom: 1rem;
+}
+
+.commandSheet__body {
+  min-block-size: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.25rem;
 }
 
 .commandSheet__modeToggle,

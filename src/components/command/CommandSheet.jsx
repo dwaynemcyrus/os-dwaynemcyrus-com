@@ -452,147 +452,104 @@ export function CommandSheet({ children }) {
               />
             </label>
 
-            {mode === 'direct-create' ? (
-              <section className={styles.commandSheet__section}>
-                <h3 className={styles.commandSheet__sectionTitle}>
-                  Direct Create
-                </h3>
-                <ul className={styles.commandSheet__hintList}>
-                  {DIRECT_CREATE_HINTS.map((hint) => (
-                    <li className={styles.commandSheet__hintItem} key={hint}>
-                      {hint}
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ) : (
-              <>
-                <section className={styles.commandSheet__controls}>
-                  <button
-                    aria-pressed={isRapidLogEnabled}
-                    className={`${styles.commandSheet__modeToggle} ${
-                      isRapidLogEnabled
-                        ? styles['commandSheet__modeToggle--active']
-                        : ''
-                    }`}
-                    onClick={() => {
-                      setIsRapidLogEnabled((currentValue) => !currentValue);
-                    }}
-                    type="button"
-                  >
-                    Rapid log {isRapidLogEnabled ? 'On' : 'Off'}
-                  </button>
-
-                  <button
-                    className={styles.commandSheet__captureButton}
-                    disabled={!capturePreview || isSavingCapture || isSlashQuery}
-                    onClick={() => {
-                      void handleCapture(!isRapidLogEnabled);
-                    }}
-                    type="button"
-                  >
-                    {isSavingCapture
-                      ? 'Saving...'
-                      : isRapidLogEnabled
-                        ? 'Capture and Keep Open'
-                        : 'Capture to Inbox'}
-                  </button>
+            <div className={styles.commandSheet__body}>
+              {mode === 'direct-create' ? (
+                <section className={styles.commandSheet__section}>
+                  <h3 className={styles.commandSheet__sectionTitle}>
+                    Direct Create
+                  </h3>
+                  <ul className={styles.commandSheet__hintList}>
+                    {DIRECT_CREATE_HINTS.map((hint) => (
+                      <li className={styles.commandSheet__hintItem} key={hint}>
+                        {hint}
+                      </li>
+                    ))}
+                  </ul>
                 </section>
+              ) : (
+                <>
+                  <section className={styles.commandSheet__controls}>
+                    <button
+                      aria-pressed={isRapidLogEnabled}
+                      className={`${styles.commandSheet__modeToggle} ${
+                        isRapidLogEnabled
+                          ? styles['commandSheet__modeToggle--active']
+                          : ''
+                      }`}
+                      onClick={() => {
+                        setIsRapidLogEnabled((currentValue) => !currentValue);
+                      }}
+                      type="button"
+                    >
+                      Rapid log {isRapidLogEnabled ? 'On' : 'Off'}
+                    </button>
 
-                {sheetError ? (
-                  <p
-                    className={`${styles.commandSheet__message} ${styles['commandSheet__message--error']}`}
-                    role="alert"
-                  >
-                    {sheetError}
-                  </p>
-                ) : null}
-
-                {sheetStatus ? (
-                  <p
-                    className={`${styles.commandSheet__message} ${styles['commandSheet__message--success']}`}
-                    role="status"
-                  >
-                    {sheetStatus}
-                  </p>
-                ) : null}
-
-                {isSlashQuery ? (
-                  <section className={styles.commandSheet__section}>
-                    <h3 className={styles.commandSheet__sectionTitle}>
-                      Slash Commands
-                    </h3>
-                    <p className={styles.commandSheet__emptyState}>
-                      Slash actions arrive in the next chunk.
-                    </p>
+                    <button
+                      className={styles.commandSheet__captureButton}
+                      disabled={!capturePreview || isSavingCapture || isSlashQuery}
+                      onClick={() => {
+                        void handleCapture(!isRapidLogEnabled);
+                      }}
+                      type="button"
+                    >
+                      {isSavingCapture
+                        ? 'Saving...'
+                        : isRapidLogEnabled
+                          ? 'Capture and Keep Open'
+                          : 'Capture to Inbox'}
+                    </button>
                   </section>
-                ) : null}
 
-                {shouldShowCaptureState ? (
-                  <section className={styles.commandSheet__section}>
-                    <h3 className={styles.commandSheet__sectionTitle}>
-                      Quick Capture
-                    </h3>
-                    <p className={styles.commandSheet__previewTitle}>
-                      {capturePreview.title}
+                  {sheetError ? (
+                    <p
+                      className={`${styles.commandSheet__message} ${styles['commandSheet__message--error']}`}
+                      role="alert"
+                    >
+                      {sheetError}
                     </p>
-                    <p className={styles.commandSheet__previewCopy}>
-                      {capturePreview.content || 'No overflow content.'}
+                  ) : null}
+
+                  {sheetStatus ? (
+                    <p
+                      className={`${styles.commandSheet__message} ${styles['commandSheet__message--success']}`}
+                      role="status"
+                    >
+                      {sheetStatus}
                     </p>
-                  </section>
-                ) : null}
+                  ) : null}
 
-                {shouldShowSearchState ? (
-                  <section className={styles.commandSheet__section}>
-                    <h3 className={styles.commandSheet__sectionTitle}>
-                      Search Results
-                    </h3>
-
-                    {isLoadingSearchResults ? (
-                      <div className={styles.commandSheet__skeletonList}>
-                        {RECENT_SKELETON_ROWS.map((rowId) => (
-                          <div
-                            className={styles.commandSheet__skeletonRow}
-                            key={rowId}
-                          />
-                        ))}
-                      </div>
-                    ) : searchResults.length > 0 ? (
-                      <ul className={styles.commandSheet__list}>
-                        {searchResults.map((item) => (
-                          <li className={styles.commandSheet__listItem} key={item.id}>
-                            <button
-                              className={styles.commandSheet__itemButton}
-                              onClick={() => {
-                                void handleOpenItem(item.id);
-                              }}
-                              type="button"
-                            >
-                              <span className={styles.commandSheet__itemTitle}>
-                                {formatItemLabel(item)}
-                              </span>
-                              <span className={styles.commandSheet__itemMeta}>
-                                {formatItemMeta(item)}
-                              </span>
-                            </button>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <p className={styles.commandSheet__emptyState}>
-                        No item titles match yet. Capture this text into inbox or
-                        keep typing.
-                      </p>
-                    )}
-                  </section>
-                ) : null}
-
-                {shouldShowDefaultState ? (
-                  <>
+                  {isSlashQuery ? (
                     <section className={styles.commandSheet__section}>
-                      <h3 className={styles.commandSheet__sectionTitle}>Recent</h3>
+                      <h3 className={styles.commandSheet__sectionTitle}>
+                        Slash Commands
+                      </h3>
+                      <p className={styles.commandSheet__emptyState}>
+                        Slash actions arrive in the next chunk.
+                      </p>
+                    </section>
+                  ) : null}
 
-                      {isLoadingDefaultState ? (
+                  {shouldShowCaptureState ? (
+                    <section className={styles.commandSheet__section}>
+                      <h3 className={styles.commandSheet__sectionTitle}>
+                        Quick Capture
+                      </h3>
+                      <p className={styles.commandSheet__previewTitle}>
+                        {capturePreview.title}
+                      </p>
+                      <p className={styles.commandSheet__previewCopy}>
+                        {capturePreview.content || 'No overflow content.'}
+                      </p>
+                    </section>
+                  ) : null}
+
+                  {shouldShowSearchState ? (
+                    <section className={styles.commandSheet__section}>
+                      <h3 className={styles.commandSheet__sectionTitle}>
+                        Search Results
+                      </h3>
+
+                      {isLoadingSearchResults ? (
                         <div className={styles.commandSheet__skeletonList}>
                           {RECENT_SKELETON_ROWS.map((rowId) => (
                             <div
@@ -601,9 +558,9 @@ export function CommandSheet({ children }) {
                             />
                           ))}
                         </div>
-                      ) : recentItems.length > 0 ? (
+                      ) : searchResults.length > 0 ? (
                         <ul className={styles.commandSheet__list}>
-                          {recentItems.map((item) => (
+                          {searchResults.map((item) => (
                             <li className={styles.commandSheet__listItem} key={item.id}>
                               <button
                                 className={styles.commandSheet__itemButton}
@@ -624,51 +581,96 @@ export function CommandSheet({ children }) {
                         </ul>
                       ) : (
                         <p className={styles.commandSheet__emptyState}>
-                          No recent items yet. Your next capture will land here.
+                          No item titles match yet. Capture this text into inbox or
+                          keep typing.
                         </p>
                       )}
                     </section>
+                  ) : null}
 
-                    <section className={styles.commandSheet__section}>
-                      <h3 className={styles.commandSheet__sectionTitle}>
-                        Templates
-                      </h3>
+                  {shouldShowDefaultState ? (
+                    <>
+                      <section className={styles.commandSheet__section}>
+                        <h3 className={styles.commandSheet__sectionTitle}>Recent</h3>
 
-                      {isLoadingDefaultState ? (
-                        <div className={styles.commandSheet__skeletonList}>
-                          {TEMPLATE_SKELETON_ROWS.map((rowId) => (
-                            <div
-                              className={styles.commandSheet__skeletonRow}
-                              key={rowId}
-                            />
-                          ))}
-                        </div>
-                      ) : templateItems.length > 0 ? (
-                        <ul className={styles.commandSheet__templateList}>
-                          {templateItems.map((templateItem) => (
-                            <li
-                              className={styles.commandSheet__templateItem}
-                              key={templateItem.id}
-                            >
-                              <span className={styles.commandSheet__templateTitle}>
-                                {formatTemplateLabel(templateItem)}
-                              </span>
-                              <span className={styles.commandSheet__templateMeta}>
-                                {formatItemMeta(templateItem)}
-                              </span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className={styles.commandSheet__emptyState}>
-                          No templates are available yet.
-                        </p>
-                      )}
-                    </section>
-                  </>
-                ) : null}
-              </>
-            )}
+                        {isLoadingDefaultState ? (
+                          <div className={styles.commandSheet__skeletonList}>
+                            {RECENT_SKELETON_ROWS.map((rowId) => (
+                              <div
+                                className={styles.commandSheet__skeletonRow}
+                                key={rowId}
+                              />
+                            ))}
+                          </div>
+                        ) : recentItems.length > 0 ? (
+                          <ul className={styles.commandSheet__list}>
+                            {recentItems.map((item) => (
+                              <li className={styles.commandSheet__listItem} key={item.id}>
+                                <button
+                                  className={styles.commandSheet__itemButton}
+                                  onClick={() => {
+                                    void handleOpenItem(item.id);
+                                  }}
+                                  type="button"
+                                >
+                                  <span className={styles.commandSheet__itemTitle}>
+                                    {formatItemLabel(item)}
+                                  </span>
+                                  <span className={styles.commandSheet__itemMeta}>
+                                    {formatItemMeta(item)}
+                                  </span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className={styles.commandSheet__emptyState}>
+                            No recent items yet. Your next capture will land here.
+                          </p>
+                        )}
+                      </section>
+
+                      <section className={styles.commandSheet__section}>
+                        <h3 className={styles.commandSheet__sectionTitle}>
+                          Templates
+                        </h3>
+
+                        {isLoadingDefaultState ? (
+                          <div className={styles.commandSheet__skeletonList}>
+                            {TEMPLATE_SKELETON_ROWS.map((rowId) => (
+                              <div
+                                className={styles.commandSheet__skeletonRow}
+                                key={rowId}
+                              />
+                            ))}
+                          </div>
+                        ) : templateItems.length > 0 ? (
+                          <ul className={styles.commandSheet__templateList}>
+                            {templateItems.map((templateItem) => (
+                              <li
+                                className={styles.commandSheet__templateItem}
+                                key={templateItem.id}
+                              >
+                                <span className={styles.commandSheet__templateTitle}>
+                                  {formatTemplateLabel(templateItem)}
+                                </span>
+                                <span className={styles.commandSheet__templateMeta}>
+                                  {formatItemMeta(templateItem)}
+                                </span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className={styles.commandSheet__emptyState}>
+                            No templates are available yet.
+                          </p>
+                        )}
+                      </section>
+                    </>
+                  ) : null}
+                </>
+              )}
+            </div>
           </section>
         </div>
       ) : null}
