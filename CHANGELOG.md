@@ -2,6 +2,25 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.6.0] - 2026-04-04
+
+Recommended release: `v0.6.0`
+
+### Added
+- Responsive navigation shell with a mobile bottom tab bar, desktop sidebar, and route-aware active states.
+- Home summaries for unprocessed inbox items and recent workbench items.
+- Full items library view with search, type and subtype filters, and sortable results.
+- Trash management with restore and permanent delete flows backed by typed confirmation.
+- Live wikilink resolution in the editor and a saved-state backlinks panel grouped by property.
+
+### Changed
+- Settings now acts as a stronger route hub with shortcuts, slash command reference, and the trash entry point.
+- System templates remain readable in the shared editor while user-owned items continue to be editable and navigable.
+
+### Notes
+- This milestone completes the navigation, trash, and backlinks phases of the build sequence.
+- The remaining defined build phase in the current spec is the final settings audit and completion pass.
+
 ## [0.5.0] - 2026-04-03
 
 Recommended release: `v0.5.0`
