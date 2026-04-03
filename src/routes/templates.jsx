@@ -4,12 +4,14 @@ import { useAuth } from '../lib/auth';
 import {
   createUserTemplateFromSubtype,
   fetchManagedTemplates,
+  trashTemplate,
 } from '../lib/items';
 import {
   formatSubtypeLabel,
   groupTemplatesByType,
   getTemplateSubtypeOptions,
   isSystemTemplate,
+  isUserTemplate,
 } from '../lib/templates';
 import { authenticatedRoute } from './_authenticated';
 
@@ -71,9 +73,14 @@ export const templatesRoute = createRoute({
     const navigate = templatesRoute.useNavigate();
     const [templateItems, setTemplateItems] = useState([]);
     const [createErrorMessage, setCreateErrorMessage] = useState('');
+    const [deleteConfirmationValue, setDeleteConfirmationValue] = useState('');
+    const [deleteErrorMessage, setDeleteErrorMessage] = useState('');
+    const [deleteStatusMessage, setDeleteStatusMessage] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const [isCreating, setIsCreating] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [pendingDeleteTemplate, setPendingDeleteTemplate] = useState(null);
     const [selectedSubtype, setSelectedSubtype] = useState('');
     const templateGroups = useMemo(
       () => groupTemplatesByType(templateItems),
@@ -195,6 +202,77 @@ export const templatesRoute = createRoute({
         );
       } finally {
         setIsCreating(false);
+      }
+    }
+
+    function openDeleteDialog(templateItem) {
+      setPendingDeleteTemplate(templateItem);
+      setDeleteConfirmationValue('');
+      setDeleteErrorMessage('');
+      setDeleteStatusMessage('');
+    }
+
+    function closeDeleteDialog() {
+      if (isDeleting) {
+        return;
+      }
+
+      setPendingDeleteTemplate(null);
+      setDeleteConfirmationValue('');
+      setDeleteErrorMessage('');
+    }
+
+    async function handleDeleteTemplate(event) {
+      event.preventDefault();
+
+      if (!auth.user?.id || !pendingDeleteTemplate) {
+        setDeleteErrorMessage('Select a user template before deleting it.');
+        return;
+      }
+
+      if (!isUserTemplate(pendingDeleteTemplate)) {
+        setDeleteErrorMessage('System templates cannot be deleted.');
+        return;
+      }
+
+      if (deleteConfirmationValue !== pendingDeleteTemplate.subtype) {
+        setDeleteErrorMessage('Type the exact subtype to confirm deletion.');
+        return;
+      }
+
+      setIsDeleting(true);
+      setDeleteErrorMessage('');
+      setDeleteStatusMessage('');
+
+      try {
+        const deletedTemplate = await trashTemplate({
+          templateId: pendingDeleteTemplate.id,
+          userId: auth.user.id,
+        });
+
+        setTemplateItems((currentItems) =>
+          currentItems.filter((item) => item.id !== deletedTemplate.id),
+        );
+        setDeleteStatusMessage('Template moved to trash.');
+        setPendingDeleteTemplate(null);
+        setDeleteConfirmationValue('');
+      } catch (error) {
+        if (error.item?.id) {
+          setTemplateItems((currentItems) =>
+            currentItems.filter((item) => item.id !== error.item.id),
+          );
+          setDeleteStatusMessage(
+            'Template moved to trash, but the history snapshot failed.',
+          );
+          setPendingDeleteTemplate(null);
+          setDeleteConfirmationValue('');
+        } else {
+          setDeleteErrorMessage(
+            error.message ?? 'Unable to delete that template right now.',
+          );
+        }
+      } finally {
+        setIsDeleting(false);
       }
     }
 
@@ -370,6 +448,20 @@ export const templatesRoute = createRoute({
           ) : null}
         </section>
 
+        {deleteStatusMessage ? (
+          <p
+            style={{
+              background: 'rgba(47, 111, 81, 0.12)',
+              borderRadius: '1rem',
+              color: '#25543d',
+              margin: 0,
+              padding: '1rem',
+            }}
+          >
+            {deleteStatusMessage}
+          </p>
+        ) : null}
+
         {errorMessage ? (
           <p
             role="alert"
@@ -510,77 +602,282 @@ export const templatesRoute = createRoute({
                   }}
                 >
                   {templateGroup.items.map((templateItem) => (
-                    <button
+                    <div
                       key={templateItem.id}
-                      onClick={() => {
-                        void openTemplate(templateItem.id);
-                      }}
                       style={{
                         background: 'rgba(248, 250, 252, 0.92)',
                         border: '1px solid rgba(82, 96, 109, 0.14)',
                         borderRadius: '0.875rem',
-                        color: 'inherit',
-                        cursor: 'pointer',
                         display: 'grid',
                         gap: '0.45rem',
                         padding: '1rem',
-                        textAlign: 'left',
                       }}
-                      type="button"
                     >
-                      <div
-                        style={{
-                          alignItems: 'center',
-                          display: 'flex',
-                          flexWrap: 'wrap',
-                          gap: '0.75rem',
-                          justifyContent: 'space-between',
+                      <button
+                        onClick={() => {
+                          void openTemplate(templateItem.id);
                         }}
+                        style={{
+                          background: 'transparent',
+                          border: 'none',
+                          color: 'inherit',
+                          cursor: 'pointer',
+                          display: 'grid',
+                          gap: '0.75rem',
+                          padding: 0,
+                          textAlign: 'left',
+                        }}
+                        type="button"
                       >
-                        <strong
+                        <div
                           style={{
-                            fontSize: '1rem',
+                            alignItems: 'center',
+                            display: 'flex',
+                            flexWrap: 'wrap',
+                            gap: '0.75rem',
+                            justifyContent: 'space-between',
                           }}
                         >
-                          {formatTemplateTitle(templateItem)}
-                        </strong>
+                          <strong
+                            style={{
+                              fontSize: '1rem',
+                            }}
+                          >
+                            {formatTemplateTitle(templateItem)}
+                          </strong>
+                          <span
+                            style={{
+                              background: isSystemTemplate(templateItem)
+                                ? 'rgba(82, 96, 109, 0.12)'
+                                : 'rgba(255, 250, 243, 0.98)',
+                              borderRadius: '999px',
+                              color: '#243b53',
+                              fontSize: '0.82rem',
+                              fontWeight: 700,
+                              padding: '0.25rem 0.65rem',
+                            }}
+                          >
+                            {isSystemTemplate(templateItem)
+                              ? 'Read Only'
+                              : 'Editable'}
+                          </span>
+                        </div>
                         <span
                           style={{
-                            background: isSystemTemplate(templateItem)
-                              ? 'rgba(82, 96, 109, 0.12)'
-                              : 'rgba(255, 250, 243, 0.98)',
-                            borderRadius: '999px',
-                            color: '#243b53',
-                            fontSize: '0.82rem',
-                            fontWeight: 700,
-                            padding: '0.25rem 0.65rem',
+                            color: '#52606d',
+                            fontSize: '0.92rem',
                           }}
                         >
-                          {isSystemTemplate(templateItem)
-                            ? 'Read Only'
-                            : 'Editable'}
+                          {formatTemplateMeta(templateItem)}
                         </span>
-                      </div>
-                      <span
-                        style={{
-                          color: '#52606d',
-                          fontSize: '0.92rem',
-                        }}
-                      >
-                        {formatTemplateMeta(templateItem)}
-                      </span>
-                      <span
-                        style={{
-                          color: '#243b53',
-                        }}
-                      >
-                        {formatTemplatePreview(templateItem)}
-                      </span>
-                    </button>
+                        <span
+                          style={{
+                            color: '#243b53',
+                          }}
+                        >
+                          {formatTemplatePreview(templateItem)}
+                        </span>
+                      </button>
+                      {isUserTemplate(templateItem) ? (
+                        <div
+                          style={{
+                            display: 'flex',
+                            justifyContent: 'end',
+                          }}
+                        >
+                          <button
+                            onClick={() => {
+                              openDeleteDialog(templateItem);
+                            }}
+                            style={{
+                              background: 'rgba(186, 73, 73, 0.1)',
+                              border: '1px solid rgba(186, 73, 73, 0.18)',
+                              borderRadius: '0.75rem',
+                              color: '#8f2d2d',
+                              cursor: 'pointer',
+                              font: 'inherit',
+                              fontWeight: 700,
+                              minHeight: '2.5rem',
+                              padding: '0 0.9rem',
+                            }}
+                            type="button"
+                          >
+                            Delete Template
+                          </button>
+                        </div>
+                      ) : null}
+                    </div>
                   ))}
                 </div>
               </section>
             ))}
+          </div>
+        ) : null}
+
+        {pendingDeleteTemplate ? (
+          <div
+            role="presentation"
+            style={{
+              alignItems: 'center',
+              background: 'rgba(15, 23, 42, 0.38)',
+              display: 'flex',
+              inset: 0,
+              justifyContent: 'center',
+              padding: '1.5rem',
+              position: 'fixed',
+              zIndex: 30,
+            }}
+          >
+            <section
+              aria-modal="true"
+              role="alertdialog"
+              style={{
+                background: 'rgba(255, 255, 255, 0.98)',
+                border: '1px solid rgba(82, 96, 109, 0.16)',
+                borderRadius: '1.25rem',
+                display: 'grid',
+                gap: '1rem',
+                inlineSize: 'min(32rem, 100%)',
+                padding: '1.5rem',
+              }}
+            >
+              <header
+                style={{
+                  display: 'grid',
+                  gap: '0.45rem',
+                }}
+              >
+                <h2
+                  style={{
+                    fontSize: '1.1rem',
+                    margin: 0,
+                  }}
+                >
+                  Delete Template
+                </h2>
+                <p style={{ margin: 0 }}>
+                  Type the exact subtype <strong>{pendingDeleteTemplate.subtype}</strong>{' '}
+                  to move this template to trash. This check is case-sensitive.
+                </p>
+              </header>
+
+              <form
+                onSubmit={(event) => {
+                  void handleDeleteTemplate(event);
+                }}
+                style={{
+                  display: 'grid',
+                  gap: '1rem',
+                }}
+              >
+                <label
+                  style={{
+                    display: 'grid',
+                    gap: '0.45rem',
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '0.92rem',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Confirm subtype
+                  </span>
+                  <input
+                    autoFocus
+                    onChange={(event) => {
+                      setDeleteConfirmationValue(event.target.value);
+                      setDeleteErrorMessage('');
+                    }}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.94)',
+                      border: '1px solid rgba(82, 96, 109, 0.18)',
+                      borderRadius: '0.875rem',
+                      color: 'inherit',
+                      font: 'inherit',
+                      minHeight: '3rem',
+                      padding: '0 0.9rem',
+                    }}
+                    type="text"
+                    value={deleteConfirmationValue}
+                  />
+                </label>
+
+                {deleteErrorMessage ? (
+                  <p
+                    role="alert"
+                    style={{
+                      background: 'rgba(186, 73, 73, 0.1)',
+                      borderRadius: '1rem',
+                      color: '#8f2d2d',
+                      margin: 0,
+                      padding: '1rem',
+                    }}
+                  >
+                    {deleteErrorMessage}
+                  </p>
+                ) : null}
+
+                <div
+                  style={{
+                    display: 'flex',
+                    gap: '0.75rem',
+                    justifyContent: 'end',
+                  }}
+                >
+                  <button
+                    onClick={closeDeleteDialog}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.94)',
+                      border: '1px solid rgba(82, 96, 109, 0.18)',
+                      borderRadius: '0.875rem',
+                      color: 'inherit',
+                      cursor: isDeleting ? 'not-allowed' : 'pointer',
+                      font: 'inherit',
+                      fontWeight: 700,
+                      minHeight: '3rem',
+                      padding: '0 1.1rem',
+                    }}
+                    type="button"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={
+                      isDeleting ||
+                      deleteConfirmationValue !== pendingDeleteTemplate.subtype
+                    }
+                    style={{
+                      background:
+                        isDeleting ||
+                        deleteConfirmationValue !== pendingDeleteTemplate.subtype
+                          ? 'rgba(82, 96, 109, 0.18)'
+                          : 'linear-gradient(135deg, #8f2d2d 0%, #7b2323 100%)',
+                      border: 'none',
+                      borderRadius: '0.875rem',
+                      color:
+                        isDeleting ||
+                        deleteConfirmationValue !== pendingDeleteTemplate.subtype
+                          ? '#52606d'
+                          : '#f8fafc',
+                      cursor:
+                        isDeleting ||
+                        deleteConfirmationValue !== pendingDeleteTemplate.subtype
+                          ? 'not-allowed'
+                          : 'pointer',
+                      font: 'inherit',
+                      fontWeight: 700,
+                      minHeight: '3rem',
+                      padding: '0 1.1rem',
+                    }}
+                    type="submit"
+                  >
+                    {isDeleting ? 'Deleting...' : 'Delete Template'}
+                  </button>
+                </div>
+              </form>
+            </section>
           </div>
         ) : null}
       </section>
