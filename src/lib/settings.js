@@ -56,12 +56,11 @@ export async function fetchDailyTemplateSettings({ userId }) {
   }
 
   const sortedTemplateItems = [...(templateItems ?? [])].sort(sortDailyTemplateItems);
-  const systemTemplate = sortedTemplateItems.find((item) => item.user_id == null) ?? null;
   const selectedTemplateId = sortedTemplateItems.some(
     (item) => item.id === settingsRow?.daily_template_id,
   )
     ? settingsRow.daily_template_id
-    : (systemTemplate?.id ?? '');
+    : '';
 
   return {
     options: sortedTemplateItems.map((templateItem) => ({
@@ -117,7 +116,7 @@ export async function fetchResolvedDailyTemplateId({ userId }) {
   const { selectedTemplateId } = await fetchDailyTemplateSettings({ userId });
 
   if (!selectedTemplateId) {
-    throw new Error('No daily template is available for this account.');
+    throw new Error('No daily template has been selected yet.');
   }
 
   return selectedTemplateId;

@@ -28,8 +28,10 @@ export const settingsRoute = createRoute({
     const selectedTemplateLabel = useMemo(
       () =>
         templateOptions.find((option) => option.id === selectedTemplateId)?.label ??
-        'No daily template available',
-      [selectedTemplateId, templateOptions],
+        (hasDailyTemplateOptions
+          ? 'No daily template selected'
+          : 'No daily template available'),
+      [hasDailyTemplateOptions, selectedTemplateId, templateOptions],
     );
 
     useEffect(() => {
@@ -259,7 +261,9 @@ export const settingsRoute = createRoute({
                 }}
                 value={selectedTemplateId}
               >
-                {hasDailyTemplateOptions ? null : (
+                {hasDailyTemplateOptions ? (
+                  <option value="">Choose a daily template</option>
+                ) : (
                   <option value="">No daily templates available</option>
                 )}
                 {templateOptions.map((option) => (
@@ -324,6 +328,22 @@ export const settingsRoute = createRoute({
               ? 'Loading daily note settings...'
               : `Current selection: ${selectedTemplateLabel}`}
           </p>
+
+          {!isLoadingSettings && hasDailyTemplateOptions && !selectedTemplateId ? (
+            <p
+              role="status"
+              style={{
+                background: 'rgba(191, 131, 45, 0.12)',
+                borderRadius: '0.875rem',
+                color: '#7c4a03',
+                margin: 0,
+                padding: '0.85rem 1rem',
+              }}
+            >
+              No default daily template is selected yet. Today&apos;s note will not
+              create until you choose one here.
+            </p>
+          ) : null}
 
           {dailyErrorMessage ? (
             <p

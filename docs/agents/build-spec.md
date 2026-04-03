@@ -448,7 +448,7 @@ When command sheet opened while editing an item:
 - Checks for existing journal: daily item with today's date
 - If exists → open in editor
 - If not → create from selected daily template then open
-- Default template: seeded system daily template
+- No implicit fallback template. If none is selected, warn the user to choose one in settings.
 - Settings picker to change default template
 
 ---
@@ -576,7 +576,7 @@ V1 is complete when:
 - [ ] Home screen shows Open Today's Note button
 - [ ] Button opens existing or creates new daily note
 - [ ] New daily note uses template from settings
-- [ ] Default is seeded daily template
+- [ ] No implicit fallback if no daily template is selected
 
 ### Navigation
 - [ ] Home shows date, daily note button, inbox count, workbench items
