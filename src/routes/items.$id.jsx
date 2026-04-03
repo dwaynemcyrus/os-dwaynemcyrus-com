@@ -192,9 +192,15 @@ export const itemEditorRoute = createRoute({
     return (
       <section
         style={{
-          display: 'grid',
+          blockSize: '100%',
+          display: 'flex',
+          flex: '1 1 auto',
+          flexDirection: 'column',
           gap: '1rem',
-          maxWidth: '56rem',
+          inlineSize: 'min(56rem, 100%)',
+          marginInline: 'auto',
+          minBlockSize: 0,
+          overflow: 'hidden',
         }}
       >
         <header
@@ -338,21 +344,29 @@ export const itemEditorRoute = createRoute({
           </p>
         ) : null}
 
-        {createElement(ItemEditor, {
-          autocompleteCacheKey: `${auth.user?.id ?? 'anonymous'}:${id}`,
-          disabled: isLoading || Boolean(loadErrorMessage),
-          loadTagSuggestions: loadTagOptions,
-          loadWikilinkSuggestions: loadWikilinkOptions,
-          onChange(nextValue) {
-            updateDraftValue(nextValue);
-          },
-          onSave() {
-            handleSave();
-          },
-          placeholderText: 'Write raw markdown with YAML frontmatter here.',
-          ref: editorRef,
-          value: draftValue,
-        })}
+        <div
+          style={{
+            flex: '1 1 auto',
+            minBlockSize: 0,
+            overflow: 'hidden',
+          }}
+        >
+          {createElement(ItemEditor, {
+            autocompleteCacheKey: `${auth.user?.id ?? 'anonymous'}:${id}`,
+            disabled: isLoading || Boolean(loadErrorMessage),
+            loadTagSuggestions: loadTagOptions,
+            loadWikilinkSuggestions: loadWikilinkOptions,
+            onChange(nextValue) {
+              updateDraftValue(nextValue);
+            },
+            onSave() {
+              handleSave();
+            },
+            placeholderText: 'Write raw markdown with YAML frontmatter here.',
+            ref: editorRef,
+            value: draftValue,
+          })}
+        </div>
       </section>
     );
   },

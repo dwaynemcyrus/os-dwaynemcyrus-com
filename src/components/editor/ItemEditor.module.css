@@ -2,7 +2,11 @@
   background: rgba(255, 255, 255, 0.92);
   border: 1px solid rgba(82, 96, 109, 0.2);
   border-radius: 1rem;
-  min-height: 24rem;
+  block-size: 100%;
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-block-size: 0;
   overflow: hidden;
 }
 
@@ -12,11 +16,12 @@
 
 .editor :global(.cm-editor) {
   background: transparent;
-  height: 100%;
-  min-height: 24rem;
+  block-size: 100%;
+  min-block-size: 0;
 }
 
 .editor :global(.cm-scroller) {
+  block-size: 100%;
   font-family:
     ui-monospace,
     SFMono-Regular,
@@ -26,12 +31,13 @@
     Consolas,
     Liberation Mono,
     monospace;
-  min-height: 24rem;
+  min-block-size: 0;
+  overflow: auto;
 }
 
 .editor :global(.cm-content),
 .editor :global(.cm-gutter) {
-  min-height: 24rem;
+  min-block-size: 100%;
   padding-bottom: 1rem;
   padding-top: 1rem;
 }

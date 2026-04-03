@@ -99,6 +99,9 @@ export const ItemEditor = forwardRef(function ItemEditor(
 ) {
   const hostRef = useRef(null);
   const editorViewRef = useRef(null);
+  const initialDisabledRef = useRef(disabled);
+  const initialPlaceholderTextRef = useRef(placeholderText);
+  const initialValueRef = useRef(value);
   const tagSuggestionsCacheRef = useRef(new Map());
   const wikilinkSuggestionsCacheRef = useRef(new Map());
   const handleChange = useEffectEvent((nextValue) => {
@@ -169,7 +172,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
     const editorView = new EditorView({
       parent: hostRef.current,
       state: EditorState.create({
-        doc: value,
+        doc: initialValueRef.current,
         extensions: [
           basicSetup,
           markdown(),
@@ -178,8 +181,10 @@ export const ItemEditor = forwardRef(function ItemEditor(
             { autocomplete: wikilinkCompletionSource },
             { autocomplete: tagCompletionSource },
           ]),
-          placeholder(placeholderText),
-          editableCompartment.of(EditorView.editable.of(!disabled)),
+          placeholder(initialPlaceholderTextRef.current),
+          editableCompartment.of(
+            EditorView.editable.of(!initialDisabledRef.current),
+          ),
           keymap.of([
             {
               key: 'Mod-s',
@@ -207,13 +212,10 @@ export const ItemEditor = forwardRef(function ItemEditor(
       editorViewRef.current = null;
     };
   }, [
-    disabled,
     handleChange,
     handleSave,
     handleTagSuggestions,
     handleWikilinkSuggestions,
-    placeholderText,
-    value,
   ]);
 
   useEffect(() => {
