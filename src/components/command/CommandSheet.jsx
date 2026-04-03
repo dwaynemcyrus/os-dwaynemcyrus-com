@@ -104,26 +104,6 @@ function formatSlashCommandMeta(slashCommand) {
   return metaParts.join(' · ');
 }
 
-function extractTemplateBody(content) {
-  if (!content) {
-    return '';
-  }
-
-  const normalizedContent = content.replaceAll('\r\n', '\n');
-
-  if (!normalizedContent.startsWith('---\n')) {
-    return normalizedContent;
-  }
-
-  const frontmatterEndIndex = normalizedContent.indexOf('\n---\n', 4);
-
-  if (frontmatterEndIndex === -1) {
-    return normalizedContent;
-  }
-
-  return normalizedContent.slice(frontmatterEndIndex + 5).replace(/^\n+/, '');
-}
-
 function getSheetCopy(mode) {
   if (mode === 'direct-create') {
     return {
@@ -468,15 +448,18 @@ export function CommandSheet({ children }) {
       return;
     }
 
-    const templateBody = extractTemplateBody(templateItem.content);
+    const templateRawMarkdown = String(templateItem.content ?? '').replaceAll(
+      '\r\n',
+      '\n',
+    );
 
-    if (!templateBody.trim()) {
-      setSheetError('That template has no body content to insert.');
+    if (!templateRawMarkdown.trim()) {
+      setSheetError('That template has no content to insert.');
       return;
     }
 
     insertTemplateTarget.onInsertTemplate({
-      body: templateBody,
+      rawMarkdown: templateRawMarkdown,
       template: templateItem,
     });
     closeSheet();

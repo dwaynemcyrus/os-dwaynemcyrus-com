@@ -185,7 +185,15 @@ export const itemEditorRoute = createRoute({
       setInsertTemplateTarget({
         itemId: id,
         onInsertTemplate(payload) {
-          editorRef.current?.insertText(payload.body);
+          try {
+            editorRef.current?.insertTemplate(payload.rawMarkdown);
+            setSaveErrorMessage('');
+            setSaveStatusMessage('');
+          } catch (error) {
+            setSaveErrorMessage(
+              error.message ?? 'Unable to insert that template right now.',
+            );
+          }
         },
       });
 
@@ -226,8 +234,9 @@ export const itemEditorRoute = createRoute({
             <h1 style={{ margin: 0 }}>{item?.title || 'Item Editor'}</h1>
             <p style={{ margin: 0 }}>
               Raw markdown editing is now active for item {id}. Use the save
-              button or Cmd/Ctrl+S, and use the FAB to insert a template body
-              at the current cursor position.
+              button or Cmd/Ctrl+S, and use the FAB to merge template
+              frontmatter while inserting template body content at the current
+              cursor position.
             </p>
             <p
               style={{

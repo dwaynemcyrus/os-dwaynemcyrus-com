@@ -225,6 +225,7 @@ function splitMarkdownDocument(rawMarkdown) {
   if (!normalizedRawMarkdown.startsWith('---\n')) {
     return {
       body: normalizedRawMarkdown,
+      bodyStartIndex: 0,
       frontmatterText: '',
       hasFrontmatter: false,
       normalizedRawMarkdown,
@@ -237,8 +238,14 @@ function splitMarkdownDocument(rawMarkdown) {
     throw new Error('The frontmatter block must end with a closing --- line.');
   }
 
+  const afterFrontmatterIndex = frontmatterEndIndex + 5;
+  const bodyStartIndex = normalizedRawMarkdown.startsWith('\n', afterFrontmatterIndex)
+    ? afterFrontmatterIndex + 1
+    : afterFrontmatterIndex;
+
   return {
-    body: normalizedRawMarkdown.slice(frontmatterEndIndex + 5).replace(/^\n/, ''),
+    body: normalizedRawMarkdown.slice(bodyStartIndex),
+    bodyStartIndex,
     frontmatterText: normalizedRawMarkdown.slice(4, frontmatterEndIndex),
     hasFrontmatter: true,
     normalizedRawMarkdown,
@@ -521,6 +528,64 @@ export function replaceEditorFrontmatterField({
   const serializedFrontmatter = serializeFrontmatter(nextFrontmatter);
 
   return `---\n${serializedFrontmatter}\n---${body ? `\n\n${body}` : '\n'}`;
+}
+
+export function mergeTemplateIntoEditorDocument({
+  currentRawMarkdown,
+  selectionEnd,
+  selectionStart,
+  templateRawMarkdown,
+}) {
+  const currentDocument = splitMarkdownDocument(currentRawMarkdown);
+  const templateDocument = splitMarkdownDocument(templateRawMarkdown);
+
+  if (!currentDocument.hasFrontmatter) {
+    throw new Error('Editor inserts require a YAML frontmatter block.');
+  }
+
+  if (!templateDocument.hasFrontmatter) {
+    throw new Error('Template inserts require a YAML frontmatter block.');
+  }
+
+  const currentFrontmatter = parseFrontmatterText(currentDocument.frontmatterText);
+  const templateFrontmatter = parseFrontmatterText(templateDocument.frontmatterText);
+  const currentBody = currentDocument.body;
+  const templateBody = templateDocument.body;
+  const nextFrontmatter = {
+    ...currentFrontmatter,
+    ...templateFrontmatter,
+  };
+
+  nextFrontmatter.cuid = currentFrontmatter.cuid ?? nextFrontmatter.cuid;
+
+  if (currentFrontmatter.date_created) {
+    nextFrontmatter.date_created = currentFrontmatter.date_created;
+  }
+
+  if (currentFrontmatter.date_modified) {
+    nextFrontmatter.date_modified = currentFrontmatter.date_modified;
+  }
+
+  const serializedFrontmatter = serializeFrontmatter(nextFrontmatter);
+  const clampedSelectionStart = Math.max(
+    0,
+    Math.min(selectionStart - currentDocument.bodyStartIndex, currentBody.length),
+  );
+  const clampedSelectionEnd = Math.max(
+    clampedSelectionStart,
+    Math.min(selectionEnd - currentDocument.bodyStartIndex, currentBody.length),
+  );
+  const nextBody = `${currentBody.slice(0, clampedSelectionStart)}${templateBody}${currentBody.slice(clampedSelectionEnd)}`;
+  const nextDocumentPrefix = `---\n${serializedFrontmatter}\n---${
+    nextBody ? '\n\n' : '\n'
+  }`;
+  const nextSelectionAnchor =
+    nextDocumentPrefix.length + clampedSelectionStart + templateBody.length;
+
+  return {
+    rawMarkdown: `${nextDocumentPrefix}${nextBody}`,
+    selectionAnchor: nextSelectionAnchor,
+  };
 }
 
 export function parseEditorMarkdownDocument(rawMarkdown) {

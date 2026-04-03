@@ -8,6 +8,7 @@ import { Compartment, EditorState } from '@codemirror/state';
 import { EditorView, keymap, placeholder } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { basicSetup } from 'codemirror';
+import { mergeTemplateIntoEditorDocument } from '../../lib/frontmatter';
 import styles from './ItemEditor.module.css';
 
 const editableCompartment = new Compartment();
@@ -140,6 +141,34 @@ export const ItemEditor = forwardRef(function ItemEditor(
             anchor: nextCursorPosition,
           },
           scrollIntoView: true,
+        });
+        editorView.focus();
+      },
+      insertTemplate(templateRawMarkdown) {
+        const editorView = editorViewRef.current;
+
+        if (!editorView) {
+          return;
+        }
+
+        const selection = editorView.state.selection.main;
+        const { rawMarkdown, selectionAnchor } = mergeTemplateIntoEditorDocument({
+          currentRawMarkdown: editorView.state.doc.toString(),
+          selectionEnd: selection.to,
+          selectionStart: selection.from,
+          templateRawMarkdown,
+        });
+
+        editorView.dispatch({
+          changes: {
+            from: 0,
+            insert: rawMarkdown,
+            to: editorView.state.doc.length,
+          },
+          scrollIntoView: true,
+          selection: {
+            anchor: selectionAnchor,
+          },
         });
         editorView.focus();
       },
