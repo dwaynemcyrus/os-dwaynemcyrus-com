@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '../../lib/auth';
+import { CommandContext } from '../../lib/command-context';
 import {
   createItemFromTemplate,
   createInboxItemFromCapture,
@@ -103,6 +104,26 @@ function formatSlashCommandMeta(slashCommand) {
   return metaParts.join(' · ');
 }
 
+function extractTemplateBody(content) {
+  if (!content) {
+    return '';
+  }
+
+  const normalizedContent = content.replaceAll('\r\n', '\n');
+
+  if (!normalizedContent.startsWith('---\n')) {
+    return normalizedContent;
+  }
+
+  const frontmatterEndIndex = normalizedContent.indexOf('\n---\n', 4);
+
+  if (frontmatterEndIndex === -1) {
+    return normalizedContent;
+  }
+
+  return normalizedContent.slice(frontmatterEndIndex + 5).replace(/^\n+/, '');
+}
+
 function getSheetCopy(mode) {
   if (mode === 'direct-create') {
     return {
@@ -137,6 +158,7 @@ export function CommandSheet({ children }) {
   const [isLoadingSearchResults, setIsLoadingSearchResults] = useState(false);
   const [isSavingCapture, setIsSavingCapture] = useState(false);
   const [isCreatingFromTemplate, setIsCreatingFromTemplate] = useState(false);
+  const [insertTemplateTarget, setInsertTemplateTarget] = useState(null);
   const inputRef = useRef(null);
   const titleId = useId();
   const inputId = useId();
@@ -388,10 +410,16 @@ export function CommandSheet({ children }) {
   const shouldShowDefaultState = isSearchMode && !trimmedQuery;
   const shouldShowSearchState = isSearchMode && Boolean(trimmedQuery) && !isSlashQuery;
   const shouldShowCaptureState = shouldShowSearchState && Boolean(capturePreview);
+  const shouldShowInsertTemplateState =
+    shouldShowDefaultState && Boolean(insertTemplateTarget?.onInsertTemplate);
   const slashCommands = getSlashCommands(templateItems, trimmedQuery);
   const firstAvailableSlashCommand = slashCommands.find(
     (slashCommand) => slashCommand.template,
   );
+  const commandContextValue = {
+    isInsertTemplateAvailable: Boolean(insertTemplateTarget?.onInsertTemplate),
+    setInsertTemplateTarget,
+  };
 
   async function handleOpenItem(itemId) {
     closeSheet();
@@ -434,159 +462,179 @@ export function CommandSheet({ children }) {
     }
   }
 
-  return (
-    <div className={styles.commandSheetShell}>
-      <div className={styles.commandSheetShell__content}>{children}</div>
+  function handleInsertTemplate(templateItem) {
+    if (!insertTemplateTarget?.onInsertTemplate) {
+      setSheetError('Open an item before inserting a template.');
+      return;
+    }
 
-      {createElement(FabButton, {
-        isSheetOpen: isOpen,
-        onOpen: openSearchMode,
-        onOpenDirectCreate: openDirectCreateMode,
-      })}
+    const templateBody = extractTemplateBody(templateItem.content);
 
-      {isOpen ? (
-        <div
-          className={styles.commandSheet}
-          onClick={handleBackdropClick}
-          role="presentation"
-        >
-          <section
-            aria-describedby={descriptionId}
-            aria-labelledby={titleId}
-            aria-modal="true"
-            className={styles.commandSheet__panel}
-            role="dialog"
+    if (!templateBody.trim()) {
+      setSheetError('That template has no body content to insert.');
+      return;
+    }
+
+    insertTemplateTarget.onInsertTemplate({
+      body: templateBody,
+      template: templateItem,
+    });
+    closeSheet();
+  }
+
+  const sheetTree = (
+      <div className={styles.commandSheetShell}>
+        <div className={styles.commandSheetShell__content}>{children}</div>
+
+        {createElement(FabButton, {
+          isSheetOpen: isOpen,
+          onOpen: openSearchMode,
+          onOpenDirectCreate: openDirectCreateMode,
+        })}
+
+        {isOpen ? (
+          <div
+            className={styles.commandSheet}
+            onClick={handleBackdropClick}
+            role="presentation"
           >
-            <header className={styles.commandSheet__header}>
-              <div>
-                <p className={styles.commandSheet__eyebrow}>Personal OS</p>
-                <h2 className={styles.commandSheet__title} id={titleId}>
-                  {sheetCopy.title}
-                </h2>
-              </div>
+            <section
+              aria-describedby={descriptionId}
+              aria-labelledby={titleId}
+              aria-modal="true"
+              className={styles.commandSheet__panel}
+              role="dialog"
+            >
+              <header className={styles.commandSheet__header}>
+                <div>
+                  <p className={styles.commandSheet__eyebrow}>Personal OS</p>
+                  <h2 className={styles.commandSheet__title} id={titleId}>
+                    {sheetCopy.title}
+                  </h2>
+                </div>
 
-              <button
-                aria-label="Close command sheet"
-                className={styles.commandSheet__close}
-                onClick={() => {
-                  void requestClose();
-                }}
-                type="button"
-              >
-                Close
-              </button>
-            </header>
+                <button
+                  aria-label="Close command sheet"
+                  className={styles.commandSheet__close}
+                  onClick={() => {
+                    void requestClose();
+                  }}
+                  type="button"
+                >
+                  Close
+                </button>
+              </header>
 
-            <p className={styles.commandSheet__description} id={descriptionId}>
-              {sheetCopy.description}
-            </p>
+              <p className={styles.commandSheet__description} id={descriptionId}>
+                {sheetCopy.description}
+              </p>
 
-            <label className={styles.commandSheet__field} htmlFor={inputId}>
-              <span className={styles.commandSheet__label}>Input</span>
-              <textarea
-                className={styles.commandSheet__input}
-                id={inputId}
-                onChange={(event) => {
-                  updateComposerValue(event.target.value);
-                }}
-                onKeyDown={(event) => {
-                  if (
-                    event.key === 'Enter' &&
-                    !event.shiftKey &&
-                    isSearchMode &&
-                    !isSlashQuery
-                  ) {
-                    event.preventDefault();
-                    void handleCapture(!isRapidLogEnabled);
-                    return;
-                  }
+              <label className={styles.commandSheet__field} htmlFor={inputId}>
+                <span className={styles.commandSheet__label}>Input</span>
+                <textarea
+                  className={styles.commandSheet__input}
+                  id={inputId}
+                  onChange={(event) => {
+                    updateComposerValue(event.target.value);
+                  }}
+                  onKeyDown={(event) => {
+                    if (
+                      event.key === 'Enter' &&
+                      !event.shiftKey &&
+                      isSearchMode &&
+                      !isSlashQuery
+                    ) {
+                      event.preventDefault();
+                      void handleCapture(!isRapidLogEnabled);
+                      return;
+                    }
 
-                  if (
-                    event.key === 'Enter' &&
-                    !event.shiftKey &&
-                    isSearchMode &&
-                    isSlashQuery &&
-                    firstAvailableSlashCommand?.template?.id
-                  ) {
-                    event.preventDefault();
-                    void handleCreateFromSlashCommand(
-                      firstAvailableSlashCommand.template.id,
-                    );
-                  }
-                }}
-                placeholder={sheetCopy.placeholder}
-                ref={inputRef}
-                rows={1}
-                spellCheck={false}
-                value={query}
-              />
-            </label>
+                    if (
+                      event.key === 'Enter' &&
+                      !event.shiftKey &&
+                      isSearchMode &&
+                      isSlashQuery &&
+                      firstAvailableSlashCommand?.template?.id
+                    ) {
+                      event.preventDefault();
+                      void handleCreateFromSlashCommand(
+                        firstAvailableSlashCommand.template.id,
+                      );
+                    }
+                  }}
+                  placeholder={sheetCopy.placeholder}
+                  ref={inputRef}
+                  rows={1}
+                  spellCheck={false}
+                  value={query}
+                />
+              </label>
 
-            <div className={styles.commandSheet__body}>
-              {mode === 'direct-create' ? (
-                <section className={styles.commandSheet__section}>
-                  <h3 className={styles.commandSheet__sectionTitle}>
-                    Direct Create
-                  </h3>
-                  <ul className={styles.commandSheet__hintList}>
-                    {DIRECT_CREATE_HINTS.map((hint) => (
-                      <li className={styles.commandSheet__hintItem} key={hint}>
-                        {hint}
-                      </li>
-                    ))}
-                  </ul>
-                </section>
-              ) : (
-                <>
-                  <section className={styles.commandSheet__controls}>
-                    <button
-                      aria-pressed={isRapidLogEnabled}
-                      className={`${styles.commandSheet__modeToggle} ${
-                        isRapidLogEnabled
-                          ? styles['commandSheet__modeToggle--active']
-                          : ''
-                      }`}
-                      onClick={() => {
-                        setIsRapidLogEnabled((currentValue) => !currentValue);
-                      }}
-                      type="button"
-                    >
-                      Rapid log {isRapidLogEnabled ? 'On' : 'Off'}
-                    </button>
-
-                    <button
-                      className={styles.commandSheet__captureButton}
-                      disabled={!capturePreview || isSavingCapture || isSlashQuery}
-                      onClick={() => {
-                        void handleCapture(!isRapidLogEnabled);
-                      }}
-                      type="button"
-                    >
-                      {isSavingCapture
-                        ? 'Saving...'
-                        : isRapidLogEnabled
-                          ? 'Capture and Keep Open'
-                          : 'Capture to Inbox'}
-                    </button>
+              <div className={styles.commandSheet__body}>
+                {mode === 'direct-create' ? (
+                  <section className={styles.commandSheet__section}>
+                    <h3 className={styles.commandSheet__sectionTitle}>
+                      Direct Create
+                    </h3>
+                    <ul className={styles.commandSheet__hintList}>
+                      {DIRECT_CREATE_HINTS.map((hint) => (
+                        <li className={styles.commandSheet__hintItem} key={hint}>
+                          {hint}
+                        </li>
+                      ))}
+                    </ul>
                   </section>
+                ) : (
+                  <>
+                    <section className={styles.commandSheet__controls}>
+                      <button
+                        aria-pressed={isRapidLogEnabled}
+                        className={`${styles.commandSheet__modeToggle} ${
+                          isRapidLogEnabled
+                            ? styles['commandSheet__modeToggle--active']
+                            : ''
+                        }`}
+                        onClick={() => {
+                          setIsRapidLogEnabled((currentValue) => !currentValue);
+                        }}
+                        type="button"
+                      >
+                        Rapid log {isRapidLogEnabled ? 'On' : 'Off'}
+                      </button>
 
-                  {sheetError ? (
-                    <p
-                      className={`${styles.commandSheet__message} ${styles['commandSheet__message--error']}`}
-                      role="alert"
-                    >
-                      {sheetError}
-                    </p>
-                  ) : null}
+                      <button
+                        className={styles.commandSheet__captureButton}
+                        disabled={!capturePreview || isSavingCapture || isSlashQuery}
+                        onClick={() => {
+                          void handleCapture(!isRapidLogEnabled);
+                        }}
+                        type="button"
+                      >
+                        {isSavingCapture
+                          ? 'Saving...'
+                          : isRapidLogEnabled
+                            ? 'Capture and Keep Open'
+                            : 'Capture to Inbox'}
+                      </button>
+                    </section>
 
-                  {sheetStatus ? (
-                    <p
-                      className={`${styles.commandSheet__message} ${styles['commandSheet__message--success']}`}
-                      role="status"
-                    >
-                      {sheetStatus}
-                    </p>
-                  ) : null}
+                    {sheetError ? (
+                      <p
+                        className={`${styles.commandSheet__message} ${styles['commandSheet__message--error']}`}
+                        role="alert"
+                      >
+                        {sheetError}
+                      </p>
+                    ) : null}
+
+                    {sheetStatus ? (
+                      <p
+                        className={`${styles.commandSheet__message} ${styles['commandSheet__message--success']}`}
+                        role="status"
+                      >
+                        {sheetStatus}
+                      </p>
+                    ) : null}
 
                   {isSlashQuery ? (
                     <section className={styles.commandSheet__section}>
@@ -703,10 +751,57 @@ export function CommandSheet({ children }) {
                     </section>
                   ) : null}
 
-                  {shouldShowDefaultState ? (
-                    <>
+                    {shouldShowInsertTemplateState ? (
                       <section className={styles.commandSheet__section}>
-                        <h3 className={styles.commandSheet__sectionTitle}>Recent</h3>
+                        <h3 className={styles.commandSheet__sectionTitle}>
+                          Insert Template
+                        </h3>
+
+                        {isLoadingDefaultState ? (
+                          <div className={styles.commandSheet__skeletonList}>
+                            {TEMPLATE_SKELETON_ROWS.map((rowId) => (
+                              <div
+                                className={styles.commandSheet__skeletonRow}
+                                key={rowId}
+                              />
+                            ))}
+                          </div>
+                        ) : templateItems.length > 0 ? (
+                          <ul className={styles.commandSheet__list}>
+                            {templateItems.map((templateItem) => (
+                              <li
+                                className={styles.commandSheet__listItem}
+                                key={`insert-${templateItem.id}`}
+                              >
+                                <button
+                                  className={styles.commandSheet__itemButton}
+                                  onClick={() => {
+                                    handleInsertTemplate(templateItem);
+                                  }}
+                                  type="button"
+                                >
+                                  <span className={styles.commandSheet__itemTitle}>
+                                    {formatTemplateLabel(templateItem)}
+                                  </span>
+                                  <span className={styles.commandSheet__itemMeta}>
+                                    {formatItemMeta(templateItem)}
+                                  </span>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className={styles.commandSheet__emptyState}>
+                            No templates are available to insert yet.
+                          </p>
+                        )}
+                      </section>
+                    ) : null}
+
+                    {shouldShowDefaultState ? (
+                  <>
+                    <section className={styles.commandSheet__section}>
+                      <h3 className={styles.commandSheet__sectionTitle}>Recent</h3>
 
                         {isLoadingDefaultState ? (
                           <div className={styles.commandSheet__skeletonList}>
@@ -782,13 +877,18 @@ export function CommandSheet({ children }) {
                         )}
                       </section>
                     </>
-                  ) : null}
-                </>
-              )}
-            </div>
-          </section>
-        </div>
-      ) : null}
-    </div>
+                    ) : null}
+                  </>
+                )}
+              </div>
+            </section>
+          </div>
+        ) : null}
+      </div>
   );
+
+  return createElement(CommandContext.Provider, {
+    value: commandContextValue,
+    children: sheetTree,
+  });
 }
