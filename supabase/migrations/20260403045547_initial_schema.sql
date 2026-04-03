@@ -231,10 +231,10 @@ create index idx_items_trash
   where user_id is not null and date_trashed is not null;
 
 create index idx_items_title_trgm
-  on public.items using gin (title gin_trgm_ops);
+  on public.items using gin (title extensions.gin_trgm_ops);
 
 create index idx_items_content_trgm
-  on public.items using gin (content gin_trgm_ops);
+  on public.items using gin (content extensions.gin_trgm_ops);
 
 create index idx_items_frontmatter_gin
   on public.items using gin (frontmatter jsonb_path_ops);
