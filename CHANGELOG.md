@@ -2,6 +2,30 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.5.0] - 2026-04-03
+
+Recommended release: `v0.5.0`
+
+### Added
+- Full markdown item editor with CodeMirror, explicit save, `Cmd/Ctrl+S`, and item history snapshots on save.
+- Frontmatter parsing and serialization with YAML, plus frontmatter validation that blocks invalid known-field shapes.
+- Wikilink and tag autocomplete in the editor, plus a workbench toggle in the item header.
+- Template management for browsing, creating from seeded subtypes, opening in the shared editor, and soft-deleting user templates with typed confirmation.
+- Daily note settings backed by `user_settings`, persisted daily-template selection, and a home action for opening or creating today's note.
+
+### Changed
+- Template insertion now preserves existing note identity, merges frontmatter safely, and inserts template body content at the cursor instead of replacing the document.
+- Daily note creation now requires an explicitly selected template instead of silently falling back to a seeded system placeholder.
+- The home route now provides the daily-note entry point and missing-template warning path into settings.
+
+### Fixed
+- Stabilized the editor shell so typing no longer remounts the editor, loses focus, or wipes unsaved text during routine rerenders.
+- Corrected timestamp-based runtime `cuid` generation to align new item creation with the schema reference.
+
+### Notes
+- This milestone completes the item editor, template management, and daily note phases of the build sequence.
+- Navigation shell and list-navigation work remain next in the planned order.
+
 ## [0.4.0] - 2026-04-03
 
 Recommended release: `v0.4.0`
