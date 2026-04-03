@@ -385,7 +385,7 @@ When command sheet opened while editing an item:
 ## Inbox
 
 - Shows all items where type: inbox and status: unprocessed
-- Count badge on nav and FAB
+- Count badge deferred until the navigation phase exists
 - Each row shows title or first line and date captured
 - Tap to open inbox processor
 
@@ -545,7 +545,7 @@ V1 is complete when:
 
 ### Inbox
 - [ ] Shows all unprocessed items
-- [ ] Count badge on nav and FAB
+- [ ] Count badge deferred until the navigation phase exists
 - [ ] Processor allows editing title
 - [ ] Processor allows selecting type and subtype
 - [ ] Processed items get status: backlog
