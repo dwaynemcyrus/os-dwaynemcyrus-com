@@ -386,7 +386,7 @@ When command sheet opened while editing an item:
 ## Inbox
 
 - Shows all items where type: inbox and status: unprocessed
-- Count badge deferred until the navigation phase exists
+- No inbox count badge in v1
 - Each row shows title or first line and date captured
 - Tap to open inbox processor
 
@@ -547,7 +547,7 @@ V1 is complete when:
 
 ### Inbox
 - [ ] Shows all unprocessed items
-- [ ] Count badge deferred until the navigation phase exists
+- [ ] No inbox count badge in v1
 - [ ] Processor allows editing title
 - [ ] Processor allows selecting type and subtype
 - [ ] Processed items get status: backlog
@@ -581,7 +581,7 @@ V1 is complete when:
 
 ### Navigation
 - [ ] Home shows date, daily note button, inbox count, workbench items
-- [ ] Inbox tab shows unprocessed items with count badge
+- [ ] Inbox tab shows unprocessed items
 - [ ] Items tab shows all items filterable by type and subtype
 - [ ] Items tab sortable by date_created, date_modified, title
 - [ ] Templates tab shows all templates grouped by type
