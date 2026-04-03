@@ -10,12 +10,14 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '../../lib/auth';
 import {
+  createItemFromTemplate,
   createInboxItemFromCapture,
   fetchCommandTemplates,
   fetchRecentCommandItems,
   getCapturePreview,
   searchCommandItemsByTitle,
 } from '../../lib/items';
+import { getSlashCommands } from '../../lib/templates';
 import { FabButton } from './FabButton';
 import styles from './CommandSheet.module.css';
 
@@ -83,6 +85,24 @@ function formatItemMeta(item) {
   return metaParts.join(' · ');
 }
 
+function formatSlashCommandMeta(slashCommand) {
+  if (!slashCommand.template) {
+    return 'System template unavailable';
+  }
+
+  const metaParts = [];
+
+  if (slashCommand.template.type) {
+    metaParts.push(slashCommand.template.type);
+  }
+
+  if (slashCommand.template.subtype) {
+    metaParts.push(slashCommand.template.subtype.replaceAll('_', ' '));
+  }
+
+  return metaParts.join(' · ');
+}
+
 function getSheetCopy(mode) {
   if (mode === 'direct-create') {
     return {
@@ -116,6 +136,7 @@ export function CommandSheet({ children }) {
   const [isLoadingDefaultState, setIsLoadingDefaultState] = useState(false);
   const [isLoadingSearchResults, setIsLoadingSearchResults] = useState(false);
   const [isSavingCapture, setIsSavingCapture] = useState(false);
+  const [isCreatingFromTemplate, setIsCreatingFromTemplate] = useState(false);
   const inputRef = useRef(null);
   const titleId = useId();
   const inputId = useId();
@@ -367,6 +388,10 @@ export function CommandSheet({ children }) {
   const shouldShowDefaultState = isSearchMode && !trimmedQuery;
   const shouldShowSearchState = isSearchMode && Boolean(trimmedQuery) && !isSlashQuery;
   const shouldShowCaptureState = shouldShowSearchState && Boolean(capturePreview);
+  const slashCommands = getSlashCommands(templateItems, trimmedQuery);
+  const firstAvailableSlashCommand = slashCommands.find(
+    (slashCommand) => slashCommand.template,
+  );
 
   async function handleOpenItem(itemId) {
     closeSheet();
@@ -376,6 +401,37 @@ export function CommandSheet({ children }) {
       },
       to: '/items/$id',
     });
+  }
+
+  async function handleCreateFromSlashCommand(templateId) {
+    if (!auth.user?.id) {
+      setSheetError('Your session is missing a user id.');
+      return;
+    }
+
+    setIsCreatingFromTemplate(true);
+    setSheetError('');
+    setSheetStatus('');
+
+    try {
+      const createdItem = await createItemFromTemplate({
+        templateId,
+        userId: auth.user.id,
+      });
+
+      setRecentItems((previousItems) => [createdItem, ...previousItems].slice(0, 8));
+      closeSheet();
+      await navigate({
+        params: {
+          id: createdItem.id,
+        },
+        to: '/items/$id',
+      });
+    } catch (error) {
+      setSheetError(error.message ?? 'Unable to create an item from that template.');
+    } finally {
+      setIsCreatingFromTemplate(false);
+    }
   }
 
   return (
@@ -442,6 +498,20 @@ export function CommandSheet({ children }) {
                   ) {
                     event.preventDefault();
                     void handleCapture(!isRapidLogEnabled);
+                    return;
+                  }
+
+                  if (
+                    event.key === 'Enter' &&
+                    !event.shiftKey &&
+                    isSearchMode &&
+                    isSlashQuery &&
+                    firstAvailableSlashCommand?.template?.id
+                  ) {
+                    event.preventDefault();
+                    void handleCreateFromSlashCommand(
+                      firstAvailableSlashCommand.template.id,
+                    );
                   }
                 }}
                 placeholder={sheetCopy.placeholder}
@@ -523,9 +593,54 @@ export function CommandSheet({ children }) {
                       <h3 className={styles.commandSheet__sectionTitle}>
                         Slash Commands
                       </h3>
-                      <p className={styles.commandSheet__emptyState}>
-                        Slash actions arrive in the next chunk.
-                      </p>
+
+                      {isLoadingDefaultState && templateItems.length === 0 ? (
+                        <div className={styles.commandSheet__skeletonList}>
+                          {TEMPLATE_SKELETON_ROWS.map((rowId) => (
+                            <div
+                              className={styles.commandSheet__skeletonRow}
+                              key={rowId}
+                            />
+                          ))}
+                        </div>
+                      ) : slashCommands.length > 0 ? (
+                        <ul className={styles.commandSheet__list}>
+                          {slashCommands.map((slashCommand) => (
+                            <li
+                              className={styles.commandSheet__listItem}
+                              key={slashCommand.command}
+                            >
+                              <button
+                                className={styles.commandSheet__itemButton}
+                                disabled={
+                                  isCreatingFromTemplate || !slashCommand.template
+                                }
+                                onClick={() => {
+                                  if (!slashCommand.template?.id) {
+                                    return;
+                                  }
+
+                                  void handleCreateFromSlashCommand(
+                                    slashCommand.template.id,
+                                  );
+                                }}
+                                type="button"
+                              >
+                                <span className={styles.commandSheet__itemTitle}>
+                                  {slashCommand.command}
+                                </span>
+                                <span className={styles.commandSheet__itemMeta}>
+                                  {formatSlashCommandMeta(slashCommand)}
+                                </span>
+                              </button>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p className={styles.commandSheet__emptyState}>
+                          No slash commands match that input yet.
+                        </p>
+                      )}
                     </section>
                   ) : null}
 

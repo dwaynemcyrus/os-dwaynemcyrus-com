@@ -41,6 +41,27 @@ function isCuidConflictError(error) {
   return error?.code === '23505' && error?.message?.includes('cuid');
 }
 
+function buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex) {
+  const templateFields = { ...templateItem };
+
+  delete templateFields.id;
+  delete templateFields.user_id;
+  delete templateFields.cuid;
+  delete templateFields.is_template;
+  delete templateFields.created_at;
+  delete templateFields.updated_at;
+
+  return {
+    ...templateFields,
+    cuid: createCuid(new Date(timestamp), collisionIndex),
+    date_created: timestamp,
+    date_modified: timestamp,
+    date_trashed: null,
+    is_template: false,
+    user_id: userId,
+  };
+}
+
 export function getCapturePreview(rawValue) {
   return formatCapturePayload(rawValue);
 }
@@ -129,6 +150,39 @@ export async function createInboxItemFromCapture({ rawValue, userId }) {
         ...itemPayload,
         cuid: createCuid(createdAt, collisionIndex),
       })
+      .select(buildCommandItemFieldsQuery())
+      .single();
+
+    if (!error) {
+      return data;
+    }
+
+    if (!isCuidConflictError(error) || collisionIndex === MAX_CUID_RETRIES) {
+      throw error;
+    }
+  }
+
+  throw new Error('Unable to create a unique timestamp id right now.');
+}
+
+export async function createItemFromTemplate({ templateId, userId }) {
+  const { data: templateItem, error: templateError } = await supabase
+    .from('items')
+    .select('*')
+    .eq('id', templateId)
+    .eq('is_template', true)
+    .single();
+
+  if (templateError) {
+    throw templateError;
+  }
+
+  const timestamp = new Date().toISOString();
+
+  for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
+    const { data, error } = await supabase
+      .from('items')
+      .insert(buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex))
       .select(buildCommandItemFieldsQuery())
       .single();
 
