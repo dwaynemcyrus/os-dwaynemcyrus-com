@@ -3,6 +3,7 @@ import { supabase } from './supabase';
 
 const RECENT_ITEMS_LIMIT = 8;
 const SEARCH_ITEMS_LIMIT = 8;
+const MAX_CUID_RETRIES = 20;
 
 function escapeIlikePattern(value) {
   return value.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
@@ -34,6 +35,10 @@ function formatCapturePayload(rawValue) {
 
 function buildCommandItemFieldsQuery() {
   return 'id,cuid,type,subtype,title,content,date_created,date_modified,is_template';
+}
+
+function isCuidConflictError(error) {
+  return error?.code === '23505' && error?.message?.includes('cuid');
 }
 
 export function getCapturePreview(rawValue) {
@@ -105,10 +110,10 @@ export async function createInboxItemFromCapture({ rawValue, userId }) {
     throw new Error('Cannot capture an empty value.');
   }
 
-  const timestamp = new Date().toISOString();
+  const createdAt = new Date();
+  const timestamp = createdAt.toISOString();
   const itemPayload = {
     content: capturePayload.content,
-    cuid: createCuid('item'),
     date_created: timestamp,
     date_modified: timestamp,
     status: 'unprocessed',
@@ -117,15 +122,24 @@ export async function createInboxItemFromCapture({ rawValue, userId }) {
     user_id: userId,
   };
 
-  const { data, error } = await supabase
-    .from('items')
-    .insert(itemPayload)
-    .select(buildCommandItemFieldsQuery())
-    .single();
+  for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
+    const { data, error } = await supabase
+      .from('items')
+      .insert({
+        ...itemPayload,
+        cuid: createCuid(createdAt, collisionIndex),
+      })
+      .select(buildCommandItemFieldsQuery())
+      .single();
 
-  if (error) {
-    throw error;
+    if (!error) {
+      return data;
+    }
+
+    if (!isCuidConflictError(error) || collisionIndex === MAX_CUID_RETRIES) {
+      throw error;
+    }
   }
 
-  return data;
+  throw new Error('Unable to create a unique timestamp id right now.');
 }

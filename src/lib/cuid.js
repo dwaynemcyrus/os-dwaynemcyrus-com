@@ -1,18 +1,28 @@
-let cuidCounter = 0;
-
-function getRandomChunk() {
-  const randomValues = new Uint8Array(6);
-  crypto.getRandomValues(randomValues);
-
-  return Array.from(randomValues, (value) =>
-    value.toString(16).padStart(2, '0'),
-  ).join('');
+function formatTimestampPart(value) {
+  return String(value).padStart(2, '0');
 }
 
-export function createCuid(prefix = 'item') {
-  cuidCounter = (cuidCounter + 1) % 1679616;
+function formatTimestampCuid(date) {
+  return [
+    date.getFullYear(),
+    formatTimestampPart(date.getMonth() + 1),
+    formatTimestampPart(date.getDate()),
+    formatTimestampPart(date.getHours()),
+    formatTimestampPart(date.getMinutes()),
+    formatTimestampPart(date.getSeconds()),
+  ].join('');
+}
 
-  return `${prefix}_${Date.now().toString(36)}_${cuidCounter
-    .toString(36)
-    .padStart(4, '0')}_${getRandomChunk()}`;
+function formatCollisionSuffix(collisionIndex) {
+  return String(collisionIndex).padStart(2, '0');
+}
+
+export function createCuid(date = new Date(), collisionIndex = 0) {
+  const timestampCuid = formatTimestampCuid(date);
+
+  if (collisionIndex <= 0) {
+    return timestampCuid;
+  }
+
+  return `${timestampCuid}-${formatCollisionSuffix(collisionIndex)}`;
 }

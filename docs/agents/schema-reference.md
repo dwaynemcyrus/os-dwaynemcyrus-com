@@ -33,7 +33,7 @@ tags:
 ```
 
 **Field notes:**
-- `cuid` — auto-generated unique ID based on timestamp, never changed
+- `cuid` — auto-generated timestamp-based unique ID, never changed. Default shape is `YYYYMMDDHHmmss`; if multiple items are created in the same second, the runtime appends a short suffix such as `-01`.
 - `type` — top-level document category
 - `subtype` — specific document kind within the type
 - `status` — varies by type; valid values defined per subtype below
