@@ -3,7 +3,13 @@ import { createRoute } from '@tanstack/react-router';
 import { ItemEditor } from '../components/editor/ItemEditor';
 import { useAuth } from '../lib/auth';
 import { useCommandContext } from '../lib/command-context';
-import { fetchEditorItem, saveEditorItem } from '../lib/items';
+import { replaceEditorFrontmatterField } from '../lib/frontmatter';
+import {
+  fetchEditorItem,
+  fetchTagSuggestions,
+  fetchWikilinkSuggestions,
+  saveEditorItem,
+} from '../lib/items';
 import { authenticatedRoute } from './_authenticated';
 
 function formatEditorDate(value) {
@@ -34,6 +40,7 @@ export const itemEditorRoute = createRoute({
     const [loadErrorMessage, setLoadErrorMessage] = useState('');
     const [saveErrorMessage, setSaveErrorMessage] = useState('');
     const [saveStatusMessage, setSaveStatusMessage] = useState('');
+    const [isWorkbenchEnabled, setIsWorkbenchEnabled] = useState(false);
     const editorRef = useRef(null);
     const isDirty = draftValue !== lastSavedValue;
 
@@ -55,12 +62,14 @@ export const itemEditorRoute = createRoute({
 
         setItem(savedEditorItem.item);
         setDraftValue(savedEditorItem.rawMarkdown);
+        setIsWorkbenchEnabled(savedEditorItem.item.workbench === true);
         setLastSavedValue(savedEditorItem.rawMarkdown);
         setSaveStatusMessage('Saved.');
       } catch (error) {
         if (error.item && error.rawMarkdown) {
           setItem(error.item);
           setDraftValue(error.rawMarkdown);
+          setIsWorkbenchEnabled(error.item.workbench === true);
           setLastSavedValue(error.rawMarkdown);
         }
 
@@ -99,6 +108,7 @@ export const itemEditorRoute = createRoute({
 
           setItem(editorItem.item);
           setDraftValue(editorItem.rawMarkdown);
+          setIsWorkbenchEnabled(editorItem.item.workbench === true);
           setLastSavedValue(editorItem.rawMarkdown);
         })
         .catch((error) => {
@@ -120,6 +130,51 @@ export const itemEditorRoute = createRoute({
         cancelled = true;
       };
     }, [auth.user?.id, id]);
+
+    function handleWorkbenchToggle() {
+      try {
+        const nextWorkbenchValue = !isWorkbenchEnabled;
+        const nextDraftValue = replaceEditorFrontmatterField({
+          key: 'workbench',
+          rawMarkdown: draftValue,
+          value: nextWorkbenchValue,
+        });
+
+        setIsWorkbenchEnabled(nextWorkbenchValue);
+        updateDraftValue(nextDraftValue);
+
+        window.requestAnimationFrame(() => {
+          editorRef.current?.focus();
+        });
+      } catch (error) {
+        setSaveErrorMessage(
+          error.message ?? 'Unable to update the workbench toggle right now.',
+        );
+      }
+    }
+
+    async function loadWikilinkOptions(query) {
+      if (!auth.user?.id) {
+        return [];
+      }
+
+      return fetchWikilinkSuggestions({
+        excludeItemId: id,
+        query,
+        userId: auth.user.id,
+      });
+    }
+
+    async function loadTagOptions(query) {
+      if (!auth.user?.id) {
+        return [];
+      }
+
+      return fetchTagSuggestions({
+        query,
+        userId: auth.user.id,
+      });
+    }
 
     useEffect(() => {
       setInsertTemplateTarget({
@@ -176,31 +231,67 @@ export const itemEditorRoute = createRoute({
             </p>
           </div>
 
-          <button
-            disabled={isLoading || isSaving || !isDirty}
-            onClick={() => {
-              handleSave();
-            }}
+          <div
             style={{
-              background:
-                isLoading || isSaving || !isDirty
-                  ? 'rgba(82, 96, 109, 0.18)'
-                  : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
-              border: 'none',
-              borderRadius: '0.875rem',
-              color: isLoading || isSaving || !isDirty ? '#52606d' : '#f8fafc',
-              cursor:
-                isLoading || isSaving || !isDirty ? 'not-allowed' : 'pointer',
-              font: 'inherit',
-              fontWeight: 700,
-              minHeight: '3rem',
-              minWidth: '8rem',
-              padding: '0 1.25rem',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
             }}
-            type="button"
           >
-            {isSaving ? 'Saving...' : isDirty ? 'Save' : 'Saved'}
-          </button>
+            <button
+              aria-pressed={isWorkbenchEnabled}
+              disabled={isLoading || Boolean(loadErrorMessage)}
+              onClick={handleWorkbenchToggle}
+              style={{
+                background: isWorkbenchEnabled
+                  ? 'rgba(255, 250, 243, 0.98)'
+                  : 'rgba(255, 255, 255, 0.9)',
+                border: isWorkbenchEnabled
+                  ? '1px solid rgba(124, 103, 84, 0.28)'
+                  : '1px solid rgba(82, 96, 109, 0.18)',
+                borderRadius: '0.875rem',
+                color: 'inherit',
+                cursor:
+                  isLoading || Boolean(loadErrorMessage)
+                    ? 'not-allowed'
+                    : 'pointer',
+                font: 'inherit',
+                fontWeight: 700,
+                minHeight: '3rem',
+                minWidth: '10rem',
+                padding: '0 1.25rem',
+              }}
+              type="button"
+            >
+              {isWorkbenchEnabled ? 'Workbench On' : 'Workbench Off'}
+            </button>
+
+            <button
+              disabled={isLoading || isSaving || !isDirty}
+              onClick={() => {
+                handleSave();
+              }}
+              style={{
+                background:
+                  isLoading || isSaving || !isDirty
+                    ? 'rgba(82, 96, 109, 0.18)'
+                    : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
+                border: 'none',
+                borderRadius: '0.875rem',
+                color: isLoading || isSaving || !isDirty ? '#52606d' : '#f8fafc',
+                cursor:
+                  isLoading || isSaving || !isDirty ? 'not-allowed' : 'pointer',
+                font: 'inherit',
+                fontWeight: 700,
+                minHeight: '3rem',
+                minWidth: '8rem',
+                padding: '0 1.25rem',
+              }}
+              type="button"
+            >
+              {isSaving ? 'Saving...' : isDirty ? 'Save' : 'Saved'}
+            </button>
+          </div>
         </header>
 
         {loadErrorMessage ? (
@@ -248,7 +339,10 @@ export const itemEditorRoute = createRoute({
         ) : null}
 
         {createElement(ItemEditor, {
+          autocompleteCacheKey: `${auth.user?.id ?? 'anonymous'}:${id}`,
           disabled: isLoading || Boolean(loadErrorMessage),
+          loadTagSuggestions: loadTagOptions,
+          loadWikilinkSuggestions: loadWikilinkOptions,
           onChange(nextValue) {
             updateDraftValue(nextValue);
           },

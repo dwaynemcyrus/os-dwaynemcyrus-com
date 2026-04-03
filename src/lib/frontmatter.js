@@ -508,6 +508,21 @@ export function buildEditorMarkdownDocument(item) {
   return `---\n${serializedFrontmatter}\n---${normalizedBody ? `\n\n${normalizedBody}` : '\n'}`;
 }
 
+export function replaceEditorFrontmatterField({
+  key,
+  rawMarkdown,
+  value,
+}) {
+  const { body, frontmatter } = parseEditorMarkdownDocument(rawMarkdown);
+  const nextFrontmatter = {
+    ...frontmatter,
+    [key]: value,
+  };
+  const serializedFrontmatter = serializeFrontmatter(nextFrontmatter);
+
+  return `---\n${serializedFrontmatter}\n---${body ? `\n\n${body}` : '\n'}`;
+}
+
 export function parseEditorMarkdownDocument(rawMarkdown) {
   const splitDocument = splitMarkdownDocument(rawMarkdown);
 

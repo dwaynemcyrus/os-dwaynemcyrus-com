@@ -8,6 +8,8 @@ import { supabase } from './supabase';
 
 const RECENT_ITEMS_LIMIT = 8;
 const SEARCH_ITEMS_LIMIT = 8;
+const TAG_ITEM_POOL_LIMIT = 200;
+const TAG_SUGGESTIONS_LIMIT = 10;
 const MAX_CUID_RETRIES = 20;
 
 function escapeIlikePattern(value) {
@@ -50,6 +52,10 @@ function buildEditorItemFieldsQuery() {
   return '*';
 }
 
+function buildEditorAutocompleteItemFieldsQuery() {
+  return 'id,cuid,title,content,date_created,date_modified';
+}
+
 function isCuidConflictError(error) {
   return error?.code === '23505' && error?.message?.includes('cuid');
 }
@@ -83,6 +89,92 @@ function buildCreatedItemPayload(templateItem, userId, timestamp, collisionIndex
 
 export function getCapturePreview(rawValue) {
   return formatCapturePayload(rawValue);
+}
+
+export async function fetchWikilinkSuggestions({
+  excludeItemId,
+  query,
+  userId,
+}) {
+  const trimmedQuery = query.trim();
+  let request = supabase
+    .from('items')
+    .select(buildEditorAutocompleteItemFieldsQuery())
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .is('date_trashed', null);
+
+  if (excludeItemId) {
+    request = request.neq('id', excludeItemId);
+  }
+
+  if (trimmedQuery) {
+    request = request.ilike('title', `%${escapeIlikePattern(trimmedQuery)}%`);
+  }
+
+  const { data, error } = await request
+    .order('date_modified', { ascending: false, nullsFirst: false })
+    .order('date_created', { ascending: false, nullsFirst: false })
+    .limit(SEARCH_ITEMS_LIMIT);
+
+  if (error) {
+    throw error;
+  }
+
+  return (data ?? [])
+    .map((item) => ({
+      id: item.id,
+      label:
+        item.title?.trim() || item.content?.split('\n')[0]?.trim() || item.cuid,
+    }))
+    .filter((item) => item.label);
+}
+
+export async function fetchTagSuggestions({ query, userId }) {
+  const normalizedQuery = query.trim().toLowerCase();
+  const { data, error } = await supabase
+    .from('items')
+    .select('tags')
+    .eq('user_id', userId)
+    .is('date_trashed', null)
+    .order('date_modified', { ascending: false, nullsFirst: false })
+    .limit(TAG_ITEM_POOL_LIMIT);
+
+  if (error) {
+    throw error;
+  }
+
+  const suggestions = [];
+  const seenTags = new Set();
+
+  (data ?? []).forEach((item) => {
+    const tags = Array.isArray(item.tags) ? item.tags : [];
+
+    tags.forEach((tag) => {
+      const normalizedTag = String(tag ?? '').trim();
+      const normalizedTagKey = normalizedTag.toLowerCase();
+
+      if (!normalizedTag) {
+        return;
+      }
+
+      if (
+        normalizedQuery &&
+        !normalizedTagKey.startsWith(normalizedQuery)
+      ) {
+        return;
+      }
+
+      if (seenTags.has(normalizedTagKey)) {
+        return;
+      }
+
+      seenTags.add(normalizedTagKey);
+      suggestions.push(normalizedTag);
+    });
+  });
+
+  return suggestions.slice(0, TAG_SUGGESTIONS_LIMIT);
 }
 
 export async function fetchEditorItem({ itemId, userId }) {
