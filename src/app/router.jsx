@@ -28,4 +28,13 @@ const routeTree = rootRoute.addChildren([
 
 export const router = createRouter({
   routeTree,
+  context: {
+    auth: {
+      session: null,
+      user: null,
+      isAuthenticated: false,
+      isLoading: true,
+      error: null,
+    },
+  },
 });
