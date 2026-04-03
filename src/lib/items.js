@@ -12,6 +12,7 @@ const RECENT_ITEMS_LIMIT = 8;
 const SEARCH_ITEMS_LIMIT = 8;
 const TAG_ITEM_POOL_LIMIT = 200;
 const TAG_SUGGESTIONS_LIMIT = 10;
+const HOME_WORKBENCH_LIMIT = 12;
 const MAX_CUID_RETRIES = 20;
 const pendingDailyNoteRequests = new Map();
 
@@ -65,6 +66,10 @@ function buildManagedTemplateFieldsQuery() {
 
 function buildDailyNoteFieldsQuery() {
   return 'id,cuid,type,subtype,title,status,date_created,date_modified,date_field';
+}
+
+function buildHomeWorkbenchFieldsQuery() {
+  return 'id,cuid,type,subtype,title,content,workbench,date_created,date_modified';
 }
 
 function isCuidConflictError(error) {
@@ -387,6 +392,48 @@ export async function fetchManagedTemplates() {
   }
 
   return data ?? [];
+}
+
+export async function fetchHomeSummary(userId) {
+  const [
+    { count, error: inboxCountError },
+    { data: workbenchItems, error: workbenchError },
+  ] = await Promise.all([
+    supabase
+      .from('items')
+      .select('id', {
+        count: 'exact',
+        head: true,
+      })
+      .eq('user_id', userId)
+      .eq('is_template', false)
+      .eq('type', 'inbox')
+      .eq('status', 'unprocessed')
+      .is('date_trashed', null),
+    supabase
+      .from('items')
+      .select(buildHomeWorkbenchFieldsQuery())
+      .eq('user_id', userId)
+      .eq('is_template', false)
+      .eq('workbench', true)
+      .is('date_trashed', null)
+      .order('date_modified', { ascending: false, nullsFirst: false })
+      .order('date_created', { ascending: false, nullsFirst: false })
+      .limit(HOME_WORKBENCH_LIMIT),
+  ]);
+
+  if (inboxCountError) {
+    throw inboxCountError;
+  }
+
+  if (workbenchError) {
+    throw workbenchError;
+  }
+
+  return {
+    inboxCount: count ?? 0,
+    workbenchItems: workbenchItems ?? [],
+  };
 }
 
 export async function fetchUnprocessedInboxItems(userId) {
