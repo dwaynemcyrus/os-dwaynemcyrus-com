@@ -2,6 +2,29 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.4.0] - 2026-04-03
+
+Recommended release: `v0.4.0`
+
+### Added
+- Global command-sheet shell with a persistent floating action button on authenticated screens.
+- Recent items, template browsing, live title search, quick capture, and rapid logging in the command sheet.
+- Slash-command creation from seeded system templates and a thin insert-template flow on the item route.
+- Real inbox list and inline inbox processor for reviewing captures before moving them into backlog.
+
+### Changed
+- The app now runs inside a viewport-bounded shell with inner scrolling instead of page-level scrolling.
+- The command sheet stays within the app shell and uses an internal scroll region when content grows.
+- New runtime items now use timestamp-based `cuid` values with collision suffixes when needed.
+
+### Fixed
+- Removed the redundant `processed` field from the schema, seed data, runtime logic, and spec docs.
+- Inbox processing now relies on `status` only and moves completed captures to `backlog`.
+
+### Notes
+- This milestone completes the command sheet and inbox phases of the build sequence.
+- The item editor phase is next in the planned build order.
+
 ## [0.3.0] - 2026-04-03
 
 Recommended release: `v0.3.0`
