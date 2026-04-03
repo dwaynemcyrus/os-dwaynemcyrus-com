@@ -65,6 +65,10 @@ function buildManagedTemplateFieldsQuery() {
   return 'id,cuid,type,subtype,title,content,date_created,date_modified,date_trashed,is_template,user_id';
 }
 
+function buildTrashItemFieldsQuery() {
+  return 'id,cuid,type,subtype,title,content,status,workbench,date_created,date_modified,date_trashed';
+}
+
 function buildDailyNoteFieldsQuery() {
   return 'id,cuid,type,subtype,title,status,date_created,date_modified,date_field';
 }
@@ -145,6 +149,16 @@ function buildTrashedItemHistorySnapshot(item, trashedAt) {
     rawMarkdown: snapshotWithUpdatedDate,
     value: trashedAt,
   });
+}
+
+function buildRestoredItemHistorySnapshot(item, restoredAt) {
+  const restoredItem = {
+    ...item,
+    date_modified: restoredAt,
+    date_trashed: null,
+  };
+
+  return buildEditorMarkdownDocument(restoredItem);
 }
 
 function materializeDailyTemplateContent({
@@ -390,6 +404,22 @@ export async function fetchManagedTemplates() {
     .order('type', { ascending: true })
     .order('subtype', { ascending: true })
     .order('title', { ascending: true })
+    .order('date_modified', { ascending: false, nullsFirst: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function fetchTrashedItems(userId) {
+  const { data, error } = await supabase
+    .from('items')
+    .select(buildTrashItemFieldsQuery())
+    .eq('user_id', userId)
+    .not('date_trashed', 'is', null)
+    .order('date_trashed', { ascending: false, nullsFirst: false })
     .order('date_modified', { ascending: false, nullsFirst: false });
 
   if (error) {
@@ -888,6 +918,69 @@ export async function trashTemplate({ templateId, userId }) {
   }
 
   return trashedTemplate;
+}
+
+export async function restoreTrashedItem({ itemId, userId }) {
+  const { data: existingItem, error: existingItemError } = await supabase
+    .from('items')
+    .select(buildEditorItemFieldsQuery())
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .not('date_trashed', 'is', null)
+    .single();
+
+  if (existingItemError) {
+    throw existingItemError;
+  }
+
+  const restoredAt = new Date().toISOString();
+  const { data: restoredItem, error: restoredItemError } = await supabase
+    .from('items')
+    .update({
+      date_modified: restoredAt,
+      date_trashed: null,
+    })
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .not('date_trashed', 'is', null)
+    .select(buildTrashItemFieldsQuery())
+    .single();
+
+  if (restoredItemError) {
+    throw restoredItemError;
+  }
+
+  const { error: historyError } = await supabase.from('item_history').insert({
+    change_type: 'restored',
+    content: buildRestoredItemHistorySnapshot(existingItem, restoredAt),
+    item_id: itemId,
+  });
+
+  if (historyError) {
+    const error = new Error('Item restored, but the history snapshot failed.');
+    error.cause = historyError;
+    error.item = restoredItem;
+    throw error;
+  }
+
+  return restoredItem;
+}
+
+export async function permanentlyDeleteTrashedItem({ itemId, userId }) {
+  const { data: deletedItem, error } = await supabase
+    .from('items')
+    .delete()
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .not('date_trashed', 'is', null)
+    .select(buildTrashItemFieldsQuery())
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return deletedItem;
 }
 
 export async function openOrCreateDailyNote({
