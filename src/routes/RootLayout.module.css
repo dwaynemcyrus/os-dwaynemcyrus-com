@@ -1,0 +1,16 @@
+.rootLayout {
+  block-size: 100dvh;
+  display: flex;
+  flex-direction: column;
+  inline-size: 100%;
+  min-block-size: 100vh;
+  min-inline-size: 0;
+  overflow: hidden;
+}
+
+.rootLayout__viewport {
+  block-size: 100%;
+  inline-size: 100%;
+  min-block-size: 0;
+  min-inline-size: 0;
+}

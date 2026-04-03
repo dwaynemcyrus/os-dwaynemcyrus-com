@@ -3,10 +3,17 @@
   background:
     radial-gradient(circle at top, rgba(233, 217, 193, 0.8), transparent 36%),
     linear-gradient(180deg, #f7f3ec 0%, #efe6d7 100%);
+  block-size: 100%;
   color: var(--color-text-primary, #1f2933);
   display: flex;
-  min-height: 100vh;
-  padding: var(--space-5, 1.25rem);
+  min-block-size: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding:
+    max(var(--space-5, 1.25rem), env(safe-area-inset-top))
+    var(--space-5, 1.25rem)
+    max(var(--space-5, 1.25rem), env(safe-area-inset-bottom));
 }
 
 .authForm__card {
