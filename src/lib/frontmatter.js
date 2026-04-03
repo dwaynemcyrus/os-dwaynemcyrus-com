@@ -351,6 +351,39 @@ function normalizeScalarStringValue(value) {
   return String(value);
 }
 
+function hasExistingScalarValue(value) {
+  if (value == null) {
+    return false;
+  }
+
+  if (typeof value === 'string') {
+    return value.trim() !== '';
+  }
+
+  return true;
+}
+
+function mergeTagValues(currentTags, templateTags) {
+  const mergedTags = [];
+  const seenTags = new Set();
+
+  [...normalizeArrayValue(currentTags), ...normalizeArrayValue(templateTags)].forEach(
+    (tag) => {
+      const normalizedTag = tag.trim();
+      const dedupeKey = normalizedTag.toLowerCase();
+
+      if (!normalizedTag || seenTags.has(dedupeKey)) {
+        return;
+      }
+
+      seenTags.add(dedupeKey);
+      mergedTags.push(normalizedTag);
+    },
+  );
+
+  return mergedTags;
+}
+
 function normalizeFrontmatterValue(key, value) {
   try {
     if (ARRAY_FIELDS.has(key)) {
@@ -558,6 +591,14 @@ export function mergeTemplateIntoEditorDocument({
 
   nextFrontmatter.cuid = currentFrontmatter.cuid ?? nextFrontmatter.cuid;
 
+  if (hasExistingScalarValue(currentFrontmatter.title)) {
+    nextFrontmatter.title = currentFrontmatter.title;
+  }
+
+  if (hasExistingScalarValue(currentFrontmatter.subtitle)) {
+    nextFrontmatter.subtitle = currentFrontmatter.subtitle;
+  }
+
   if (currentFrontmatter.date_created) {
     nextFrontmatter.date_created = currentFrontmatter.date_created;
   }
@@ -565,6 +606,11 @@ export function mergeTemplateIntoEditorDocument({
   if (currentFrontmatter.date_modified) {
     nextFrontmatter.date_modified = currentFrontmatter.date_modified;
   }
+
+  nextFrontmatter.tags = mergeTagValues(
+    currentFrontmatter.tags,
+    templateFrontmatter.tags,
+  );
 
   const serializedFrontmatter = serializeFrontmatter(nextFrontmatter);
   const clampedSelectionStart = Math.max(
