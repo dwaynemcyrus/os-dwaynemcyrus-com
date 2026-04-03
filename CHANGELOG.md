@@ -2,6 +2,17 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.6.1] - 2026-04-04
+
+Recommended release: `v0.6.1`
+
+### Changed
+- Committed the accumulated implementation plans in `PLANS.md` so the repository now includes the recorded execution plan for the completed build phases.
+
+### Notes
+- This is a documentation-only patch release after `v0.6.0`.
+- No application behavior changed in this milestone.
+
 ## [0.6.0] - 2026-04-04
 
 Recommended release: `v0.6.0`
