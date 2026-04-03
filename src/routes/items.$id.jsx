@@ -41,6 +41,7 @@ export const itemEditorRoute = createRoute({
     const [saveErrorMessage, setSaveErrorMessage] = useState('');
     const [saveStatusMessage, setSaveStatusMessage] = useState('');
     const [isWorkbenchEnabled, setIsWorkbenchEnabled] = useState(false);
+    const [editorSyncVersion, setEditorSyncVersion] = useState(0);
     const editorRef = useRef(null);
     const isDirty = draftValue !== lastSavedValue;
 
@@ -64,6 +65,7 @@ export const itemEditorRoute = createRoute({
         setDraftValue(savedEditorItem.rawMarkdown);
         setIsWorkbenchEnabled(savedEditorItem.item.workbench === true);
         setLastSavedValue(savedEditorItem.rawMarkdown);
+        setEditorSyncVersion((currentVersion) => currentVersion + 1);
         setSaveStatusMessage('Saved.');
       } catch (error) {
         if (error.item && error.rawMarkdown) {
@@ -71,6 +73,7 @@ export const itemEditorRoute = createRoute({
           setDraftValue(error.rawMarkdown);
           setIsWorkbenchEnabled(error.item.workbench === true);
           setLastSavedValue(error.rawMarkdown);
+          setEditorSyncVersion((currentVersion) => currentVersion + 1);
         }
 
         setSaveErrorMessage(error.message ?? 'Unable to save this item right now.');
@@ -110,6 +113,7 @@ export const itemEditorRoute = createRoute({
           setDraftValue(editorItem.rawMarkdown);
           setIsWorkbenchEnabled(editorItem.item.workbench === true);
           setLastSavedValue(editorItem.rawMarkdown);
+          setEditorSyncVersion((currentVersion) => currentVersion + 1);
         })
         .catch((error) => {
           if (cancelled) {
@@ -142,6 +146,7 @@ export const itemEditorRoute = createRoute({
 
         setIsWorkbenchEnabled(nextWorkbenchValue);
         updateDraftValue(nextDraftValue);
+        setEditorSyncVersion((currentVersion) => currentVersion + 1);
 
         window.requestAnimationFrame(() => {
           editorRef.current?.focus();
@@ -359,13 +364,14 @@ export const itemEditorRoute = createRoute({
             onChange(nextValue) {
               updateDraftValue(nextValue);
             },
-            onSave() {
-              handleSave();
-            },
-            placeholderText: 'Write raw markdown with YAML frontmatter here.',
-            ref: editorRef,
-            value: draftValue,
-          })}
+          onSave() {
+            handleSave();
+          },
+          placeholderText: 'Write raw markdown with YAML frontmatter here.',
+          ref: editorRef,
+          syncVersion: editorSyncVersion,
+          value: draftValue,
+        })}
         </div>
       </section>
     );

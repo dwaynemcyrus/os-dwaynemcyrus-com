@@ -93,6 +93,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
     onChange,
     onSave,
     placeholderText,
+    syncVersion,
     value,
   },
   ref,
@@ -258,7 +259,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
         anchor: nextCursorPosition,
       },
     });
-  }, [value]);
+  }, [syncVersion, value]);
 
   return (
     <div
