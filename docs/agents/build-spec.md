@@ -227,7 +227,6 @@ month_expenses_chf numeric default 0
 month_profit_chf numeric default 0
 date_field date
 mood text
-processed boolean default false
 chapter_count integer default 0
 issue integer
 author text

@@ -99,7 +99,7 @@ Fill from these valid values only.
 - review: active | archived
 - action — task: open | done | someday
 - action — project: active | complete | paused | someday
-- inbox: unprocessed | backlog | processed
+- inbox: unprocessed | backlog
 
 **access:** private | public | paywall
 **tier:** public | member | premium
@@ -2158,7 +2158,7 @@ tags:
 
 ```
 
-**status valid values:** unprocessed | backlog | processed
+**status valid values:** unprocessed | backlog
 
 ---
 
