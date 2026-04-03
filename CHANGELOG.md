@@ -2,6 +2,24 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.3.0] - 2026-04-03
+
+Recommended release: `v0.3.0`
+
+### Added
+- Supabase-backed authentication flows for sign in, sign up, forgot password, reset password, and sign out.
+- Route protection for all non-authenticated application routes with redirect-back handling.
+- Shared auth UI components for account access and account status screens.
+- Settings account section showing the signed-in email address.
+
+### Changed
+- Auth state now tracks the current session and latest auth event so recovery and redirect flows can respond to session changes.
+- Password recovery emails now target the in-app reset route and preserve the originally requested destination when available.
+
+### Notes
+- This milestone completes the authentication phase of the build sequence.
+- Core app workflows after authentication remain ahead in the build order.
+
 ## [0.2.0] - 2026-04-03
 
 Recommended release: `v0.2.0`
