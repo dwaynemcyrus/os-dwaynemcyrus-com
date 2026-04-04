@@ -269,7 +269,7 @@ export const templatesRoute = createRoute({
           </p>
           <p
             style={{
-              color: '#52606d',
+              color: 'var(--color-text-secondary)',
               fontSize: '0.95rem',
               margin: 0,
             }}
@@ -280,12 +280,8 @@ export const templatesRoute = createRoute({
 
         <section
           style={{
-            background: 'rgba(255, 250, 243, 0.92)',
-            border: '1px solid rgba(124, 103, 84, 0.16)',
-            borderRadius: '1rem',
             display: 'grid',
             gap: '1rem',
-            padding: '1.25rem',
           }}
         >
           <header
@@ -319,11 +315,8 @@ export const templatesRoute = createRoute({
           >
             <p
               style={{
-                background: 'rgba(47, 111, 81, 0.08)',
-                borderRadius: '1rem',
-                color: '#25543d',
+                color: 'var(--color-text-secondary)',
                 margin: 0,
-                padding: '1rem',
               }}
             >
               Add <code>type:</code> and <code>subtype:</code> in frontmatter
@@ -338,14 +331,13 @@ export const templatesRoute = createRoute({
               style={{
                 background:
                   isLoading || isCreating
-                    ? 'rgba(82, 96, 109, 0.18)'
-                    : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
-                border: 'none',
-                borderRadius: '0.875rem',
+                    ? 'transparent'
+                    : 'var(--color-bg-surface)',
+                border: '1px solid var(--color-border-card)',
                 color:
                   isLoading || isCreating
-                    ? '#52606d'
-                    : '#f8fafc',
+                    ? 'var(--color-text-secondary)'
+                    : 'var(--color-text-primary)',
                 cursor:
                   isLoading || isCreating
                     ? 'not-allowed'
@@ -362,17 +354,14 @@ export const templatesRoute = createRoute({
           </form>
 
           {createErrorMessage ? (
-            <p
-              role="alert"
-              style={{
-                background: 'rgba(186, 73, 73, 0.1)',
-                borderRadius: '1rem',
-                color: '#8f2d2d',
-                margin: 0,
-                padding: '1rem',
-              }}
-            >
-              {createErrorMessage}
+          <p
+            role="alert"
+            style={{
+              color: 'var(--color-danger)',
+              margin: 0,
+            }}
+          >
+            {createErrorMessage}
             </p>
           ) : null}
         </section>
@@ -380,11 +369,8 @@ export const templatesRoute = createRoute({
         {deleteStatusMessage ? (
           <p
             style={{
-              background: 'rgba(47, 111, 81, 0.12)',
-              borderRadius: '1rem',
-              color: '#25543d',
+              color: 'var(--color-text-secondary)',
               margin: 0,
-              padding: '1rem',
             }}
           >
             {deleteStatusMessage}
@@ -395,11 +381,8 @@ export const templatesRoute = createRoute({
           <p
             role="alert"
             style={{
-              background: 'rgba(186, 73, 73, 0.1)',
-              borderRadius: '1rem',
-              color: '#8f2d2d',
+              color: 'var(--color-danger)',
               margin: 0,
-              padding: '1rem',
             }}
           >
             {errorMessage}
@@ -418,9 +401,7 @@ export const templatesRoute = createRoute({
               <div
                 key={loadingKey}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.82)',
-                  border: '1px solid rgba(82, 96, 109, 0.12)',
-                  borderRadius: '1rem',
+                  border: '1px solid var(--color-border-subtle)',
                   display: 'grid',
                   gap: '0.75rem',
                   padding: '1.25rem',
@@ -428,9 +409,8 @@ export const templatesRoute = createRoute({
               >
                 <div
                   style={{
-                    background: 'rgba(82, 96, 109, 0.12)',
+                    background: 'var(--color-bg-surface)',
                     blockSize: '1rem',
-                    borderRadius: '999px',
                     inlineSize: '9rem',
                   }}
                 />
@@ -438,9 +418,8 @@ export const templatesRoute = createRoute({
                   <div
                     key={rowKey}
                     style={{
-                      background: 'rgba(82, 96, 109, 0.08)',
+                      background: 'var(--color-bg-surface)',
                       blockSize: '4.5rem',
-                      borderRadius: '0.875rem',
                     }}
                   />
                 ))}
@@ -452,12 +431,8 @@ export const templatesRoute = createRoute({
         {!isLoading && !errorMessage && templateGroups.length === 0 ? (
           <section
             style={{
-              background: 'rgba(255, 255, 255, 0.82)',
-              border: '1px solid rgba(82, 96, 109, 0.12)',
-              borderRadius: '1rem',
               display: 'grid',
               gap: '0.75rem',
-              padding: '1.25rem',
             }}
           >
             <h2
@@ -486,12 +461,8 @@ export const templatesRoute = createRoute({
               <section
                 key={templateGroup.type}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.82)',
-                  border: '1px solid rgba(82, 96, 109, 0.12)',
-                  borderRadius: '1rem',
                   display: 'grid',
                   gap: '0.875rem',
-                  padding: '1.25rem',
                 }}
               >
                 <header
@@ -514,7 +485,7 @@ export const templatesRoute = createRoute({
                   </h2>
                   <span
                     style={{
-                      color: '#52606d',
+                      color: 'var(--color-text-secondary)',
                       fontSize: '0.92rem',
                     }}
                   >
@@ -534,9 +505,7 @@ export const templatesRoute = createRoute({
                     <div
                       key={templateItem.id}
                       style={{
-                        background: 'rgba(248, 250, 252, 0.92)',
-                        border: '1px solid rgba(82, 96, 109, 0.14)',
-                        borderRadius: '0.875rem',
+                        border: '1px solid var(--color-border-subtle)',
                         display: 'grid',
                         gap: '0.45rem',
                         padding: '1rem',
@@ -558,38 +527,16 @@ export const templatesRoute = createRoute({
                         }}
                         type="button"
                       >
-                        <div
+                        <strong
                           style={{
-                            alignItems: 'center',
-                            display: 'flex',
-                            flexWrap: 'wrap',
-                            gap: '0.75rem',
-                            justifyContent: 'space-between',
+                            fontSize: '1rem',
                           }}
                         >
-                          <strong
-                            style={{
-                              fontSize: '1rem',
-                            }}
-                          >
-                            {formatTemplateTitle(templateItem)}
-                          </strong>
-                          <span
-                            style={{
-                              background: 'rgba(255, 250, 243, 0.98)',
-                              borderRadius: '999px',
-                              color: '#243b53',
-                              fontSize: '0.82rem',
-                              fontWeight: 700,
-                              padding: '0.25rem 0.65rem',
-                            }}
-                          >
-                            Editable
-                          </span>
-                        </div>
+                          {formatTemplateTitle(templateItem)}
+                        </strong>
                         <span
                           style={{
-                            color: '#52606d',
+                            color: 'var(--color-text-secondary)',
                             fontSize: '0.92rem',
                           }}
                         >
@@ -597,7 +544,7 @@ export const templatesRoute = createRoute({
                         </span>
                         <span
                           style={{
-                            color: '#243b53',
+                            color: 'var(--color-text-secondary)',
                           }}
                         >
                           {formatTemplatePreview(templateItem)}
@@ -614,10 +561,9 @@ export const templatesRoute = createRoute({
                             openDeleteDialog(templateItem);
                           }}
                           style={{
-                            background: 'rgba(186, 73, 73, 0.1)',
-                            border: '1px solid rgba(186, 73, 73, 0.18)',
-                            borderRadius: '0.75rem',
-                            color: '#8f2d2d',
+                            background: 'transparent',
+                            border: '1px solid var(--color-border-card)',
+                            color: 'var(--color-danger)',
                             cursor: 'pointer',
                             font: 'inherit',
                             fontWeight: 700,
@@ -655,9 +601,8 @@ export const templatesRoute = createRoute({
               aria-modal="true"
               role="alertdialog"
               style={{
-                background: 'rgba(255, 255, 255, 0.98)',
-                border: '1px solid rgba(82, 96, 109, 0.16)',
-                borderRadius: '1.25rem',
+                background: 'var(--color-bg-surface)',
+                border: '1px solid var(--color-border-card)',
                 display: 'grid',
                 gap: '1rem',
                 inlineSize: 'min(32rem, 100%)',
@@ -717,11 +662,8 @@ export const templatesRoute = createRoute({
                       setDeleteErrorMessage('');
                     }}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.94)',
-                      border: '1px solid rgba(82, 96, 109, 0.18)',
-                      borderRadius: '0.875rem',
-                      color: 'inherit',
-                      font: 'inherit',
+                      background: 'transparent',
+                      border: '1px solid var(--color-border-card)',
                       minHeight: '3rem',
                       padding: '0 0.9rem',
                     }}
@@ -734,11 +676,8 @@ export const templatesRoute = createRoute({
                   <p
                     role="alert"
                     style={{
-                      background: 'rgba(186, 73, 73, 0.1)',
-                      borderRadius: '1rem',
-                      color: '#8f2d2d',
+                      color: 'var(--color-danger)',
                       margin: 0,
-                      padding: '1rem',
                     }}
                   >
                     {deleteErrorMessage}
@@ -755,9 +694,8 @@ export const templatesRoute = createRoute({
                   <button
                     onClick={closeDeleteDialog}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.94)',
-                      border: '1px solid rgba(82, 96, 109, 0.18)',
-                      borderRadius: '0.875rem',
+                      background: 'transparent',
+                      border: '1px solid var(--color-border-card)',
                       color: 'inherit',
                       cursor: isDeleting ? 'not-allowed' : 'pointer',
                       font: 'inherit',
@@ -782,18 +720,17 @@ export const templatesRoute = createRoute({
                           getTemplateDeleteConfirmationValue(
                             pendingDeleteTemplate,
                           )
-                          ? 'rgba(82, 96, 109, 0.18)'
-                          : 'linear-gradient(135deg, #8f2d2d 0%, #7b2323 100%)',
-                      border: 'none',
-                      borderRadius: '0.875rem',
+                          ? 'transparent'
+                          : 'var(--color-bg-surface)',
+                      border: '1px solid var(--color-border-card)',
                       color:
                         isDeleting ||
                         deleteConfirmationValue !==
                           getTemplateDeleteConfirmationValue(
                             pendingDeleteTemplate,
                           )
-                          ? '#52606d'
-                          : '#f8fafc',
+                          ? 'var(--color-text-secondary)'
+                          : 'var(--color-danger)',
                       cursor:
                         isDeleting ||
                         deleteConfirmationValue !==

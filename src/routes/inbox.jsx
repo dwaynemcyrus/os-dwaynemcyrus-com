@@ -223,7 +223,7 @@ export const inboxRoute = createRoute({
           </p>
           <p
             style={{
-              color: '#52606d',
+              color: 'var(--color-text-secondary)',
               fontSize: '0.95rem',
               margin: 0,
             }}
@@ -235,12 +235,8 @@ export const inboxRoute = createRoute({
         {selectedInboxItem ? (
           <section
             style={{
-              background: 'rgba(255, 255, 255, 0.82)',
-              border: '1px solid rgba(82, 96, 109, 0.12)',
-              borderRadius: '1rem',
               display: 'grid',
               gap: '1rem',
-              padding: '1.25rem',
             }}
           >
             <header
@@ -262,7 +258,7 @@ export const inboxRoute = createRoute({
                 </h2>
                 <p
                   style={{
-                    color: '#52606d',
+                    color: 'var(--color-text-secondary)',
                     lineHeight: 1.5,
                     margin: 0,
                   }}
@@ -275,9 +271,8 @@ export const inboxRoute = createRoute({
               <button
                 onClick={closeProcessor}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.9)',
-                  border: '1px solid rgba(82, 96, 109, 0.18)',
-                  borderRadius: '999px',
+                  background: 'transparent',
+                  border: '1px solid var(--color-border-card)',
                   cursor: 'pointer',
                   font: 'inherit',
                   fontWeight: 600,
@@ -304,11 +299,8 @@ export const inboxRoute = createRoute({
               >
                 <span
                   style={{
-                    color: '#7c6754',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
+                    color: 'var(--color-text-muted)',
+                    fontSize: '0.9rem',
                   }}
                 >
                   Captured Title
@@ -326,18 +318,15 @@ export const inboxRoute = createRoute({
               >
                 <span
                   style={{
-                    color: '#7c6754',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
+                    color: 'var(--color-text-muted)',
+                    fontSize: '0.9rem',
                   }}
                 >
                   Captured Content
                 </span>
                 <p
                   style={{
-                    color: '#52606d',
+                    color: 'var(--color-text-secondary)',
                     lineHeight: 1.6,
                     margin: 0,
                     whiteSpace: 'pre-wrap',
@@ -352,11 +341,8 @@ export const inboxRoute = createRoute({
               <p
                 role="alert"
                 style={{
-                  background: 'rgba(186, 73, 73, 0.1)',
-                  borderRadius: '1rem',
-                  color: '#8f2d2d',
+                  color: 'var(--color-danger)',
                   margin: 0,
-                  padding: '1rem',
                 }}
               >
                 {processorErrorMessage}
@@ -392,11 +378,8 @@ export const inboxRoute = createRoute({
                   }}
                   placeholder="Refine the captured title"
                   style={{
-                    background: 'rgba(255, 255, 255, 0.96)',
-                    border: '1px solid rgba(82, 96, 109, 0.24)',
-                    borderRadius: '0.875rem',
-                    color: 'inherit',
-                    font: 'inherit',
+                    background: 'transparent',
+                    border: '1px solid var(--color-border-card)',
                     minHeight: '3rem',
                     padding: '0 1rem',
                   }}
@@ -422,7 +405,7 @@ export const inboxRoute = createRoute({
                 {templateOptions.length === 0 ? (
                   <p
                     style={{
-                      color: '#7c4a03',
+                      color: 'var(--color-text-secondary)',
                       margin: 0,
                     }}
                   >
@@ -436,11 +419,8 @@ export const inboxRoute = createRoute({
                     setSelectedTemplateId(event.target.value);
                   }}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.96)',
-                    border: '1px solid rgba(82, 96, 109, 0.24)',
-                    borderRadius: '0.875rem',
-                    color: 'inherit',
-                    font: 'inherit',
+                    background: 'transparent',
+                    border: '1px solid var(--color-border-card)',
                     minHeight: '3rem',
                     padding: '0 1rem',
                   }}
@@ -470,14 +450,13 @@ export const inboxRoute = createRoute({
                   style={{
                     background:
                       isSaving || templateOptions.length === 0
-                        ? 'rgba(82, 96, 109, 0.18)'
-                        : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
-                    border: 'none',
-                    borderRadius: '0.875rem',
+                        ? 'transparent'
+                        : 'var(--color-bg-surface)',
+                    border: '1px solid var(--color-border-card)',
                     color:
                       isSaving || templateOptions.length === 0
-                        ? '#52606d'
-                        : '#f8fafc',
+                        ? 'var(--color-text-secondary)'
+                        : 'var(--color-text-primary)',
                     cursor:
                       isSaving || templateOptions.length === 0
                         ? 'not-allowed'
@@ -495,10 +474,8 @@ export const inboxRoute = createRoute({
                 <button
                   onClick={closeProcessor}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.9)',
-                    border: '1px solid rgba(82, 96, 109, 0.18)',
-                    borderRadius: '0.875rem',
-                    color: 'inherit',
+                    background: 'transparent',
+                    border: '1px solid var(--color-border-card)',
                     cursor: 'pointer',
                     font: 'inherit',
                     fontWeight: 600,
@@ -514,12 +491,7 @@ export const inboxRoute = createRoute({
           </section>
         ) : selectedInboxItemMissing ? (
           <section
-            style={{
-              background: 'rgba(255, 255, 255, 0.76)',
-              border: '1px solid rgba(82, 96, 109, 0.1)',
-              borderRadius: '1rem',
-              padding: '1.25rem',
-            }}
+            style={{}}
           >
             <h2
               style={{
@@ -531,7 +503,7 @@ export const inboxRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.6,
                 margin: 0,
               }}
@@ -546,11 +518,8 @@ export const inboxRoute = createRoute({
           <p
             role="alert"
             style={{
-              background: 'rgba(186, 73, 73, 0.1)',
-              borderRadius: '1rem',
-              color: '#8f2d2d',
+              color: 'var(--color-danger)',
               margin: 0,
-              padding: '1rem',
             }}
           >
             {errorMessage}
@@ -570,10 +539,8 @@ export const inboxRoute = createRoute({
                 <div
                   key={rowId}
                   style={{
-                    background:
-                      'linear-gradient(90deg, rgba(220, 211, 200, 0.5) 0%, rgba(245, 241, 236, 0.9) 50%, rgba(220, 211, 200, 0.5) 100%)',
-                    backgroundSize: '200% 100%',
-                    borderRadius: '1rem',
+                    background: 'var(--color-bg-surface)',
+                    border: '1px solid var(--color-border-subtle)',
                     height: '6rem',
                   }}
                 />
@@ -599,11 +566,12 @@ export const inboxRoute = createRoute({
                   style={{
                     background:
                       search.itemId === item.id
-                        ? 'rgba(255, 250, 243, 0.98)'
-                        : 'rgba(255, 255, 255, 0.82)',
-                    border: '1px solid rgba(82, 96, 109, 0.12)',
-                    borderRadius: '1rem',
-                    color: 'inherit',
+                        ? 'var(--color-bg-surface)'
+                        : 'transparent',
+                    border:
+                      search.itemId === item.id
+                        ? '1px solid var(--color-border-card)'
+                        : '1px solid var(--color-border-subtle)',
                     cursor: 'pointer',
                     display: 'grid',
                     gap: '0.5rem',
@@ -623,7 +591,7 @@ export const inboxRoute = createRoute({
                   </span>
                   <span
                     style={{
-                      color: '#52606d',
+                      color: 'var(--color-text-secondary)',
                       lineHeight: 1.5,
                       whiteSpace: 'pre-wrap',
                     }}
@@ -632,8 +600,8 @@ export const inboxRoute = createRoute({
                   </span>
                   <span
                     style={{
-                      color: '#7c6754',
-                      fontSize: '0.9rem',
+                      color: 'var(--color-text-muted)',
+                      fontSize: '0.88rem',
                     }}
                   >
                     Captured {formatInboxDate(item.date_created ?? item.date_modified)}
@@ -643,14 +611,7 @@ export const inboxRoute = createRoute({
             ))}
           </ul>
         ) : (
-          <section
-            style={{
-              background: 'rgba(255, 255, 255, 0.76)',
-              border: '1px solid rgba(82, 96, 109, 0.1)',
-              borderRadius: '1rem',
-              padding: '1.25rem',
-            }}
-          >
+          <section>
             <h2
               style={{
                 fontSize: '1rem',
@@ -661,7 +622,7 @@ export const inboxRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.6,
                 margin: 0,
               }}
