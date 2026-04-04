@@ -110,7 +110,7 @@ function getSheetCopy(mode) {
   if (mode === 'direct-create') {
     return {
       description:
-        'Choose what to create directly from the floating action button.',
+        'Direct creation shortcuts.',
       placeholder: 'Type a subtype or slash command',
       title: 'Direct Create',
     };
@@ -118,9 +118,9 @@ function getSheetCopy(mode) {
 
   return {
     description:
-      'Capture a note, search titles, or jump into a template from one place.',
-    placeholder: 'Capture, search, or type / for commands',
-    title: 'Command Sheet',
+      'Search, capture, or run a slash command.',
+    placeholder: 'Search or create…',
+    title: 'Command',
   };
 }
 
