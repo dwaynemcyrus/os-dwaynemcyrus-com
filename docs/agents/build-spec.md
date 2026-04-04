@@ -437,8 +437,10 @@ When command sheet opened while editing an item:
 
 - Template list grouped by type
 - Tap to open in CodeMirror editor
-- Create new template from any subtype
-- Deletion requires typed subtype name confirmation (case-sensitive)
+- Templates without type or subtype group under Misc.
+- Create new template opens blank
+- Only user-owned templates participate in runtime flows
+- Deletion requires typed confirmation text (case-sensitive)
 
 ---
 
@@ -447,7 +449,7 @@ When command sheet opened while editing an item:
 - Home screen shows Open Today's Note button
 - Checks for existing journal: daily item with today's date
 - If exists → open in editor
-- If not → create from selected daily template then open
+- If not → create from selected user daily template then open
 - No implicit fallback template. If none is selected, warn the user to choose one in settings.
 - Settings picker to change default template
 
@@ -488,6 +490,9 @@ When command sheet opened while editing an item:
 
 Seed all 31 subtypes as system templates with is_template: true and user_id: null.
 Add RLS policy allowing all authenticated users to read system templates.
+These seeded templates are bootstrap-only data for the build. Runtime template
+surfaces should rely on user-owned templates, not on seeded records being
+visible in the UI.
 Reference schema-reference.md for full content and frontmatter per subtype.
 
 Subtypes to seed:
@@ -535,7 +540,7 @@ V1 is complete when:
 - [ ] FAB visible on every screen
 - [ ] Tap opens command sheet
 - [ ] Recent items shown by default
-- [ ] Templates shown by default
+- [ ] User templates shown by default
 - [ ] Typing searches item titles in real time
 - [ ] Typing / shows slash command list
 - [ ] Slash commands create correct item from correct template
@@ -569,14 +574,16 @@ V1 is complete when:
 
 ### Templates
 - [ ] Template list shows all templates grouped by type
+- [ ] Templates without type or subtype group under Misc.
 - [ ] Templates editable in CodeMirror
-- [ ] New templates creatable from any subtype
-- [ ] Deletion requires typed subtype confirmation
+- [ ] New templates open blank
+- [ ] Only user-owned templates participate in runtime flows
+- [ ] Deletion requires typed confirmation text
 
 ### Daily Note
 - [ ] Home screen shows Open Today's Note button
 - [ ] Button opens existing or creates new daily note
-- [ ] New daily note uses template from settings
+- [ ] New daily note uses selected user template from settings
 - [ ] No implicit fallback if no daily template is selected
 
 ### Navigation

@@ -1,13 +1,6 @@
 import { supabase } from './supabase';
 
 function sortDailyTemplateItems(leftItem, rightItem) {
-  const leftIsSystemTemplate = leftItem.user_id == null;
-  const rightIsSystemTemplate = rightItem.user_id == null;
-
-  if (leftIsSystemTemplate !== rightIsSystemTemplate) {
-    return leftIsSystemTemplate ? -1 : 1;
-  }
-
   const titleComparison = String(leftItem.title ?? '').localeCompare(
     String(rightItem.title ?? ''),
   );
@@ -22,10 +15,7 @@ function sortDailyTemplateItems(leftItem, rightItem) {
 }
 
 function formatDailyTemplateOptionLabel(templateItem) {
-  const title = templateItem.title?.trim() || 'Daily';
-  const sourceLabel = templateItem.user_id == null ? 'System' : 'Your Template';
-
-  return `${sourceLabel} · ${title}`;
+  return templateItem.title?.trim() || 'Daily';
 }
 
 export async function fetchDailyTemplateSettings({ userId }) {
@@ -40,11 +30,11 @@ export async function fetchDailyTemplateSettings({ userId }) {
       .maybeSingle(),
     supabase
       .from('items')
-      .select('id,user_id,title,subtype,date_modified')
+      .select('id,title,subtype,date_modified')
+      .eq('user_id', userId)
       .eq('is_template', true)
       .eq('subtype', 'daily')
-      .is('date_trashed', null)
-      .or(`user_id.eq.${userId},user_id.is.null`),
+      .is('date_trashed', null),
   ]);
 
   if (settingsError) {
@@ -65,7 +55,6 @@ export async function fetchDailyTemplateSettings({ userId }) {
   return {
     options: sortedTemplateItems.map((templateItem) => ({
       id: templateItem.id,
-      isSystemTemplate: templateItem.user_id == null,
       label: formatDailyTemplateOptionLabel(templateItem),
       title: templateItem.title?.trim() || 'Daily',
     })),
@@ -81,10 +70,10 @@ export async function saveDailyTemplatePreference({
     .from('items')
     .select('id')
     .eq('id', dailyTemplateId)
+    .eq('user_id', userId)
     .eq('is_template', true)
     .eq('subtype', 'daily')
     .is('date_trashed', null)
-    .or(`user_id.eq.${userId},user_id.is.null`)
     .single();
 
   if (templateError) {

@@ -788,3 +788,69 @@
    - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
    - Risks: merge behavior must stay consistent with the earlier Obsidian-like rules for title, subtitle, tags, dates, and body insertion.
    - Commit message: `fix(command): preserve template shape`
+
+## Fix: empty new template creation
+
+**Summary:** Stop new user templates from opening with cloned seeded frontmatter and ensure an empty authored frontmatter block stays empty on first save.
+
+**Agents involved:** @planner + @architecture
+
+**Sequence:**
+
+1. **Blank template creation contract**
+   - Files touched: `src/lib/items.js`, `src/routes/templates.jsx`
+   - Steps:
+     1. Change user-template creation to create a blank template row instead of cloning the seeded template body/frontmatter.
+     2. Preserve the selected `type` and `subtype` in row columns so template grouping still works.
+     3. Store an explicitly empty authored frontmatter object so the editor does not synthesize seeded/default YAML on first open.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
+   - Risks: this intentionally changes the earlier “clone seeded template” behavior, because the new product rule is that template authoring should start blank.
+   - Commit message: `fix(templates): create blank templates`
+
+2. **Empty frontmatter rendering**
+   - Files touched: `src/lib/frontmatter.js`
+   - Steps:
+     1. Render an authored-empty frontmatter object as a truly empty YAML block.
+     2. Keep save behavior sparse so saving a blank or minimal template does not inject defaults into the visible YAML.
+     3. Preserve the current row columns for grouping and querying even when the YAML remains sparse.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
+   - Risks: the serializer must distinguish between “authored empty frontmatter” and “legacy row with no preserved authored frontmatter.”
+   - Commit message: `fix(editor): keep empty frontmatter sparse`
+
+## Refactor: decouple runtime from seeded templates
+
+**Summary:** Remove runtime dependence on system-seeded template rows by separating the subtype catalog from saved template documents.
+
+**Agents involved:** @planner + both
+
+**Sequence:**
+
+1. **Subtype catalog extraction**
+   - Files touched: `src/lib/templates.js`, optionally a new `src/lib/template-catalog.js`
+   - Steps:
+     1. Introduce a canonical in-code subtype catalog with `type`, `subtype`, and display metadata.
+     2. Use that catalog for create-template subtype options and slash-command names instead of deriving those from seeded rows.
+     3. Keep grouping logic tolerant of user templates with no `type` / `subtype`, routing those to `Misc`.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
+   - Risks: the catalog becomes the runtime source of taxonomy, so it must stay aligned with `schema-reference.md`.
+   - Commit message: `refactor(data): add template catalog`
+
+2. **User-template-first runtime**
+   - Files touched: `src/lib/items.js`, `src/lib/settings.js`, `src/routes/templates.jsx`, `src/routes/settings.jsx`, `src/routes/inbox.jsx`, `src/components/command/CommandSheet.jsx`
+   - Steps:
+     1. Make template creation start blank and user-owned.
+     2. Make insert-template and template management surfaces use user templates instead of system seeds.
+     3. Make slash commands, inbox processing, and daily-template selection resolve against user templates only, or fail clearly when no user template exists.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
+   - Risks: behavior when a subtype has no user template must be chosen explicitly before implementation.
+   - Commit message: `refactor(data): prefer user templates`
+
+3. **Seeded template retirement**
+   - Files touched: `docs/agents/build-spec.md`, `docs/agents/schema-reference.md`, `supabase/seed.sql`, optional data-migration docs
+   - Steps:
+     1. Reframe system seeds as optional bootstrap content or remove them from the runtime contract entirely.
+     2. Update the spec so runtime behavior no longer assumes seeded templates exist.
+     3. Decide whether existing system template rows should be ignored, deleted, or left inert.
+   - Exit conditions: docs are aligned; any chosen migration path is explicitly documented.
+   - Risks: the build spec currently still requires system seeding, so this is a product-level contract change.
+   - Commit message: `docs(spec): decouple seeded templates`

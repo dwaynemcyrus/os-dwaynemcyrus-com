@@ -91,14 +91,6 @@ export function formatSubtypeLabel(subtype) {
   return normalizeTemplateLabel(subtype).replaceAll('_', ' ');
 }
 
-export function isSystemTemplate(templateItem) {
-  return templateItem?.is_template === true && templateItem?.user_id == null;
-}
-
-export function isUserTemplate(templateItem) {
-  return templateItem?.is_template === true && templateItem?.user_id != null;
-}
-
 export function sortTemplates(templateItems) {
   return [...templateItems].sort(compareTemplateItems);
 }
@@ -108,7 +100,7 @@ export function groupTemplatesByType(templateItems) {
   const groupsByType = new Map();
 
   sortTemplates(templateItems).forEach((templateItem) => {
-    const groupType = normalizeTemplateLabel(templateItem.type) || 'other';
+    const groupType = normalizeTemplateLabel(templateItem.type) || 'misc';
     let group = groupsByType.get(groupType);
 
     if (!group) {
@@ -126,29 +118,14 @@ export function groupTemplatesByType(templateItems) {
   return templateGroups;
 }
 
-export function getTemplateSubtypeOptions(templateItems) {
-  const optionsBySubtype = new Map();
+export function formatTemplateGroupLabel(type) {
+  const normalizedType = normalizeTemplateLabel(type);
 
-  sortTemplates(templateItems)
-    .filter((templateItem) => isSystemTemplate(templateItem))
-    .forEach((templateItem) => {
-      const normalizedSubtype = normalizeTemplateLabel(templateItem.subtype);
+  if (!normalizedType || normalizedType === 'misc') {
+    return 'Misc.';
+  }
 
-      if (!normalizedSubtype || optionsBySubtype.has(normalizedSubtype)) {
-        return;
-      }
-
-      optionsBySubtype.set(normalizedSubtype, {
-        subtype: normalizedSubtype,
-        subtypeLabel:
-          normalizeTemplateLabel(templateItem.title) ||
-          formatSubtypeLabel(normalizedSubtype),
-        templateId: templateItem.id,
-        type: normalizeTemplateLabel(templateItem.type) || 'other',
-      });
-    });
-
-  return [...optionsBySubtype.values()];
+  return normalizedType;
 }
 
 export function getSlashCommands(templateItems, query) {

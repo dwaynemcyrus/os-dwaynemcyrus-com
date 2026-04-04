@@ -2,6 +2,7 @@ import { createCuid } from './cuid';
 import {
   buildEditorMarkdownDocument,
   buildItemUpdatePayloadFromFrontmatter,
+  createStoredAuthoredFrontmatter,
   parseEditorMarkdownDocument,
   replaceEditorFrontmatterField,
 } from './frontmatter';
@@ -142,6 +143,25 @@ function buildClonedTemplatePayload({
   };
 }
 
+function buildBlankTemplatePayload({
+  collisionIndex,
+  createdAt,
+  userId,
+}) {
+  const timestamp = createdAt.toISOString();
+
+  return {
+    content: '',
+    cuid: createCuid(createdAt, collisionIndex),
+    date_created: timestamp,
+    date_modified: timestamp,
+    date_trashed: null,
+    frontmatter: createStoredAuthoredFrontmatter(),
+    is_template: true,
+    user_id: userId,
+  };
+}
+
 function buildTrashedItemHistorySnapshot(item, trashedAt) {
   const snapshotWithUpdatedDate = replaceEditorFrontmatterField({
     key: 'date_modified',
@@ -210,6 +230,7 @@ async function createDailyNoteForDate({
     .eq('id', templateId)
     .eq('is_template', true)
     .eq('subtype', 'daily')
+    .eq('user_id', userId)
     .is('date_trashed', null)
     .single();
 
@@ -426,8 +447,8 @@ export async function fetchEditorItem({ itemId, userId }) {
     .from('items')
     .select(buildEditorItemFieldsQuery())
     .eq('id', itemId)
+    .eq('user_id', userId)
     .is('date_trashed', null)
-    .or(`user_id.eq.${userId},and(is_template.eq.true,user_id.is.null)`)
     .single();
 
   if (error) {
@@ -458,10 +479,11 @@ export async function fetchRecentCommandItems(userId) {
   return data ?? [];
 }
 
-export async function fetchCommandTemplates() {
+export async function fetchCommandTemplates(userId) {
   const { data, error } = await supabase
     .from('items')
     .select(buildEditorItemFieldsQuery())
+    .eq('user_id', userId)
     .eq('is_template', true)
     .is('date_trashed', null)
     .order('type', { ascending: true })
@@ -474,10 +496,11 @@ export async function fetchCommandTemplates() {
   return data ?? [];
 }
 
-export async function fetchManagedTemplates() {
+export async function fetchManagedTemplates(userId) {
   const { data, error } = await supabase
     .from('items')
     .select(buildManagedTemplateFieldsQuery())
+    .eq('user_id', userId)
     .eq('is_template', true)
     .is('date_trashed', null)
     .order('type', { ascending: true })
@@ -746,6 +769,8 @@ export async function createItemFromTemplate({ templateId, userId }) {
     .select('*')
     .eq('id', templateId)
     .eq('is_template', true)
+    .eq('user_id', userId)
+    .is('date_trashed', null)
     .single();
 
   if (templateError) {
@@ -781,40 +806,16 @@ export async function createItemFromTemplate({ templateId, userId }) {
   throw new Error('Unable to create a unique timestamp id right now.');
 }
 
-export async function createUserTemplateFromSubtype({ subtype, userId }) {
-  const normalizedSubtype = subtype?.trim();
-
-  if (!normalizedSubtype) {
-    throw new Error('A template subtype is required.');
-  }
-
-  const { data: seededTemplate, error: seededTemplateError } = await supabase
-    .from('items')
-    .select('*')
-    .eq('is_template', true)
-    .eq('subtype', normalizedSubtype)
-    .is('user_id', null)
-    .is('date_trashed', null)
-    .single();
-
-  if (seededTemplateError) {
-    throw seededTemplateError;
-  }
-
-  const timestamp = new Date().toISOString();
-
+export async function createBlankTemplate({ userId }) {
+  const createdAt = new Date();
   for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
     const { data, error } = await supabase
       .from('items')
-      .insert(
-        buildClonedTemplatePayload({
-          collisionIndex,
-          isTemplate: true,
-          templateItem: seededTemplate,
-          timestamp,
-          userId,
-        }),
-      )
+      .insert(buildBlankTemplatePayload({
+        collisionIndex,
+        createdAt,
+        userId,
+      }))
       .select(buildManagedTemplateFieldsQuery())
       .single();
 
@@ -852,6 +853,8 @@ export async function processInboxItem({
         .select('*')
         .eq('id', templateId)
         .eq('is_template', true)
+        .eq('user_id', userId)
+        .is('date_trashed', null)
         .single(),
     ]);
 

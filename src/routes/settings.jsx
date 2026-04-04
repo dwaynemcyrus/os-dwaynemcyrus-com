@@ -45,7 +45,7 @@ const KEYBOARD_SHORTCUTS = [
 
 function formatSlashCommandMeta(slashCommand) {
   if (!slashCommand.template) {
-    return 'Template unavailable';
+    return 'Create a matching template first';
   }
 
   const metaParts = [];
@@ -109,7 +109,7 @@ export const settingsRoute = createRoute({
         fetchDailyTemplateSettings({
           userId: auth.user.id,
         }),
-        fetchCommandTemplates(),
+        fetchCommandTemplates(auth.user.id),
       ])
         .then(([dailySettingsResult, commandTemplatesResult]) => {
           if (cancelled) {
@@ -277,7 +277,7 @@ export const settingsRoute = createRoute({
               }}
             >
               Today&apos;s note will open an existing daily entry for your local
-              calendar date, or create one from this selected daily template.
+              calendar date, or create one from this selected user template.
             </p>
           </header>
 
@@ -413,6 +413,22 @@ export const settingsRoute = createRoute({
             >
               No default daily template is selected yet. Today&apos;s note will not
               create until you choose one here.
+            </p>
+          ) : null}
+
+          {!isLoadingSettings && !hasDailyTemplateOptions ? (
+            <p
+              role="status"
+              style={{
+                background: 'rgba(191, 131, 45, 0.12)',
+                borderRadius: '0.875rem',
+                color: '#7c4a03',
+                margin: 0,
+                padding: '0.85rem 1rem',
+              }}
+            >
+              No daily templates are available yet. Create a template and add
+              <code> subtype: daily</code> when you want it to appear here.
             </p>
           ) : null}
 

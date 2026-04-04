@@ -101,7 +101,7 @@ export const inboxRoute = createRoute({
 
       Promise.all([
         fetchUnprocessedInboxItems(auth.user.id),
-        fetchCommandTemplates(),
+        fetchCommandTemplates(auth.user.id),
       ])
         .then(([items, templates]) => {
           if (cancelled) {
@@ -164,7 +164,11 @@ export const inboxRoute = createRoute({
       }
 
       if (!selectedTemplateId) {
-        setProcessorErrorMessage('Choose a target type before processing.');
+        setProcessorErrorMessage(
+          templateOptions.length === 0
+            ? 'Create a user template with a matching subtype before processing inbox items.'
+            : 'Choose a target type before processing.',
+        );
         return;
       }
 
@@ -415,7 +419,19 @@ export const inboxRoute = createRoute({
                 >
                   Target Type
                 </span>
+                {templateOptions.length === 0 ? (
+                  <p
+                    style={{
+                      color: '#7c4a03',
+                      margin: 0,
+                    }}
+                  >
+                    No user templates are available yet. Create one with the
+                    subtype you want before processing inbox items.
+                  </p>
+                ) : null}
                 <select
+                  disabled={templateOptions.length === 0}
                   onChange={(event) => {
                     setSelectedTemplateId(event.target.value);
                   }}
@@ -450,14 +466,22 @@ export const inboxRoute = createRoute({
                 }}
               >
                 <button
-                  disabled={isSaving}
+                  disabled={isSaving || templateOptions.length === 0}
                   style={{
                     background:
-                      'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
+                      isSaving || templateOptions.length === 0
+                        ? 'rgba(82, 96, 109, 0.18)'
+                        : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
                     border: 'none',
                     borderRadius: '0.875rem',
-                    color: '#f8fafc',
-                    cursor: 'pointer',
+                    color:
+                      isSaving || templateOptions.length === 0
+                        ? '#52606d'
+                        : '#f8fafc',
+                    cursor:
+                      isSaving || templateOptions.length === 0
+                        ? 'not-allowed'
+                        : 'pointer',
                     font: 'inherit',
                     fontWeight: 700,
                     minHeight: '3rem',

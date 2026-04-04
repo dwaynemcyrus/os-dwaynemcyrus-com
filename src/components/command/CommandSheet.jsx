@@ -90,7 +90,7 @@ function formatItemMeta(item) {
 
 function formatSlashCommandMeta(slashCommand) {
   if (!slashCommand.template) {
-    return 'System template unavailable';
+    return 'Create a user template with this subtype first';
   }
 
   const metaParts = [];
@@ -308,7 +308,7 @@ export function CommandSheet({ children }) {
 
     Promise.all([
       fetchRecentCommandItems(auth.user.id),
-      fetchCommandTemplates(),
+      fetchCommandTemplates(auth.user.id),
     ])
       .then(([nextRecentItems, nextTemplateItems]) => {
         if (cancelled) {
@@ -536,10 +536,17 @@ export function CommandSheet({ children }) {
                       event.key === 'Enter' &&
                       !event.shiftKey &&
                       isSearchMode &&
-                      isSlashQuery &&
-                      firstAvailableSlashCommand?.template?.id
+                      isSlashQuery
                     ) {
                       event.preventDefault();
+
+                      if (!firstAvailableSlashCommand?.template?.id) {
+                        setSheetError(
+                          'Create a user template with this subtype before using that slash command.',
+                        );
+                        return;
+                      }
+
                       void handleCreateFromSlashCommand(
                         firstAvailableSlashCommand.template.id,
                       );
@@ -775,7 +782,7 @@ export function CommandSheet({ children }) {
                           </ul>
                         ) : (
                           <p className={styles.commandSheet__emptyState}>
-                            No templates are available to insert yet.
+                            No user templates are available to insert yet.
                           </p>
                         )}
                       </section>
@@ -855,7 +862,7 @@ export function CommandSheet({ children }) {
                           </ul>
                         ) : (
                           <p className={styles.commandSheet__emptyState}>
-                            No templates are available yet.
+                            No user templates are available yet.
                           </p>
                         )}
                       </section>

@@ -2,16 +2,14 @@ import { useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
 import {
-  createUserTemplateFromSubtype,
+  createBlankTemplate,
   fetchManagedTemplates,
   trashTemplate,
 } from '../lib/items';
 import {
+  formatTemplateGroupLabel,
   formatSubtypeLabel,
   groupTemplatesByType,
-  getTemplateSubtypeOptions,
-  isSystemTemplate,
-  isUserTemplate,
 } from '../lib/templates';
 import { authenticatedRoute } from './_authenticated';
 
@@ -35,9 +33,6 @@ function formatTemplateMeta(templateItem) {
     metaParts.push(formatSubtypeLabel(templateItem.subtype));
   }
 
-  metaParts.push(
-    isSystemTemplate(templateItem) ? 'system template' : 'your template',
-  );
   metaParts.push(
     formatTemplateDate(templateItem.date_modified ?? templateItem.date_created),
   );
@@ -65,6 +60,14 @@ function formatTemplatePreview(templateItem) {
   return 'Open in the editor to review this template.';
 }
 
+function getTemplateDeleteConfirmationValue(templateItem) {
+  if (templateItem.subtype?.trim()) {
+    return templateItem.subtype.trim();
+  }
+
+  return formatTemplateTitle(templateItem);
+}
+
 export const templatesRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/templates',
@@ -81,13 +84,8 @@ export const templatesRoute = createRoute({
     const [isDeleting, setIsDeleting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
     const [pendingDeleteTemplate, setPendingDeleteTemplate] = useState(null);
-    const [selectedSubtype, setSelectedSubtype] = useState('');
     const templateGroups = useMemo(
       () => groupTemplatesByType(templateItems),
-      [templateItems],
-    );
-    const templateSubtypeOptions = useMemo(
-      () => getTemplateSubtypeOptions(templateItems),
       [templateItems],
     );
     const templateCountLabel = useMemo(() => {
@@ -108,7 +106,7 @@ export const templatesRoute = createRoute({
       setIsLoading(true);
       setErrorMessage('');
 
-      fetchManagedTemplates()
+      fetchManagedTemplates(auth.user.id)
         .then((templates) => {
           if (cancelled) {
             return;
@@ -138,26 +136,6 @@ export const templatesRoute = createRoute({
       };
     }, [auth.user?.id]);
 
-    useEffect(() => {
-      if (!templateSubtypeOptions.length) {
-        setSelectedSubtype('');
-        return;
-      }
-
-      setSelectedSubtype((currentSubtype) => {
-        if (
-          currentSubtype &&
-          templateSubtypeOptions.some(
-            (option) => option.subtype === currentSubtype,
-          )
-        ) {
-          return currentSubtype;
-        }
-
-        return templateSubtypeOptions[0].subtype;
-      });
-    }, [templateSubtypeOptions]);
-
     async function openTemplate(templateId) {
       await navigate({
         params: {
@@ -175,17 +153,11 @@ export const templatesRoute = createRoute({
         return;
       }
 
-      if (!selectedSubtype) {
-        setCreateErrorMessage('Choose a subtype before creating a template.');
-        return;
-      }
-
       setIsCreating(true);
       setCreateErrorMessage('');
 
       try {
-        const createdTemplate = await createUserTemplateFromSubtype({
-          subtype: selectedSubtype,
+        const createdTemplate = await createBlankTemplate({
           userId: auth.user.id,
         });
 
@@ -230,13 +202,13 @@ export const templatesRoute = createRoute({
         return;
       }
 
-      if (!isUserTemplate(pendingDeleteTemplate)) {
-        setDeleteErrorMessage('System templates cannot be deleted.');
-        return;
-      }
-
-      if (deleteConfirmationValue !== pendingDeleteTemplate.subtype) {
-        setDeleteErrorMessage('Type the exact subtype to confirm deletion.');
+      if (
+        deleteConfirmationValue !==
+        getTemplateDeleteConfirmationValue(pendingDeleteTemplate)
+      ) {
+        setDeleteErrorMessage(
+          'Type the exact confirmation text to delete this template.',
+        );
         return;
       }
 
@@ -292,8 +264,8 @@ export const templatesRoute = createRoute({
         >
           <h1 style={{ margin: 0 }}>Templates</h1>
           <p style={{ margin: 0 }}>
-            Browse system templates and your own custom templates by type. Open
-            any template in the existing editor surface to review or refine it.
+            Browse your templates by type. Open any template in the existing
+            editor surface to review or refine it.
           </p>
           <p
             style={{
@@ -331,8 +303,8 @@ export const templatesRoute = createRoute({
               Create a New Template
             </h2>
             <p style={{ margin: 0 }}>
-              Start from any seeded subtype template, then refine it in the
-              editor as your own reusable version.
+              Start with a blank template. Add frontmatter only when you want
+              it, and keep templates without a type or subtype under Misc.
             </p>
           </header>
 
@@ -341,94 +313,51 @@ export const templatesRoute = createRoute({
               void handleCreateTemplate(event);
             }}
             style={{
-              alignItems: 'end',
               display: 'grid',
               gap: '1rem',
-              gridTemplateColumns: 'minmax(0, 1fr) auto',
             }}
           >
-            <label
+            <p
               style={{
-                display: 'grid',
-                gap: '0.45rem',
+                background: 'rgba(47, 111, 81, 0.08)',
+                borderRadius: '1rem',
+                color: '#25543d',
+                margin: 0,
+                padding: '1rem',
               }}
             >
-              <span
-                style={{
-                  fontSize: '0.92rem',
-                  fontWeight: 700,
-                }}
-              >
-                Template subtype
-              </span>
-              <select
-                disabled={isLoading || isCreating || templateSubtypeOptions.length === 0}
-                onChange={(event) => {
-                  setSelectedSubtype(event.target.value);
-                  setCreateErrorMessage('');
-                }}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.94)',
-                  border: '1px solid rgba(82, 96, 109, 0.18)',
-                  borderRadius: '0.875rem',
-                  color: 'inherit',
-                  font: 'inherit',
-                  minHeight: '3rem',
-                  padding: '0 0.9rem',
-                }}
-                value={selectedSubtype}
-              >
-                {templateSubtypeOptions.length === 0 ? (
-                  <option value="">No seeded subtypes available</option>
-                ) : null}
-                {templateSubtypeOptions.map((option) => (
-                  <option key={option.subtype} value={option.subtype}>
-                    {option.type} · {option.subtypeLabel}
-                  </option>
-                ))}
-              </select>
-            </label>
+              Add <code>type:</code> and <code>subtype:</code> in frontmatter
+              only when you want a template to drive slash commands, inbox
+              processing, or the daily-note picker.
+            </p>
 
             <button
               disabled={
-                isLoading ||
-                isCreating ||
-                !selectedSubtype ||
-                templateSubtypeOptions.length === 0
+                isLoading || isCreating
               }
               style={{
                 background:
-                  isLoading ||
-                  isCreating ||
-                  !selectedSubtype ||
-                  templateSubtypeOptions.length === 0
+                  isLoading || isCreating
                     ? 'rgba(82, 96, 109, 0.18)'
                     : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
                 border: 'none',
                 borderRadius: '0.875rem',
                 color:
-                  isLoading ||
-                  isCreating ||
-                  !selectedSubtype ||
-                  templateSubtypeOptions.length === 0
+                  isLoading || isCreating
                     ? '#52606d'
                     : '#f8fafc',
                 cursor:
-                  isLoading ||
-                  isCreating ||
-                  !selectedSubtype ||
-                  templateSubtypeOptions.length === 0
+                  isLoading || isCreating
                     ? 'not-allowed'
                     : 'pointer',
                 font: 'inherit',
                 fontWeight: 700,
                 minHeight: '3rem',
-                minWidth: '11rem',
                 padding: '0 1.25rem',
               }}
               type="submit"
             >
-              {isCreating ? 'Creating...' : 'Create Template'}
+              {isCreating ? 'Creating...' : 'Create Empty Template'}
             </button>
           </form>
 
@@ -540,8 +469,8 @@ export const templatesRoute = createRoute({
               No templates yet
             </h2>
             <p style={{ margin: 0 }}>
-              Seeded templates are missing or you do not have access to them
-              yet.
+              Create your first blank template, then add only the frontmatter
+              you actually want to keep.
             </p>
           </section>
         ) : null}
@@ -581,7 +510,7 @@ export const templatesRoute = createRoute({
                       textTransform: 'capitalize',
                     }}
                   >
-                    {templateGroup.type}
+                    {formatTemplateGroupLabel(templateGroup.type)}
                   </h2>
                   <span
                     style={{
@@ -647,9 +576,7 @@ export const templatesRoute = createRoute({
                           </strong>
                           <span
                             style={{
-                              background: isSystemTemplate(templateItem)
-                                ? 'rgba(82, 96, 109, 0.12)'
-                                : 'rgba(255, 250, 243, 0.98)',
+                              background: 'rgba(255, 250, 243, 0.98)',
                               borderRadius: '999px',
                               color: '#243b53',
                               fontSize: '0.82rem',
@@ -657,9 +584,7 @@ export const templatesRoute = createRoute({
                               padding: '0.25rem 0.65rem',
                             }}
                           >
-                            {isSystemTemplate(templateItem)
-                              ? 'Read Only'
-                              : 'Editable'}
+                            Editable
                           </span>
                         </div>
                         <span
@@ -678,34 +603,32 @@ export const templatesRoute = createRoute({
                           {formatTemplatePreview(templateItem)}
                         </span>
                       </button>
-                      {isUserTemplate(templateItem) ? (
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'end',
+                      <div
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'end',
+                        }}
+                      >
+                        <button
+                          onClick={() => {
+                            openDeleteDialog(templateItem);
                           }}
+                          style={{
+                            background: 'rgba(186, 73, 73, 0.1)',
+                            border: '1px solid rgba(186, 73, 73, 0.18)',
+                            borderRadius: '0.75rem',
+                            color: '#8f2d2d',
+                            cursor: 'pointer',
+                            font: 'inherit',
+                            fontWeight: 700,
+                            minHeight: '2.5rem',
+                            padding: '0 0.9rem',
+                          }}
+                          type="button"
                         >
-                          <button
-                            onClick={() => {
-                              openDeleteDialog(templateItem);
-                            }}
-                            style={{
-                              background: 'rgba(186, 73, 73, 0.1)',
-                              border: '1px solid rgba(186, 73, 73, 0.18)',
-                              borderRadius: '0.75rem',
-                              color: '#8f2d2d',
-                              cursor: 'pointer',
-                              font: 'inherit',
-                              fontWeight: 700,
-                              minHeight: '2.5rem',
-                              padding: '0 0.9rem',
-                            }}
-                            type="button"
-                          >
-                            Delete Template
-                          </button>
-                        </div>
-                      ) : null}
+                          Delete Template
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -756,7 +679,10 @@ export const templatesRoute = createRoute({
                   Delete Template
                 </h2>
                 <p style={{ margin: 0 }}>
-                  Type the exact subtype <strong>{pendingDeleteTemplate.subtype}</strong>{' '}
+                  Type the exact text{' '}
+                  <strong>
+                    {getTemplateDeleteConfirmationValue(pendingDeleteTemplate)}
+                  </strong>{' '}
                   to move this template to trash. This check is case-sensitive.
                 </p>
               </header>
@@ -782,7 +708,7 @@ export const templatesRoute = createRoute({
                       fontWeight: 700,
                     }}
                   >
-                    Confirm subtype
+                    Confirm text
                   </span>
                   <input
                     autoFocus
@@ -846,24 +772,34 @@ export const templatesRoute = createRoute({
                   <button
                     disabled={
                       isDeleting ||
-                      deleteConfirmationValue !== pendingDeleteTemplate.subtype
+                      deleteConfirmationValue !==
+                        getTemplateDeleteConfirmationValue(pendingDeleteTemplate)
                     }
                     style={{
                       background:
                         isDeleting ||
-                        deleteConfirmationValue !== pendingDeleteTemplate.subtype
+                        deleteConfirmationValue !==
+                          getTemplateDeleteConfirmationValue(
+                            pendingDeleteTemplate,
+                          )
                           ? 'rgba(82, 96, 109, 0.18)'
                           : 'linear-gradient(135deg, #8f2d2d 0%, #7b2323 100%)',
                       border: 'none',
                       borderRadius: '0.875rem',
                       color:
                         isDeleting ||
-                        deleteConfirmationValue !== pendingDeleteTemplate.subtype
+                        deleteConfirmationValue !==
+                          getTemplateDeleteConfirmationValue(
+                            pendingDeleteTemplate,
+                          )
                           ? '#52606d'
                           : '#f8fafc',
                       cursor:
                         isDeleting ||
-                        deleteConfirmationValue !== pendingDeleteTemplate.subtype
+                        deleteConfirmationValue !==
+                          getTemplateDeleteConfirmationValue(
+                            pendingDeleteTemplate,
+                          )
                           ? 'not-allowed'
                           : 'pointer',
                       font: 'inherit',

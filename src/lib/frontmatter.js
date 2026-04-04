@@ -198,8 +198,6 @@ const FRONTMATTER_FIELD_ORDER = [
 const KNOWN_FRONTMATTER_FIELDS = new Set(FRONTMATTER_FIELD_ORDER);
 const PRESERVED_WHEN_OMITTED_FIELDS = new Set([
   'cuid',
-  'type',
-  'subtype',
   'date_created',
   'date_trashed',
 ]);
@@ -240,14 +238,19 @@ function stripStorageMarker(frontmatter) {
   return nextFrontmatter;
 }
 
+export function createStoredAuthoredFrontmatter(frontmatter = {}) {
+  return {
+    [AUTHORED_FRONTMATTER_STORAGE_KEY]: true,
+    ...stripStorageMarker(frontmatter),
+  };
+}
+
 function buildStoredAuthoredFrontmatter({
   existingItem,
   modifiedAt,
   parsedFrontmatter,
 }) {
-  const storedFrontmatter = {
-    [AUTHORED_FRONTMATTER_STORAGE_KEY]: true,
-  };
+  const storedFrontmatter = createStoredAuthoredFrontmatter();
 
   Object.entries(parsedFrontmatter).forEach(([key, value]) => {
     if (!SYSTEM_MANAGED_FRONTMATTER_FIELDS.has(key)) {
@@ -587,6 +590,30 @@ function serializeFrontmatter(frontmatter) {
     .trimEnd();
 }
 
+function buildRawMarkdownDocumentParts({
+  body,
+  frontmatter,
+}) {
+  const normalizedBody = normalizeMarkdownText(body ?? '').replace(/^\n+/, '');
+  const serializedFrontmatter = serializeFrontmatter(frontmatter);
+
+  if (!serializedFrontmatter) {
+    return {
+      bodyStartIndex: 0,
+      rawMarkdown: normalizedBody,
+    };
+  }
+
+  const documentPrefix = `---\n${serializedFrontmatter}\n---${
+    normalizedBody ? '\n\n' : '\n'
+  }`;
+
+  return {
+    bodyStartIndex: documentPrefix.length,
+    rawMarkdown: `${documentPrefix}${normalizedBody}`,
+  };
+}
+
 function buildPersistedFieldValue(key, parsedFrontmatter, existingItem, modifiedAt) {
   if (key === 'cuid') {
     return existingItem.cuid;
@@ -627,12 +654,11 @@ export function buildEditorMarkdownDocument(item) {
   }
 
   const authoredFrontmatter = readStoredAuthoredFrontmatter(item.frontmatter);
-  const serializedFrontmatter = serializeFrontmatter(
-    authoredFrontmatter ?? buildStoredFrontmatter(item),
-  );
-  const normalizedBody = normalizeMarkdownText(item.content ?? '').replace(/^\n+/, '');
 
-  return `---\n${serializedFrontmatter}\n---${normalizedBody ? `\n\n${normalizedBody}` : '\n'}`;
+  return buildRawMarkdownDocumentParts({
+    body: item.content ?? '',
+    frontmatter: authoredFrontmatter ?? buildStoredFrontmatter(item),
+  }).rawMarkdown;
 }
 
 export function replaceEditorFrontmatterField({
@@ -645,9 +671,11 @@ export function replaceEditorFrontmatterField({
     ...frontmatter,
     [key]: value,
   };
-  const serializedFrontmatter = serializeFrontmatter(nextFrontmatter);
 
-  return `---\n${serializedFrontmatter}\n---${body ? `\n\n${body}` : '\n'}`;
+  return buildRawMarkdownDocumentParts({
+    body,
+    frontmatter: nextFrontmatter,
+  }).rawMarkdown;
 }
 
 export function mergeTemplateIntoEditorDocument({
@@ -658,17 +686,12 @@ export function mergeTemplateIntoEditorDocument({
 }) {
   const currentDocument = splitMarkdownDocument(currentRawMarkdown);
   const templateDocument = splitMarkdownDocument(templateRawMarkdown);
-
-  if (!currentDocument.hasFrontmatter) {
-    throw new Error('Editor inserts require a YAML frontmatter block.');
-  }
-
-  if (!templateDocument.hasFrontmatter) {
-    throw new Error('Template inserts require a YAML frontmatter block.');
-  }
-
-  const currentFrontmatter = parseFrontmatterText(currentDocument.frontmatterText);
-  const templateFrontmatter = parseFrontmatterText(templateDocument.frontmatterText);
+  const currentFrontmatter = currentDocument.hasFrontmatter
+    ? parseFrontmatterText(currentDocument.frontmatterText)
+    : {};
+  const templateFrontmatter = templateDocument.hasFrontmatter
+    ? parseFrontmatterText(templateDocument.frontmatterText)
+    : {};
   const currentBody = currentDocument.body;
   const templateBody = templateDocument.body;
   const nextFrontmatter = {
@@ -676,7 +699,11 @@ export function mergeTemplateIntoEditorDocument({
     ...templateFrontmatter,
   };
 
-  nextFrontmatter.cuid = currentFrontmatter.cuid ?? nextFrontmatter.cuid;
+  if (hasOwnValue(currentFrontmatter, 'cuid')) {
+    nextFrontmatter.cuid = currentFrontmatter.cuid;
+  } else {
+    delete nextFrontmatter.cuid;
+  }
 
   if (hasExistingScalarValue(currentFrontmatter.title)) {
     nextFrontmatter.title = currentFrontmatter.title;
@@ -686,20 +713,29 @@ export function mergeTemplateIntoEditorDocument({
     nextFrontmatter.subtitle = currentFrontmatter.subtitle;
   }
 
-  if (currentFrontmatter.date_created) {
+  if (hasOwnValue(currentFrontmatter, 'date_created')) {
     nextFrontmatter.date_created = currentFrontmatter.date_created;
+  } else {
+    delete nextFrontmatter.date_created;
   }
 
-  if (currentFrontmatter.date_modified) {
+  if (hasOwnValue(currentFrontmatter, 'date_modified')) {
     nextFrontmatter.date_modified = currentFrontmatter.date_modified;
+  } else {
+    delete nextFrontmatter.date_modified;
   }
 
-  nextFrontmatter.tags = mergeTagValues(
-    currentFrontmatter.tags,
-    templateFrontmatter.tags,
-  );
-
-  const serializedFrontmatter = serializeFrontmatter(nextFrontmatter);
+  if (
+    hasOwnValue(currentFrontmatter, 'tags') ||
+    hasOwnValue(templateFrontmatter, 'tags')
+  ) {
+    nextFrontmatter.tags = mergeTagValues(
+      currentFrontmatter.tags,
+      templateFrontmatter.tags,
+    );
+  } else {
+    delete nextFrontmatter.tags;
+  }
   const clampedSelectionStart = Math.max(
     0,
     Math.min(selectionStart - currentDocument.bodyStartIndex, currentBody.length),
@@ -709,14 +745,15 @@ export function mergeTemplateIntoEditorDocument({
     Math.min(selectionEnd - currentDocument.bodyStartIndex, currentBody.length),
   );
   const nextBody = `${currentBody.slice(0, clampedSelectionStart)}${templateBody}${currentBody.slice(clampedSelectionEnd)}`;
-  const nextDocumentPrefix = `---\n${serializedFrontmatter}\n---${
-    nextBody ? '\n\n' : '\n'
-  }`;
+  const nextDocument = buildRawMarkdownDocumentParts({
+    body: nextBody,
+    frontmatter: nextFrontmatter,
+  });
   const nextSelectionAnchor =
-    nextDocumentPrefix.length + clampedSelectionStart + templateBody.length;
+    nextDocument.bodyStartIndex + clampedSelectionStart + templateBody.length;
 
   return {
-    rawMarkdown: `${nextDocumentPrefix}${nextBody}`,
+    rawMarkdown: nextDocument.rawMarkdown,
     selectionAnchor: nextSelectionAnchor,
   };
 }
@@ -724,14 +761,12 @@ export function mergeTemplateIntoEditorDocument({
 export function parseEditorMarkdownDocument(rawMarkdown) {
   const splitDocument = splitMarkdownDocument(rawMarkdown);
 
-  if (!splitDocument.hasFrontmatter) {
-    throw new Error('Editor saves require a YAML frontmatter block.');
-  }
-
   return {
     body: splitDocument.body,
     bodyStartIndex: splitDocument.bodyStartIndex,
-    frontmatter: parseFrontmatterText(splitDocument.frontmatterText),
+    frontmatter: splitDocument.hasFrontmatter
+      ? parseFrontmatterText(splitDocument.frontmatterText)
+      : {},
     frontmatterText: splitDocument.frontmatterText,
     normalizedRawMarkdown: splitDocument.normalizedRawMarkdown,
   };
