@@ -22,6 +22,7 @@ import { getSlashCommands } from '../../lib/templates';
 import { FabButton } from './FabButton';
 import styles from './CommandSheet.module.css';
 
+const INBOX_COUNT_REFRESH_EVENT = 'personal-os:inbox-count-refresh';
 const DIRECT_CREATE_HINTS = [
   'Direct item creation will land here next.',
   'Touch hold opens this mode on mobile.',
@@ -205,6 +206,7 @@ export function CommandSheet({ children }) {
       });
 
       setRecentItems((previousItems) => [createdItem, ...previousItems].slice(0, 8));
+      window.dispatchEvent(new Event(INBOX_COUNT_REFRESH_EVENT));
       setSheetStatus('Saved to inbox.');
 
       if (closeAfterCapture) {

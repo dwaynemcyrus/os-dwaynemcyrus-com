@@ -117,6 +117,30 @@
   letter-spacing: 0.01em;
 }
 
+.appNav__headingRow {
+  align-items: center;
+  display: inline-flex;
+  gap: 0.45rem;
+  justify-content: space-between;
+  min-inline-size: 0;
+  width: 100%;
+}
+
+.appNav__badge {
+  align-items: center;
+  background: linear-gradient(135deg, #8f2d2d 0%, #6d1f1f 100%);
+  border-radius: 999px;
+  color: #f8fafc;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 0.72rem;
+  font-weight: 800;
+  justify-content: center;
+  min-block-size: 1.35rem;
+  min-inline-size: 1.35rem;
+  padding: 0 0.45rem;
+}
+
 .appNav__meta {
   color: #7c6754;
   font-size: 0.72rem;

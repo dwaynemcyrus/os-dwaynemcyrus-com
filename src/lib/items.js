@@ -510,20 +510,10 @@ export async function fetchTrashedItems(userId) {
 
 export async function fetchHomeSummary(userId) {
   const [
-    { count, error: inboxCountError },
+    inboxCount,
     { data: workbenchItems, error: workbenchError },
   ] = await Promise.all([
-    supabase
-      .from('items')
-      .select('id', {
-        count: 'exact',
-        head: true,
-      })
-      .eq('user_id', userId)
-      .eq('is_template', false)
-      .eq('type', 'inbox')
-      .eq('status', 'unprocessed')
-      .is('date_trashed', null),
+    fetchInboxCount(userId),
     supabase
       .from('items')
       .select(buildHomeWorkbenchFieldsQuery())
@@ -536,18 +526,34 @@ export async function fetchHomeSummary(userId) {
       .limit(HOME_WORKBENCH_LIMIT),
   ]);
 
-  if (inboxCountError) {
-    throw inboxCountError;
-  }
-
   if (workbenchError) {
     throw workbenchError;
   }
 
   return {
-    inboxCount: count ?? 0,
+    inboxCount,
     workbenchItems: workbenchItems ?? [],
   };
+}
+
+export async function fetchInboxCount(userId) {
+  const { count, error } = await supabase
+    .from('items')
+    .select('id', {
+      count: 'exact',
+      head: true,
+    })
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .eq('type', 'inbox')
+    .eq('status', 'unprocessed')
+    .is('date_trashed', null);
+
+  if (error) {
+    throw error;
+  }
+
+  return count ?? 0;
 }
 
 export async function fetchItemsFilters(userId) {

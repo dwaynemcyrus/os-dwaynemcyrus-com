@@ -1,5 +1,10 @@
+import { useEffect, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
+import { useAuth } from '../../lib/auth';
+import { fetchInboxCount } from '../../lib/items';
 import styles from './AppNav.module.css';
+
+const INBOX_COUNT_REFRESH_EVENT = 'personal-os:inbox-count-refresh';
 
 const PRIMARY_NAV_ITEMS = [
   {
@@ -50,13 +55,58 @@ function isItemActive(pathname, item) {
 }
 
 export function AppNav({ children }) {
+  const auth = useAuth();
+  const [inboxCount, setInboxCount] = useState(0);
   const navigate = useNavigate();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
 
+  useEffect(() => {
+    if (!auth.user?.id) {
+      setInboxCount(0);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    async function loadInboxCount() {
+      try {
+        const nextInboxCount = await fetchInboxCount(auth.user.id);
+
+        if (cancelled) {
+          return;
+        }
+
+        setInboxCount(nextInboxCount);
+      } catch {
+        if (cancelled) {
+          return;
+        }
+
+        setInboxCount(0);
+      }
+    }
+
+    function handleInboxCountRefresh() {
+      void loadInboxCount();
+    }
+
+    void loadInboxCount();
+    window.addEventListener(INBOX_COUNT_REFRESH_EVENT, handleInboxCountRefresh);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener(
+        INBOX_COUNT_REFRESH_EVENT,
+        handleInboxCountRefresh,
+      );
+    };
+  }, [auth.user?.id, pathname]);
+
   function renderNavButton(item, variant) {
     const isActive = isItemActive(pathname, item);
+    const showsInboxBadge = item.id === 'inbox' && inboxCount > 0;
     const buttonClassName = [
       styles.appNav__button,
       variant === 'tab' ? styles['appNav__button--tab'] : '',
@@ -77,7 +127,17 @@ export function AppNav({ children }) {
         }}
         type="button"
       >
-        <span className={styles.appNav__label}>{item.label}</span>
+        <span className={styles.appNav__headingRow}>
+          <span className={styles.appNav__label}>{item.label}</span>
+          {showsInboxBadge ? (
+            <span
+              aria-label={`${inboxCount} unprocessed inbox items`}
+              className={styles.appNav__badge}
+            >
+              {inboxCount > 99 ? '99+' : inboxCount}
+            </span>
+          ) : null}
+        </span>
         <span className={styles.appNav__meta}>{item.meta}</span>
       </button>
     );
