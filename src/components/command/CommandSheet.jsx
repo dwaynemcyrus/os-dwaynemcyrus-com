@@ -10,6 +10,7 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '../../lib/auth';
 import { CommandContext } from '../../lib/command-context';
+import { buildEditorMarkdownDocument } from '../../lib/frontmatter';
 import {
   createItemFromTemplate,
   createInboxItemFromCapture,
@@ -450,10 +451,7 @@ export function CommandSheet({ children }) {
       return;
     }
 
-    const templateRawMarkdown = String(templateItem.content ?? '').replaceAll(
-      '\r\n',
-      '\n',
-    );
+    const templateRawMarkdown = buildEditorMarkdownDocument(templateItem);
 
     if (!templateRawMarkdown.trim()) {
       setSheetError('That template has no content to insert.');

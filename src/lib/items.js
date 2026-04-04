@@ -461,7 +461,7 @@ export async function fetchRecentCommandItems(userId) {
 export async function fetchCommandTemplates() {
   const { data, error } = await supabase
     .from('items')
-    .select(buildCommandItemFieldsQuery())
+    .select(buildEditorItemFieldsQuery())
     .eq('is_template', true)
     .is('date_trashed', null)
     .order('type', { ascending: true })
