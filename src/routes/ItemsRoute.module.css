@@ -5,15 +5,8 @@
 }
 
 .itemsRoute__hero {
-  background:
-    radial-gradient(circle at top, rgba(233, 217, 193, 0.7), transparent 36%),
-    linear-gradient(180deg, #f7f3ec 0%, #efe6d7 100%);
-  border: 1px solid rgba(104, 85, 63, 0.14);
-  border-radius: 1.25rem;
-  box-shadow: 0 24px 60px rgba(84, 61, 37, 0.08);
   display: grid;
   gap: 1rem;
-  padding: 1.5rem;
 }
 
 .itemsRoute__heroHeader {
@@ -22,23 +15,20 @@
 }
 
 .itemsRoute__eyebrow {
-  color: #7c6754;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
   margin: 0;
-  text-transform: uppercase;
 }
 
 .itemsRoute__title {
-  color: #1f2933;
+  color: var(--color-text-primary);
   font-size: 2rem;
   line-height: 1.05;
   margin: 0;
 }
 
 .itemsRoute__description {
-  color: #52606d;
+  color: var(--color-text-secondary);
   line-height: 1.55;
   margin: 0;
   max-width: 42rem;
@@ -55,7 +45,7 @@
 }
 
 .itemsRoute__label {
-  color: #243b53;
+  color: var(--color-text-secondary);
   font-size: 0.92rem;
   font-weight: 700;
 }
@@ -63,21 +53,25 @@
 .itemsRoute__input,
 .itemsRoute__select {
   appearance: none;
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(82, 96, 109, 0.18);
-  border-radius: 0.95rem;
-  color: #1f2933;
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
   font: inherit;
   min-height: 3.15rem;
   padding: 0 1rem;
   width: 100%;
 }
 
+.itemsRoute__input::placeholder {
+  color: var(--color-text-muted);
+}
+
 .itemsRoute__input:focus-visible,
 .itemsRoute__select:focus-visible,
 .itemsRoute__itemButton:focus-visible {
-  box-shadow: 0 0 0 3px rgba(58, 124, 165, 0.18);
-  outline: none;
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
 }
 
 .itemsRoute__filterGrid {
@@ -94,30 +88,23 @@
 }
 
 .itemsRoute__summary {
-  color: #52606d;
+  color: var(--color-text-secondary);
   font-size: 0.95rem;
   margin: 0;
 }
 
 .itemsRoute__chip {
-  background: rgba(47, 111, 81, 0.12);
-  border-radius: 999px;
-  color: #24563d;
+  color: var(--color-text-secondary);
   display: inline-flex;
   font-size: 0.82rem;
   font-weight: 700;
   min-height: 2rem;
-  padding: 0.45rem 0.8rem;
+  padding: 0;
 }
 
 .itemsRoute__panel {
-  background: rgba(255, 252, 247, 0.94);
-  border: 1px solid rgba(104, 85, 63, 0.14);
-  border-radius: 1.15rem;
-  box-shadow: 0 24px 60px rgba(84, 61, 37, 0.08);
   display: grid;
   gap: 1rem;
-  padding: 1.4rem;
 }
 
 .itemsRoute__panelHeader {
@@ -126,7 +113,7 @@
 }
 
 .itemsRoute__panelTitle {
-  color: #1f2933;
+  color: var(--color-text-primary);
   font-size: 1.45rem;
   line-height: 1.1;
   margin: 0;
@@ -134,21 +121,16 @@
 
 .itemsRoute__emptyState,
 .itemsRoute__error {
-  border-radius: 1rem;
   line-height: 1.55;
   margin: 0;
-  padding: 1rem;
 }
 
 .itemsRoute__emptyState {
-  background: rgba(249, 246, 241, 0.88);
-  color: #52606d;
+  color: var(--color-text-secondary);
 }
 
 .itemsRoute__error {
-  background: rgba(255, 248, 248, 0.98);
-  border: 1px solid rgba(186, 73, 73, 0.18);
-  color: #8f2d2d;
+  color: var(--color-danger);
 }
 
 .itemsRoute__skeletonList,
@@ -161,30 +143,25 @@
 }
 
 .itemsRoute__skeletonRow {
-  background: rgba(240, 231, 218, 0.88);
-  border-radius: 1rem;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
   min-height: 5rem;
 }
 
 .itemsRoute__itemButton {
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(82, 96, 109, 0.12);
-  border-radius: 1rem;
-  color: #243b53;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
   cursor: pointer;
   display: grid;
   gap: 0.45rem;
   padding: 1rem;
   text-align: left;
-  transition:
-    box-shadow 160ms ease,
-    transform 160ms ease;
   width: 100%;
 }
 
 .itemsRoute__itemButton:hover {
-  box-shadow: 0 14px 30px rgba(84, 61, 37, 0.08);
-  transform: translateY(-1px);
+  border-color: var(--color-border-card);
 }
 
 .itemsRoute__itemTitle {
@@ -193,15 +170,12 @@
 }
 
 .itemsRoute__itemMeta {
-  color: #7c6754;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
 }
 
 .itemsRoute__itemPreview {
-  color: #52606d;
+  color: var(--color-text-secondary);
   line-height: 1.55;
   margin: 0;
 }

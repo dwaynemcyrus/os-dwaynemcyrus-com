@@ -5,35 +5,25 @@
 }
 
 .trashRoute__hero {
-  background:
-    radial-gradient(circle at top, rgba(233, 217, 193, 0.7), transparent 36%),
-    linear-gradient(180deg, #f7f3ec 0%, #efe6d7 100%);
-  border: 1px solid rgba(104, 85, 63, 0.14);
-  border-radius: 1.25rem;
-  box-shadow: 0 24px 60px rgba(84, 61, 37, 0.08);
   display: grid;
   gap: 0.75rem;
-  padding: 1.5rem;
 }
 
 .trashRoute__eyebrow {
-  color: #7c6754;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
+  color: var(--color-text-muted);
+  font-size: 0.9rem;
   margin: 0;
-  text-transform: uppercase;
 }
 
 .trashRoute__title {
-  color: #1f2933;
+  color: var(--color-text-primary);
   font-size: 2rem;
   line-height: 1.05;
   margin: 0;
 }
 
 .trashRoute__description {
-  color: #52606d;
+  color: var(--color-text-secondary);
   line-height: 1.55;
   margin: 0;
   max-width: 42rem;
@@ -45,14 +35,9 @@
 }
 
 .trashRoute__panel {
-  background: rgba(255, 252, 247, 0.94);
-  border: 1px solid rgba(104, 85, 63, 0.14);
-  border-radius: 1.15rem;
-  box-shadow: 0 24px 60px rgba(84, 61, 37, 0.08);
   display: grid;
   gap: 1rem;
   min-block-size: 0;
-  padding: 1.4rem;
 }
 
 .trashRoute__panelHeader {
@@ -61,14 +46,14 @@
 }
 
 .trashRoute__panelTitle {
-  color: #1f2933;
+  color: var(--color-text-primary);
   font-size: 1.45rem;
   line-height: 1.1;
   margin: 0;
 }
 
 .trashRoute__summary {
-  color: #52606d;
+  color: var(--color-text-secondary);
   font-size: 0.95rem;
   margin: 0;
 }
@@ -76,22 +61,17 @@
 .trashRoute__error,
 .trashRoute__emptyState,
 .trashRoute__detailEmpty {
-  border-radius: 1rem;
   line-height: 1.55;
   margin: 0;
-  padding: 1rem;
 }
 
 .trashRoute__error {
-  background: rgba(255, 248, 248, 0.98);
-  border: 1px solid rgba(186, 73, 73, 0.18);
-  color: #8f2d2d;
+  color: var(--color-danger);
 }
 
 .trashRoute__emptyState,
 .trashRoute__detailEmpty {
-  background: rgba(249, 246, 241, 0.88);
-  color: #52606d;
+  color: var(--color-text-secondary);
 }
 
 .trashRoute__list,
@@ -104,41 +84,36 @@
 }
 
 .trashRoute__skeletonRow {
-  background: rgba(240, 231, 218, 0.88);
-  border-radius: 1rem;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
   min-height: 5rem;
 }
 
 .trashRoute__itemButton {
-  background: rgba(255, 255, 255, 0.82);
-  border: 1px solid rgba(82, 96, 109, 0.12);
-  border-radius: 1rem;
-  color: #243b53;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
   cursor: pointer;
   display: grid;
   gap: 0.45rem;
   padding: 1rem;
   text-align: left;
-  transition:
-    box-shadow 160ms ease,
-    transform 160ms ease,
-    border-color 160ms ease;
   width: 100%;
 }
 
 .trashRoute__itemButton:hover {
-  box-shadow: 0 14px 30px rgba(84, 61, 37, 0.08);
-  transform: translateY(-1px);
+  border-color: var(--color-border-card);
 }
 
 .trashRoute__itemButton:focus-visible {
-  box-shadow: 0 0 0 3px rgba(58, 124, 165, 0.18);
-  outline: none;
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
 }
 
 .trashRoute__itemButton--active {
-  border-color: rgba(47, 111, 81, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(47, 111, 81, 0.18);
+  background: var(--color-bg-surface);
+  border-color: var(--color-border-card);
 }
 
 .trashRoute__itemTitle {
@@ -147,54 +122,34 @@
 }
 
 .trashRoute__itemMeta {
-  color: #7c6754;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
 }
 
 .trashRoute__itemPreview,
-.trashRoute__detailCopy {
-  color: #52606d;
+.trashRoute__detailCopy,
+.trashRoute__detailMeta {
+  color: var(--color-text-secondary);
   line-height: 1.55;
   margin: 0;
-}
-
-.trashRoute__detailMeta {
-  color: #7c6754;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  margin: 0;
-  text-transform: uppercase;
 }
 
 .trashRoute__detailBody {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(82, 96, 109, 0.12);
-  border-radius: 1rem;
   display: grid;
   gap: 0.75rem;
-  padding: 1rem;
 }
 
 .trashRoute__message {
-  border-radius: 0.95rem;
   line-height: 1.55;
   margin: 0;
-  padding: 0.9rem 1rem;
 }
 
 .trashRoute__message--error {
-  background: rgba(255, 248, 248, 0.98);
-  border: 1px solid rgba(186, 73, 73, 0.18);
-  color: #8f2d2d;
+  color: var(--color-danger);
 }
 
 .trashRoute__message--success {
-  background: rgba(47, 111, 81, 0.12);
-  color: #24563d;
+  color: var(--color-text-secondary);
 }
 
 .trashRoute__actions {
@@ -204,9 +159,8 @@
 
 .trashRoute__restoreButton,
 .trashRoute__deleteButton {
-  border: none;
-  border-radius: 0.9rem;
-  color: #f8fafc;
+  background: transparent;
+  border: 1px solid var(--color-border-card);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -215,38 +169,34 @@
 }
 
 .trashRoute__restoreButton {
-  background: linear-gradient(135deg, #2f6f51 0%, #25543d 100%);
+  color: var(--color-text-primary);
 }
 
 .trashRoute__deleteButton {
-  background: linear-gradient(135deg, #8f2d2d 0%, #6d1f1f 100%);
+  color: var(--color-danger);
 }
 
 .trashRoute__restoreButton:disabled,
 .trashRoute__deleteButton:disabled {
-  background: rgba(82, 96, 109, 0.18);
-  color: #52606d;
+  color: var(--color-text-muted);
   cursor: not-allowed;
 }
 
 .trashRoute__restoreButton:focus-visible,
 .trashRoute__deleteButton:focus-visible,
 .trashRoute__deleteInput:focus-visible {
-  box-shadow: 0 0 0 3px rgba(58, 124, 165, 0.18);
-  outline: none;
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
 }
 
 .trashRoute__deleteBlock {
-  background: rgba(255, 248, 248, 0.78);
-  border: 1px solid rgba(186, 73, 73, 0.14);
-  border-radius: 1rem;
   display: grid;
   gap: 0.75rem;
-  padding: 1rem;
 }
 
 .trashRoute__deleteLabel {
-  color: #243b53;
+  color: var(--color-text-secondary);
   display: grid;
   gap: 0.45rem;
   font-size: 0.92rem;
@@ -255,10 +205,9 @@
 
 .trashRoute__deleteInput {
   appearance: none;
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(82, 96, 109, 0.18);
-  border-radius: 0.9rem;
-  color: #1f2933;
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
   font: inherit;
   min-height: 3rem;
   padding: 0 1rem;
@@ -266,7 +215,7 @@
 }
 
 .trashRoute__deleteHelp {
-  color: #7c4a03;
+  color: var(--color-text-secondary);
   line-height: 1.5;
   margin: 0;
 }
