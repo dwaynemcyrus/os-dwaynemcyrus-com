@@ -1,12 +1,13 @@
 .appShell {
-  background:
-    radial-gradient(circle at top left, rgba(233, 217, 193, 0.46), transparent 28%),
-    linear-gradient(180deg, #f8f4ec 0%, #f1e8d9 100%);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-card);
+  border-radius: var(--space-card-radius);
   block-size: 100%;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   min-block-size: 0;
   min-inline-size: 0;
+  overflow: hidden;
   position: relative;
 }
 
@@ -22,7 +23,10 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
-  padding: 1.25rem 1.25rem calc(8.5rem + env(safe-area-inset-bottom));
+  padding:
+    var(--space-card-pad-lg)
+    var(--space-card-pad)
+    calc(var(--space-tab-bar-height) + 1.5rem + env(safe-area-inset-bottom));
 }
 
 .appNav__sidebar {
@@ -30,18 +34,17 @@
 }
 
 .appNav__brand {
-  background: rgba(255, 251, 245, 0.82);
-  border: 1px solid rgba(104, 85, 63, 0.14);
-  border-radius: 1.4rem;
-  box-shadow: 0 24px 60px rgba(84, 61, 37, 0.08);
+  background: var(--color-bg-surface-elevated);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: calc(var(--space-card-radius) - 0.125rem);
   display: grid;
   gap: 0.75rem;
-  padding: 1.15rem;
+  padding: 1rem;
 }
 
 .appNav__eyebrow {
-  color: #7c6754;
-  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-section-label);
   font-weight: 700;
   letter-spacing: 0.16em;
   margin: 0;
@@ -49,14 +52,14 @@
 }
 
 .appNav__title {
-  color: #1f2933;
-  font-size: 1.75rem;
-  line-height: 1.05;
+  color: var(--color-text-primary);
+  font-size: 1.35rem;
+  line-height: var(--line-height-tight);
   margin: 0;
 }
 
 .appNav__description {
-  color: #52606d;
+  color: var(--color-text-secondary);
   line-height: 1.5;
   margin: 0;
 }
@@ -70,38 +73,31 @@
   align-items: start;
   background: transparent;
   border: none;
-  border-radius: 1.1rem;
-  color: #52606d;
+  border-radius: 0.9rem;
+  color: var(--color-text-secondary);
   cursor: pointer;
   display: grid;
   font: inherit;
   gap: 0.2rem;
-  min-height: 3.15rem;
-  padding: 0.95rem 1rem;
+  min-height: var(--space-row-height);
+  padding: 0.75rem 0.85rem;
   text-align: left;
-  transition:
-    background-color 160ms ease,
-    box-shadow 160ms ease,
-    color 160ms ease,
-    transform 160ms ease;
   width: 100%;
 }
 
 .appNav__button:hover {
-  background: rgba(255, 255, 255, 0.78);
-  color: #243b53;
-  transform: translateY(-1px);
+  background: var(--color-bg-surface-hover);
+  color: var(--color-text-primary);
 }
 
 .appNav__button:focus-visible {
-  box-shadow: 0 0 0 3px rgba(58, 124, 165, 0.18);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
   outline: none;
 }
 
 .appNav__button--active {
-  background: rgba(47, 111, 81, 0.14);
-  box-shadow: inset 0 0 0 1px rgba(47, 111, 81, 0.18);
-  color: #163922;
+  background: var(--color-bg-surface-hover);
+  color: var(--color-text-primary);
 }
 
 .appNav__button--tab {
@@ -111,9 +107,13 @@
   text-align: center;
 }
 
+.appNav__button--tab.appNav__button--active {
+  box-shadow: inset 0 2px 0 0 var(--color-accent);
+}
+
 .appNav__label {
-  font-size: 0.92rem;
-  font-weight: 700;
+  font-size: var(--font-size-tab-label);
+  font-weight: 600;
   letter-spacing: 0.01em;
 }
 
@@ -128,13 +128,13 @@
 
 .appNav__badge {
   align-items: center;
-  background: linear-gradient(135deg, #8f2d2d 0%, #6d1f1f 100%);
+  background: rgba(255, 255, 255, 0.1);
   border-radius: 999px;
-  color: #f8fafc;
+  color: var(--color-text-primary);
   display: inline-flex;
   flex: 0 0 auto;
   font-size: 0.72rem;
-  font-weight: 800;
+  font-weight: 700;
   justify-content: center;
   min-block-size: 1.35rem;
   min-inline-size: 1.35rem;
@@ -142,20 +142,19 @@
 }
 
 .appNav__meta {
-  color: #7c6754;
-  font-size: 0.72rem;
+  color: var(--color-text-muted);
+  font-size: var(--font-size-section-label);
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
 .appNav__tabBar {
-  backdrop-filter: blur(18px);
-  background: rgba(255, 248, 240, 0.9);
-  border-top: 1px solid rgba(104, 85, 63, 0.16);
+  background: var(--color-bg-surface);
+  border-top: 1px solid var(--color-border-subtle);
   bottom: 0;
   left: 0;
-  padding: 0.65rem 0.9rem calc(0.65rem + env(safe-area-inset-bottom));
+  padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom));
   position: absolute;
   right: 0;
   z-index: 10;
@@ -198,23 +197,26 @@
   }
 
   .appShell__scrollRegion {
-    padding: 1.75rem 2rem calc(7rem + env(safe-area-inset-bottom));
+    padding:
+      var(--space-card-pad-lg)
+      calc(var(--space-card-pad-lg) + 0.25rem)
+      calc(var(--space-card-pad-lg) + env(safe-area-inset-bottom));
   }
 
   .appNav__sidebar {
-    border-right: 1px solid rgba(104, 85, 63, 0.14);
+    border-right: 1px solid var(--color-border-subtle);
     display: grid;
     gap: 1rem;
     min-block-size: 0;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding: 1.5rem 1.15rem;
+    padding: var(--space-card-pad-lg) var(--space-card-pad);
   }
 
   .appNav__button--tab {
     align-items: start;
-    min-height: 3.15rem;
-    padding: 0.95rem 1rem;
+    min-height: var(--space-row-height);
+    padding: 0.75rem 0.85rem;
     text-align: left;
   }
 

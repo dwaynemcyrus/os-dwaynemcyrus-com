@@ -1,0 +1,64 @@
+:root {
+  color-scheme: dark;
+
+  --color-bg-app: #000000;
+  --color-bg-surface: #0f0f0f;
+  --color-bg-surface-hover: #171717;
+  --color-bg-surface-elevated: #141414;
+  --color-border-subtle: rgba(255, 255, 255, 0.08);
+  --color-border-card: rgba(255, 255, 255, 0.12);
+  --color-text-primary: #ffffff;
+  --color-text-secondary: rgba(255, 255, 255, 0.58);
+  --color-text-muted: rgba(255, 255, 255, 0.34);
+  --color-text-badge: rgba(255, 255, 255, 0.45);
+  --color-accent: #ffffff;
+  --color-danger: #ff7b7b;
+  --color-focus-ring: rgba(255, 255, 255, 0.24);
+
+  --font-family-body:
+    -apple-system,
+    BlinkMacSystemFont,
+    'SF Pro Text',
+    'SF Pro Display',
+    'Segoe UI',
+    sans-serif;
+  --font-family-mono:
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    'Liberation Mono',
+    monospace;
+
+  --font-size-page-date: 0.76rem;
+  --font-size-section-label: 0.72rem;
+  --font-size-row-title: 1rem;
+  --font-size-row-meta: 0.82rem;
+  --font-size-tab-label: 0.88rem;
+  --font-size-search: 1.05rem;
+
+  --line-height-body: 1.5;
+  --line-height-tight: 1.1;
+
+  --space-screen-pad: 1rem;
+  --space-card-pad: 1rem;
+  --space-card-pad-lg: 1.25rem;
+  --space-row-height: 3rem;
+  --space-section-gap: 1rem;
+  --space-card-radius: 1.15rem;
+  --space-chip-radius: 999px;
+  --space-tab-bar-height: 4.5rem;
+  --space-fab-offset: 5.5rem;
+
+  --shadow-none: none;
+}
+
+@media (min-width: 46.5rem) {
+  :root {
+    --space-screen-pad: 1.25rem;
+    --space-card-pad: 1.25rem;
+    --space-card-pad-lg: 1.5rem;
+    --space-card-radius: 1.25rem;
+  }
+}

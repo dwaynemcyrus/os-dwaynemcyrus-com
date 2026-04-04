@@ -259,6 +259,81 @@
 - When creating a new user template from a subtype, should it clone the seeded system template content/frontmatter for that subtype, or start as a mostly blank template with only the subtype set? Recommended: clone the seeded system template.
 - Where should deletion live: directly from the `/templates` list via a confirmation dialog, or from inside the editor? Recommended: from the `/templates` list via a confirmation dialog.
 
+## Feature: UI/UX hardening (v0 polish)
+
+**Summary:** Align the current app with the dark, single-card, text-first design system in `docs/agents/design-system-spec.md` and the reference images in `docs/agents/image-reference/`, then work through the high-friction interaction kinks screen by screen.
+
+**Agents involved:** both
+
+**Sequence:**
+
+### Phase 14 — UI/UX hardening
+
+**Agent:** @planner
+
+**Goal:** Rework the app shell and primary surfaces in a deliberate order so visual language, layout behavior, and interaction states become consistent before route-level polish.
+
+**Chunks:**
+
+1. **Design token foundation**
+   - Files touched: `src/styles/variables.css`, `src/styles/reset.css`, `src/routes/RootLayout.module.css`, `src/routes/__root.jsx`
+   - Steps:
+     1. Introduce the dark-mode token set from the design-system spec as the active UI foundation.
+     2. Establish the viewport background, content-card constraints, safe-area handling, and focus rules at the root.
+     3. Remove the current warm gradient foundation so later route work inherits the correct visual language.
+   - Exit conditions: `npm run build` succeeds; the root shell renders on a dark background with a fixed viewport and no page scroll.
+   - Risks: root token and shell changes will cascade into every route, so visual regressions are likely until the next chunks land.
+   - Commit message: `style(app): add dark design tokens`
+
+2. **Navigation shell alignment**
+   - Files touched: `src/components/layout/AppNav.jsx`, `src/components/layout/AppNav.module.css`, `src/routes/_authenticated.jsx`, `src/components/command/FabButton.module.css`
+   - Steps:
+     1. Rebuild the authenticated shell around the single-card layout from the spec.
+     2. Restyle the desktop and mobile navigation to the text-first card/tab model while preserving the existing route map.
+     3. Bring the diamond FAB, tab bar, and shell spacing into alignment with the reference images.
+   - Exit conditions: `npm run build` succeeds; mobile and desktop both use the same dark shell model and the FAB remains outside the card.
+   - Risks: current five-tab navigation does not exactly match the four-tab references, so the implementation must adapt the system without inventing a second navigation pattern.
+   - Commit message: `style(nav): align app shell`
+
+3. **Command sheet redesign**
+   - Files touched: `src/components/command/CommandSheet.jsx`, `src/components/command/CommandSheet.module.css`, `src/components/command/FabButton.jsx`
+   - Steps:
+     1. Restyle the command sheet to the black card modal pattern shown in the references.
+     2. Rework section spacing, footer controls, and empty states to match the text-first search/create model.
+     3. Preserve current functionality while tightening keyboard/mobile behavior and removing visual noise.
+   - Exit conditions: `npm run build` succeeds; the command sheet stays within the viewport, matches the reference visual language, and remains fully usable on mobile.
+   - Risks: this surface combines search, capture, slash commands, and insert mode, so it is easy to over-polish one mode and regress another.
+   - Commit message: `style(command): redesign sheet`
+
+4. **Editor and utility panels**
+   - Files touched: `src/components/editor/ItemEditor.module.css`, `src/routes/items.$id.jsx`, `src/components/editor/BacklinksPanel.jsx`, `src/components/editor/BacklinksPanel.module.css`
+   - Steps:
+     1. Restyle the editor surface to the darker writing-mode direction shown in the references.
+     2. Tighten header controls, saved-state messaging, and panel styling for backlinks and future info utilities.
+     3. Fix any remaining editor interaction friction surfaced during the visual pass, without changing the save contract.
+   - Exit conditions: `npm run build` succeeds; editor focus, scrolling, and panels remain stable while the surface matches the darker design system.
+   - Risks: editor UX is the most fragile interactive area in the app and should not be bundled with unrelated route refactors.
+   - Commit message: `style(editor): polish writing ui`
+
+5. **Route-level polish and empty states**
+   - Files touched: `src/routes/index.jsx`, `src/routes/inbox.jsx`, `src/routes/items.jsx`, `src/routes/templates.jsx`, `src/routes/settings.jsx`, `src/routes/trash.jsx`
+   - Steps:
+     1. Bring home, inbox, items, templates, settings, and trash into a consistent section/row/empty-state language.
+     2. Replace ad hoc inline styles and inconsistent card treatments with the shared visual system.
+     3. Audit touch targets, focus states, placeholder copy, and no-data states against the design-system spec and UI review rules.
+   - Exit conditions: `npm run build` succeeds; the primary routes feel visually consistent and no longer mix multiple card systems.
+   - Risks: this chunk touches many screens, so it should stay strictly presentational and avoid scope expansion into new features.
+   - Commit message: `style(routes): unify screen polish`
+
+**Current audit findings before execution:**
+- The current shell uses warm gradients, shadows, and multiple card treatments, while the target system is dark, flatter, and single-card.
+- The command sheet visually diverges the most from the reference direction and should be treated as a first-class redesign, not a small restyle.
+- The editor and supporting panels need to move closer to the darker writing/info utility patterns shown in the references.
+- Several primary routes still rely heavily on inline styles, which will slow down consistent UI refinement until the shell/tokens are fixed first.
+
+**Open questions before execution:**
+- None yet. Waiting for explicit approval to start Phase 14, Chunk 1.
+
 ## Feature: Daily Note (step 9)
 
 **Summary:** Add the home-screen daily-note entry point plus a persisted settings-defined default daily template.

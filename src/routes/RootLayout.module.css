@@ -1,5 +1,7 @@
 .rootLayout {
+  background: var(--color-bg-app);
   block-size: 100dvh;
+  color: var(--color-text-primary);
   display: flex;
   flex-direction: column;
   inline-size: 100%;
@@ -13,4 +15,8 @@
   inline-size: 100%;
   min-block-size: 0;
   min-inline-size: 0;
+  padding:
+    max(var(--space-screen-pad), env(safe-area-inset-top))
+    var(--space-screen-pad)
+    calc(var(--space-fab-offset) + env(safe-area-inset-bottom));
 }
