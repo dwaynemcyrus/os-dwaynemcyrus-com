@@ -96,8 +96,8 @@ insert into public.items (
   author,
   subtitle,
   description,
-  start_date,
-  end_date,
+  date_start,
+  date_end,
   content,
   frontmatter,
   date_created,
@@ -1280,8 +1280,8 @@ genre:
 medium:
 growth: seedling
 chapter_count: 0
-start_date:
-end_date:
+date_start:
+date_end:
 published: false
 tier:
 cover_link:
@@ -1430,8 +1430,8 @@ resources:
 manuscript: "[[]]"
 series:
 series_position:
-start_date:
-end_date:
+date_start:
+date_end:
 published: false
 tier:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
@@ -1565,8 +1565,8 @@ series:
 series_position:
 issue:
 growth: seedling
-start_date:
-end_date:
+date_start:
+date_end:
 published: false
 tier:
 cover_link:
@@ -3078,8 +3078,8 @@ author: "[[]]"
 medium:
 url:
 isbn:
-start_date:
-end_date:
+date_start:
+date_end:
 bookmark:
 cover_link:
 cover_alt_text:
@@ -3997,8 +3997,8 @@ workbench: false
 institution:
 instructor:
 url:
-start_date:
-end_date:
+date_start:
+date_end:
 certificate_link:
 modules:
   - "[[]]"
@@ -4273,8 +4273,8 @@ unit:
 target:
 frequency:
   -
-start_date:
-end_date:
+date_start:
+date_end:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -4402,8 +4402,8 @@ lag_target:
 lag_unit:
 lag_actual: 0
 score_overall:
-start_date:
-end_date:
+date_start:
+date_end:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -5580,8 +5580,8 @@ project: "[[]]"
 dependencies:
   - "[[]]"
 blocked: false
-start_date:
-end_date:
+date_start:
+date_end:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -5708,8 +5708,8 @@ resources:
 dependencies:
   - "[[]]"
 blocked: false
-start_date:
-end_date:
+date_start:
+date_end:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -5948,8 +5948,8 @@ on conflict (cuid) do update set
   author = excluded.author,
   subtitle = excluded.subtitle,
   description = excluded.description,
-  start_date = excluded.start_date,
-  end_date = excluded.end_date,
+  date_start = excluded.date_start,
+  date_end = excluded.date_end,
   content = excluded.content,
   frontmatter = excluded.frontmatter,
   date_created = excluded.date_created,
