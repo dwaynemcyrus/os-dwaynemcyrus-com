@@ -730,3 +730,31 @@
    - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
    - Risks: backlinks should reflect saved state, not unsaved draft content, unless explicitly chosen otherwise.
    - Commit message: `feat(links): add backlinks panel`
+
+## Fix: rename action date fields
+
+**Summary:** Rename the persisted action date fields from `start_date` and `end_date` to `date_start` and `date_end` across the schema, seed data, parser mapping, and source docs without leaving mismatched field names behind.
+
+**Agents involved:** @architecture
+
+**Sequence:**
+
+1. **Schema and seed rename**
+   - Files touched: `supabase/migrations/*.sql`, `supabase/migrations/20260403045547_initial_schema.sql`, `supabase/seed.sql`
+   - Steps:
+     1. Add a forward migration that renames the live `items.start_date` and `items.end_date` columns to `date_start` and `date_end`.
+     2. Update the base schema migration and seed SQL to use the new names.
+     3. Keep existing data intact through the rename.
+   - Exit conditions: `supabase db lint --linked` succeeds; `supabase db push --linked` succeeds.
+   - Risks: direct renames are simpler, but all references must move together to avoid broken seed upserts and editor saves.
+   - Commit message: `fix(db): rename item date fields`
+
+2. **Runtime and docs alignment**
+   - Files touched: `src/lib/frontmatter.js`, `docs/agents/build-spec.md`, `docs/agents/schema-reference.md`
+   - Steps:
+     1. Rename the known frontmatter field mapping from `start_date`/`end_date` to `date_start`/`date_end`.
+     2. Update all schema-reference templates and prose to the new names.
+     3. Update the build spec column list to match.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
+   - Risks: if any old key survives in docs or parser order, saves will silently drift from the database contract.
+   - Commit message: `fix(spec): align action date names`

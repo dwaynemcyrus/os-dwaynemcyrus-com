@@ -560,8 +560,8 @@ genre:
 medium:
 growth: seedling
 chapter_count: 0
-start_date:
-end_date:
+date_start:
+date_end:
 published: false
 tier:
 cover_link:
@@ -620,8 +620,8 @@ resources:
 manuscript: "[[]]"
 series:
 series_position:
-start_date:
-end_date:
+date_start:
+date_end:
 published: false
 tier:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
@@ -665,8 +665,8 @@ series:
 series_position:
 issue:
 growth: seedling
-start_date:
-end_date:
+date_start:
+date_end:
 published: false
 tier:
 cover_link:
@@ -1181,8 +1181,8 @@ author: "[[]]"
 medium:
 url:
 isbn:
-start_date:
-end_date:
+date_start:
+date_end:
 bookmark:
 cover_link:
 cover_alt_text:
@@ -1464,8 +1464,8 @@ workbench: false
 institution:
 instructor:
 url:
-start_date:
-end_date:
+date_start:
+date_end:
 certificate_link:
 modules:
   - "[[]]"
@@ -1563,8 +1563,8 @@ unit:
 target:
 frequency:
   -
-start_date:
-end_date:
+date_start:
+date_end:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -1600,8 +1600,8 @@ lag_target:
 lag_unit:
 lag_actual: 0
 score_overall:
-start_date:
-end_date:
+date_start:
+date_end:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -2041,7 +2041,7 @@ Things to do. The execution layer of your system.
 ### task
 
 A single actionable item with a clear outcome.
-Routed into Today, Scheduled, Anytime, or Someday based on end_date and status.
+Routed into Today, Scheduled, Anytime, or Someday based on date_end and status.
 If a task needs significant context or multiple steps it should be a project.
 
 ```yaml
@@ -2058,8 +2058,8 @@ project: "[[]]"
 dependencies:
   - "[[]]"
 blocked: false
-start_date:
-end_date:
+date_start:
+date_end:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -2074,9 +2074,9 @@ tags:
 **status valid values:** open | done | someday
 
 **Routing logic:**
-- end_date = today → Today
-- end_date = future → Scheduled
-- no end_date + status: open → Anytime
+- date_end = today → Today
+- date_end = future → Scheduled
+- no date_end + status: open → Anytime
 - status: someday → Someday
 
 ---
@@ -2104,8 +2104,8 @@ resources:
 dependencies:
   - "[[]]"
 blocked: false
-start_date:
-end_date:
+date_start:
+date_end:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:

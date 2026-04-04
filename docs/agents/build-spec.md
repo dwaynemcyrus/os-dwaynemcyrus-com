@@ -233,8 +233,8 @@ issue integer
 author text
 subtitle text
 description text
-start_date date
-end_date date
+date_start date
+date_end date
 content text
 frontmatter jsonb default '{}'
 date_created timestamptz
