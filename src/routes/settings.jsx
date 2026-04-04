@@ -233,13 +233,8 @@ export const settingsRoute = createRoute({
 
         <section
           style={{
-            background: 'rgba(255, 252, 247, 0.94)',
-            border: '1px solid rgba(104, 85, 63, 0.14)',
-            borderRadius: '1rem',
-            boxShadow: '0 24px 60px rgba(84, 61, 37, 0.08)',
             display: 'grid',
             gap: '1rem',
-            padding: '1.5rem',
           }}
         >
           <header
@@ -250,12 +245,9 @@ export const settingsRoute = createRoute({
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Daily Note
@@ -271,7 +263,7 @@ export const settingsRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -300,12 +292,9 @@ export const settingsRoute = createRoute({
             >
               <span
                 style={{
-                  color: '#7c6754',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.12em',
+                  color: 'var(--color-text-secondary)',
+                  fontSize: '0.9rem',
                   margin: 0,
-                  textTransform: 'uppercase',
                 }}
               >
                 Template
@@ -322,11 +311,8 @@ export const settingsRoute = createRoute({
                   setDailyStatusMessage('');
                 }}
                 style={{
-                  background: 'rgba(255, 255, 255, 0.92)',
-                  border: '1px solid rgba(82, 96, 109, 0.18)',
-                  borderRadius: '0.875rem',
-                  color: 'inherit',
-                  font: 'inherit',
+                  background: 'transparent',
+                  border: '1px solid var(--color-border-card)',
                   minHeight: '3rem',
                   padding: '0 0.9rem',
                 }}
@@ -358,17 +344,16 @@ export const settingsRoute = createRoute({
                   isSavingTemplate ||
                   !hasDailyTemplateOptions ||
                   !isDailyTemplateDirty
-                    ? 'rgba(82, 96, 109, 0.18)'
-                    : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
-                border: 'none',
-                borderRadius: '0.875rem',
+                    ? 'transparent'
+                    : 'var(--color-bg-surface)',
+                border: '1px solid var(--color-border-card)',
                 color:
                   isLoadingSettings ||
                   isSavingTemplate ||
                   !hasDailyTemplateOptions ||
                   !isDailyTemplateDirty
-                    ? '#52606d'
-                    : '#f8fafc',
+                    ? 'var(--color-text-secondary)'
+                    : 'var(--color-text-primary)',
                 cursor:
                   isLoadingSettings ||
                   isSavingTemplate ||
@@ -390,7 +375,7 @@ export const settingsRoute = createRoute({
 
           <p
             style={{
-              color: '#52606d',
+              color: 'var(--color-text-secondary)',
               fontSize: '0.95rem',
               margin: 0,
             }}
@@ -404,11 +389,8 @@ export const settingsRoute = createRoute({
             <p
               role="status"
               style={{
-                background: 'rgba(191, 131, 45, 0.12)',
-                borderRadius: '0.875rem',
-                color: '#7c4a03',
+                color: 'var(--color-text-secondary)',
                 margin: 0,
-                padding: '0.85rem 1rem',
               }}
             >
               No default daily template is selected yet. Today&apos;s note will not
@@ -420,11 +402,8 @@ export const settingsRoute = createRoute({
             <p
               role="status"
               style={{
-                background: 'rgba(191, 131, 45, 0.12)',
-                borderRadius: '0.875rem',
-                color: '#7c4a03',
+                color: 'var(--color-text-secondary)',
                 margin: 0,
-                padding: '0.85rem 1rem',
               }}
             >
               No daily templates are available yet. Create a template and add
@@ -436,11 +415,8 @@ export const settingsRoute = createRoute({
             <p
               role="alert"
               style={{
-                background: 'rgba(186, 73, 73, 0.1)',
-                borderRadius: '0.875rem',
-                color: '#8f2d2d',
+                color: 'var(--color-danger)',
                 margin: 0,
-                padding: '0.85rem 1rem',
               }}
             >
               {dailyErrorMessage}
@@ -448,29 +424,21 @@ export const settingsRoute = createRoute({
           ) : null}
 
           {dailyStatusMessage ? (
-            <p
-              style={{
-                background: 'rgba(47, 111, 81, 0.12)',
-                borderRadius: '0.875rem',
-                color: '#25543d',
-                margin: 0,
-                padding: '0.85rem 1rem',
-              }}
-            >
-              {dailyStatusMessage}
+          <p
+            style={{
+              color: 'var(--color-text-secondary)',
+              margin: 0,
+            }}
+          >
+            {dailyStatusMessage}
             </p>
           ) : null}
         </section>
 
         <section
           style={{
-            background: 'rgba(255, 252, 247, 0.94)',
-            border: '1px solid rgba(104, 85, 63, 0.14)',
-            borderRadius: '1rem',
-            boxShadow: '0 24px 60px rgba(84, 61, 37, 0.08)',
             display: 'grid',
             gap: '1rem',
-            padding: '1.5rem',
           }}
         >
           <header
@@ -481,12 +449,9 @@ export const settingsRoute = createRoute({
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Reference
@@ -502,7 +467,7 @@ export const settingsRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -526,9 +491,7 @@ export const settingsRoute = createRoute({
                 key={shortcut.keys}
                 style={{
                   alignItems: 'start',
-                  background: 'rgba(255, 255, 255, 0.72)',
-                  border: '1px solid rgba(82, 96, 109, 0.12)',
-                  borderRadius: '0.875rem',
+                  border: '1px solid var(--color-border-subtle)',
                   display: 'grid',
                   gap: '0.75rem',
                   gridTemplateColumns: 'minmax(0, 8rem) minmax(0, 1fr)',
@@ -537,22 +500,20 @@ export const settingsRoute = createRoute({
               >
                 <span
                   style={{
-                    background: 'rgba(47, 111, 81, 0.12)',
-                    borderRadius: '0.75rem',
-                    color: '#24563d',
+                    color: 'var(--color-text-primary)',
                     display: 'inline-flex',
                     fontSize: '0.85rem',
                     fontWeight: 700,
                     justifyContent: 'center',
                     minHeight: '2.5rem',
-                    padding: '0.65rem 0.8rem',
+                    padding: '0.65rem 0',
                   }}
                 >
                   {shortcut.keys}
                 </span>
                 <span
                   style={{
-                    color: '#243b53',
+                    color: 'var(--color-text-secondary)',
                     lineHeight: 1.55,
                   }}
                 >
@@ -565,13 +526,8 @@ export const settingsRoute = createRoute({
 
         <section
           style={{
-            background: 'rgba(255, 252, 247, 0.94)',
-            border: '1px solid rgba(104, 85, 63, 0.14)',
-            borderRadius: '1rem',
-            boxShadow: '0 24px 60px rgba(84, 61, 37, 0.08)',
             display: 'grid',
             gap: '1rem',
-            padding: '1.5rem',
           }}
         >
           <header
@@ -582,12 +538,9 @@ export const settingsRoute = createRoute({
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Reference
@@ -603,7 +556,7 @@ export const settingsRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -617,11 +570,8 @@ export const settingsRoute = createRoute({
             <p
               role="alert"
               style={{
-                background: 'rgba(186, 73, 73, 0.1)',
-                borderRadius: '0.875rem',
-                color: '#8f2d2d',
+                color: 'var(--color-danger)',
                 margin: 0,
-                padding: '0.85rem 1rem',
               }}
             >
               {referenceErrorMessage}
@@ -639,8 +589,8 @@ export const settingsRoute = createRoute({
                 <div
                   key={skeletonRow}
                   style={{
-                    background: 'rgba(240, 231, 218, 0.88)',
-                    borderRadius: '1rem',
+                    background: 'var(--color-bg-surface)',
+                    border: '1px solid var(--color-border-subtle)',
                     minHeight: '4rem',
                   }}
                 />
@@ -661,9 +611,7 @@ export const settingsRoute = createRoute({
                 <li key={slashCommand.command}>
                   <div
                     style={{
-                      background: 'rgba(255, 255, 255, 0.72)',
-                      border: '1px solid rgba(82, 96, 109, 0.12)',
-                      borderRadius: '0.875rem',
+                      border: '1px solid var(--color-border-subtle)',
                       display: 'grid',
                       gap: '0.4rem',
                       minHeight: '100%',
@@ -672,7 +620,7 @@ export const settingsRoute = createRoute({
                   >
                     <span
                       style={{
-                        color: '#243b53',
+                        color: 'var(--color-text-primary)',
                         fontSize: '1rem',
                         fontWeight: 700,
                       }}
@@ -681,11 +629,8 @@ export const settingsRoute = createRoute({
                     </span>
                     <span
                       style={{
-                        color: '#7c6754',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.12em',
-                        textTransform: 'uppercase',
+                        color: 'var(--color-text-secondary)',
+                        fontSize: '0.88rem',
                       }}
                     >
                       {formatSlashCommandMeta(slashCommand)}
@@ -699,13 +644,8 @@ export const settingsRoute = createRoute({
 
         <section
           style={{
-            background: 'rgba(255, 252, 247, 0.94)',
-            border: '1px solid rgba(104, 85, 63, 0.14)',
-            borderRadius: '1rem',
-            boxShadow: '0 24px 60px rgba(84, 61, 37, 0.08)',
             display: 'grid',
             gap: '1rem',
-            padding: '1.5rem',
           }}
         >
           <header
@@ -716,12 +656,9 @@ export const settingsRoute = createRoute({
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Workspace
@@ -737,7 +674,7 @@ export const settingsRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -761,10 +698,8 @@ export const settingsRoute = createRoute({
                 });
               }}
               style={{
-                background: 'rgba(255, 255, 255, 0.82)',
-                border: '1px solid rgba(82, 96, 109, 0.18)',
-                borderRadius: '0.875rem',
-                color: '#243b53',
+                background: 'transparent',
+                border: '1px solid var(--color-border-card)',
                 cursor: 'pointer',
                 font: 'inherit',
                 fontWeight: 700,
@@ -781,13 +716,8 @@ export const settingsRoute = createRoute({
 
         <section
           style={{
-            background: 'rgba(255, 252, 247, 0.94)',
-            border: '1px solid rgba(104, 85, 63, 0.14)',
-            borderRadius: '1rem',
-            boxShadow: '0 24px 60px rgba(84, 61, 37, 0.08)',
             display: 'grid',
             gap: '1rem',
-            padding: '1.5rem',
           }}
         >
           <header
@@ -798,12 +728,9 @@ export const settingsRoute = createRoute({
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Account
@@ -819,7 +746,7 @@ export const settingsRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -831,22 +758,15 @@ export const settingsRoute = createRoute({
 
           <section
             style={{
-              background: 'rgba(255, 255, 255, 0.72)',
-              border: '1px solid rgba(82, 96, 109, 0.12)',
-              borderRadius: '0.875rem',
               display: 'grid',
               gap: '0.5rem',
-              padding: '1rem',
             }}
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.12em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Email
@@ -863,7 +783,7 @@ export const settingsRoute = createRoute({
             </p>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -876,11 +796,8 @@ export const settingsRoute = createRoute({
             <p
               role="alert"
               style={{
-                background: 'rgba(186, 73, 73, 0.1)',
-                borderRadius: '0.875rem',
-                color: '#8f2d2d',
+                color: 'var(--color-danger)',
                 margin: 0,
-                padding: '0.85rem 1rem',
               }}
             >
               {accountErrorMessage}
@@ -899,10 +816,11 @@ export const settingsRoute = createRoute({
                 void handleSignOut();
               }}
               style={{
-                background: 'linear-gradient(135deg, #8f2d2d 0%, #6d1f1f 100%)',
-                border: 'none',
-                borderRadius: '0.875rem',
-                color: '#f8fafc',
+                background: 'transparent',
+                border: '1px solid var(--color-border-card)',
+                color: isSigningOut
+                  ? 'var(--color-text-secondary)'
+                  : 'var(--color-danger)',
                 cursor: isSigningOut ? 'wait' : 'pointer',
                 font: 'inherit',
                 fontWeight: 700,
