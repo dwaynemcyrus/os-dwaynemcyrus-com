@@ -1,7 +1,4 @@
 .editor {
-  background: rgba(255, 255, 255, 0.92);
-  border: 1px solid rgba(82, 96, 109, 0.2);
-  border-radius: 1rem;
   block-size: 100%;
   display: flex;
   flex: 1 1 auto;
@@ -17,20 +14,13 @@
 .editor :global(.cm-editor) {
   background: transparent;
   block-size: 100%;
+  color: inherit;
   min-block-size: 0;
 }
 
 .editor :global(.cm-scroller) {
   block-size: 100%;
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    Liberation Mono,
-    monospace;
+  font-family: var(--font-family-mono);
   min-block-size: 0;
   overflow: auto;
 }
@@ -43,31 +33,30 @@
 }
 
 .editor :global(.cm-content) {
-  caret-color: #25543d;
+  caret-color: currentColor;
   line-height: 1.6;
   padding-left: 1rem;
   padding-right: 1rem;
 }
 
 .editor :global(.cm-gutters) {
-  background: rgba(245, 241, 236, 0.92);
-  border-right: 1px solid rgba(82, 96, 109, 0.08);
-  color: #7c6754;
+  background: transparent;
+  border-right: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
 }
 
 .editor :global(.cm-activeLine),
 .editor :global(.cm-activeLineGutter) {
-  background: rgba(255, 250, 243, 0.88);
+  background: transparent;
 }
 
 .editor :global(.cm-focused) {
-  outline: 2px solid rgba(37, 84, 61, 0.2);
+  outline: 2px solid var(--color-focus-ring);
   outline-offset: -2px;
 }
 
 .editor :global(.cm-placeholder) {
-  color: #7c6754;
-  font-style: italic;
+  color: var(--color-text-muted);
 }
 
 .editor :global(.cm-wikilink) {
@@ -78,26 +67,22 @@
 }
 
 .editor :global(.cm-wikilinkResolved) {
-  background: rgba(47, 111, 81, 0.08);
-  color: #25543d;
+  background: transparent;
+  color: inherit;
   cursor: pointer;
-  text-decoration-color: rgba(37, 84, 61, 0.7);
-}
-
-.editor :global(.cm-wikilinkResolved:hover) {
-  background: rgba(47, 111, 81, 0.14);
+  text-decoration-color: currentColor;
 }
 
 .editor :global(.cm-wikilinkAmbiguous) {
-  background: rgba(191, 131, 45, 0.08);
-  color: #7c4a03;
-  text-decoration-color: rgba(191, 131, 45, 0.8);
+  background: transparent;
+  color: inherit;
+  text-decoration-color: currentColor;
   text-decoration-style: dashed;
 }
 
 .editor :global(.cm-wikilinkUnresolved) {
-  background: rgba(186, 73, 73, 0.08);
-  color: #8f2d2d;
-  text-decoration-color: rgba(186, 73, 73, 0.8);
+  background: transparent;
+  color: inherit;
+  text-decoration-color: currentColor;
   text-decoration-style: wavy;
 }
