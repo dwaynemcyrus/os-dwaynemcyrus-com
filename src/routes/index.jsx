@@ -201,14 +201,8 @@ export const indexRoute = createRoute({
       >
         <section
           style={{
-            background:
-              'radial-gradient(circle at top, rgba(233, 217, 193, 0.7), transparent 36%), linear-gradient(180deg, #f7f3ec 0%, #efe6d7 100%)',
-            border: '1px solid rgba(104, 85, 63, 0.14)',
-            borderRadius: '1.25rem',
-            boxShadow: '0 24px 60px rgba(84, 61, 37, 0.08)',
             display: 'grid',
             gap: '1rem',
-            padding: '1.5rem',
           }}
         >
           <header
@@ -219,12 +213,9 @@ export const indexRoute = createRoute({
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Personal OS
@@ -240,7 +231,7 @@ export const indexRoute = createRoute({
             </h1>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 fontSize: '1rem',
                 lineHeight: 1.55,
                 margin: 0,
@@ -252,7 +243,7 @@ export const indexRoute = createRoute({
 
           <p
             style={{
-              color: '#243b53',
+              color: 'var(--color-text-secondary)',
               lineHeight: 1.6,
               margin: 0,
               maxWidth: '38rem',
@@ -276,11 +267,12 @@ export const indexRoute = createRoute({
               }}
               style={{
                 background: isOpeningDailyNote
-                  ? 'rgba(82, 96, 109, 0.18)'
-                  : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
-                border: 'none',
-                borderRadius: '0.95rem',
-                color: isOpeningDailyNote ? '#52606d' : '#f8fafc',
+                  ? 'transparent'
+                  : 'var(--color-bg-surface)',
+                border: '1px solid var(--color-border-card)',
+                color: isOpeningDailyNote
+                  ? 'var(--color-text-secondary)'
+                  : 'var(--color-text-primary)',
                 cursor: isOpeningDailyNote ? 'wait' : 'pointer',
                 font: 'inherit',
                 fontSize: '1rem',
@@ -301,10 +293,8 @@ export const indexRoute = createRoute({
                 });
               }}
               style={{
-                background: 'rgba(255, 255, 255, 0.82)',
-                border: '1px solid rgba(82, 96, 109, 0.18)',
-                borderRadius: '0.95rem',
-                color: '#243b53',
+                background: 'transparent',
+                border: '1px solid var(--color-border-card)',
                 cursor: 'pointer',
                 font: 'inherit',
                 fontWeight: 700,
@@ -328,23 +318,15 @@ export const indexRoute = createRoute({
         >
           <section
             style={{
-              background: 'rgba(255, 252, 247, 0.92)',
-              border: '1px solid rgba(104, 85, 63, 0.14)',
-              borderRadius: '1.1rem',
-              boxShadow: '0 18px 44px rgba(84, 61, 37, 0.06)',
               display: 'grid',
               gap: '0.75rem',
-              padding: '1.25rem',
             }}
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Inbox
@@ -360,7 +342,7 @@ export const indexRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -375,10 +357,8 @@ export const indexRoute = createRoute({
                 });
               }}
               style={{
-                background: 'rgba(255, 255, 255, 0.82)',
-                border: '1px solid rgba(82, 96, 109, 0.18)',
-                borderRadius: '0.9rem',
-                color: '#243b53',
+                background: 'transparent',
+                border: '1px solid var(--color-border-card)',
                 cursor: 'pointer',
                 font: 'inherit',
                 fontWeight: 700,
@@ -394,23 +374,15 @@ export const indexRoute = createRoute({
 
           <section
             style={{
-              background: 'rgba(255, 252, 247, 0.92)',
-              border: '1px solid rgba(104, 85, 63, 0.14)',
-              borderRadius: '1.1rem',
-              boxShadow: '0 18px 44px rgba(84, 61, 37, 0.06)',
               display: 'grid',
               gap: '0.75rem',
-              padding: '1.25rem',
             }}
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Workbench
@@ -426,7 +398,7 @@ export const indexRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.5,
                 margin: 0,
               }}
@@ -439,13 +411,8 @@ export const indexRoute = createRoute({
 
         <section
           style={{
-            background: 'rgba(255, 252, 247, 0.94)',
-            border: '1px solid rgba(104, 85, 63, 0.14)',
-            borderRadius: '1.15rem',
-            boxShadow: '0 24px 60px rgba(84, 61, 37, 0.08)',
             display: 'grid',
             gap: '1rem',
-            padding: '1.4rem',
           }}
         >
           <header
@@ -456,12 +423,9 @@ export const indexRoute = createRoute({
           >
             <p
               style={{
-                color: '#7c6754',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.16em',
+                color: 'var(--color-text-muted)',
+                fontSize: '0.9rem',
                 margin: 0,
-                textTransform: 'uppercase',
               }}
             >
               Workbench
@@ -477,7 +441,7 @@ export const indexRoute = createRoute({
             </h2>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.55,
                 margin: 0,
                 maxWidth: '40rem',
@@ -492,13 +456,9 @@ export const indexRoute = createRoute({
             <p
               role="alert"
               style={{
-                background: 'rgba(255, 248, 248, 0.98)',
-                border: '1px solid rgba(186, 73, 73, 0.18)',
-                borderRadius: '0.95rem',
-                color: '#8f2d2d',
+                color: 'var(--color-danger)',
                 lineHeight: 1.5,
                 margin: 0,
-                padding: '0.9rem 1rem',
               }}
             >
               {homeErrorMessage}
@@ -516,8 +476,8 @@ export const indexRoute = createRoute({
                 <div
                   key={skeletonRow}
                   style={{
-                    background: 'rgba(240, 231, 218, 0.88)',
-                    borderRadius: '1rem',
+                    background: 'var(--color-bg-surface)',
+                    border: '1px solid var(--color-border-subtle)',
                     minHeight: '4.5rem',
                   }}
                 />
@@ -540,10 +500,8 @@ export const indexRoute = createRoute({
                       void handleOpenWorkbenchItem(item.id);
                     }}
                     style={{
-                      background: 'rgba(255, 255, 255, 0.82)',
-                      border: '1px solid rgba(82, 96, 109, 0.12)',
-                      borderRadius: '1rem',
-                      color: '#243b53',
+                      background: 'transparent',
+                      border: '1px solid var(--color-border-subtle)',
                       cursor: 'pointer',
                       display: 'grid',
                       gap: '0.45rem',
@@ -563,11 +521,8 @@ export const indexRoute = createRoute({
                     </span>
                     <span
                       style={{
-                        color: '#7c6754',
-                        fontSize: '0.78rem',
-                        fontWeight: 700,
-                        letterSpacing: '0.12em',
-                        textTransform: 'uppercase',
+                        color: 'var(--color-text-secondary)',
+                        fontSize: '0.88rem',
                       }}
                     >
                       {formatWorkbenchMeta(item)}
@@ -579,7 +534,7 @@ export const indexRoute = createRoute({
           ) : (
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 lineHeight: 1.6,
                 margin: 0,
               }}
@@ -594,19 +549,13 @@ export const indexRoute = createRoute({
           <div
             role={toastState.kind === 'error' ? 'alert' : 'status'}
             style={{
-              background:
-                toastState.kind === 'warning'
-                  ? 'rgba(255, 247, 237, 0.98)'
-                  : 'rgba(255, 248, 248, 0.98)',
-              border:
-                toastState.kind === 'warning'
-                  ? '1px solid rgba(191, 131, 45, 0.24)'
-                  : '1px solid rgba(186, 73, 73, 0.18)',
-              borderRadius: '1rem',
+              background: 'var(--color-bg-surface)',
+              border: '1px solid var(--color-border-card)',
               bottom: 'calc(7.5rem + env(safe-area-inset-bottom))',
-              boxShadow: '0 24px 60px rgba(15, 23, 42, 0.12)',
               color:
-                toastState.kind === 'warning' ? '#7c4a03' : '#8f2d2d',
+                toastState.kind === 'error'
+                  ? 'var(--color-danger)'
+                  : 'var(--color-text-primary)',
               display: 'grid',
               gap: '0.75rem',
               maxWidth: '26rem',
@@ -642,9 +591,8 @@ export const indexRoute = createRoute({
                     });
                   }}
                   style={{
-                    background: 'rgba(255, 255, 255, 0.88)',
-                    border: '1px solid rgba(124, 74, 3, 0.18)',
-                    borderRadius: '0.75rem',
+                    background: 'transparent',
+                    border: '1px solid var(--color-border-card)',
                     color: 'inherit',
                     cursor: 'pointer',
                     font: 'inherit',

@@ -354,7 +354,7 @@ export const itemEditorRoute = createRoute({
             </p>
             <p
               style={{
-                color: '#52606d',
+                color: 'var(--color-text-secondary)',
                 fontSize: '0.95rem',
                 margin: 0,
               }}
@@ -380,13 +380,9 @@ export const itemEditorRoute = createRoute({
               onClick={handleWorkbenchToggle}
               style={{
                 background: isWorkbenchEnabled
-                  ? 'rgba(255, 250, 243, 0.98)'
-                  : 'rgba(255, 255, 255, 0.9)',
-                border: isWorkbenchEnabled
-                  ? '1px solid rgba(124, 103, 84, 0.28)'
-                  : '1px solid rgba(82, 96, 109, 0.18)',
-                borderRadius: '0.875rem',
-                color: 'inherit',
+                  ? 'var(--color-bg-surface)'
+                  : 'transparent',
+                border: '1px solid var(--color-border-card)',
                 cursor:
                   isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate
                     ? 'not-allowed'
@@ -412,14 +408,13 @@ export const itemEditorRoute = createRoute({
               style={{
                 background:
                   isLoading || isSaving || !isDirty || isReadOnlyTemplate
-                    ? 'rgba(82, 96, 109, 0.18)'
-                    : 'linear-gradient(135deg, #2f6f51 0%, #25543d 100%)',
-                border: 'none',
-                borderRadius: '0.875rem',
+                    ? 'transparent'
+                    : 'var(--color-bg-surface)',
+                border: '1px solid var(--color-border-card)',
                 color:
                   isLoading || isSaving || !isDirty || isReadOnlyTemplate
-                    ? '#52606d'
-                    : '#f8fafc',
+                    ? 'var(--color-text-secondary)'
+                    : 'var(--color-text-primary)',
                 cursor:
                   isLoading || isSaving || !isDirty || isReadOnlyTemplate
                     ? 'not-allowed'
@@ -447,11 +442,8 @@ export const itemEditorRoute = createRoute({
           <p
             role="alert"
             style={{
-              background: 'rgba(186, 73, 73, 0.1)',
-              borderRadius: '1rem',
-              color: '#8f2d2d',
+              color: 'var(--color-danger)',
               margin: 0,
-              padding: '1rem',
             }}
           >
             {loadErrorMessage}
@@ -462,11 +454,8 @@ export const itemEditorRoute = createRoute({
           <p
             role="alert"
             style={{
-              background: 'rgba(186, 73, 73, 0.1)',
-              borderRadius: '1rem',
-              color: '#8f2d2d',
+              color: 'var(--color-danger)',
               margin: 0,
-              padding: '1rem',
             }}
           >
             {saveErrorMessage}
@@ -476,11 +465,8 @@ export const itemEditorRoute = createRoute({
         {saveStatusMessage ? (
           <p
             style={{
-              background: 'rgba(47, 111, 81, 0.12)',
-              borderRadius: '1rem',
-              color: '#25543d',
+              color: 'var(--color-text-secondary)',
               margin: 0,
-              padding: '1rem',
             }}
           >
             {saveStatusMessage}
@@ -491,11 +477,8 @@ export const itemEditorRoute = createRoute({
           <p
             role="alert"
             style={{
-              background: 'rgba(191, 131, 45, 0.12)',
-              borderRadius: '1rem',
-              color: '#7c4a03',
+              color: 'var(--color-text-secondary)',
               margin: 0,
-              padding: '1rem',
             }}
           >
             {linkErrorMessage}
