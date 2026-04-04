@@ -78,6 +78,8 @@ const FRONTMATTER_DEFAULTS = {
   workbench: false,
 };
 
+const AUTHORED_FRONTMATTER_STORAGE_KEY = '__personal_os_authored_frontmatter';
+
 const UNIVERSAL_FRONTMATTER_FIELDS = [
   'cuid',
   'type',
@@ -194,6 +196,19 @@ const FRONTMATTER_FIELD_ORDER = [
 ];
 
 const KNOWN_FRONTMATTER_FIELDS = new Set(FRONTMATTER_FIELD_ORDER);
+const PRESERVED_WHEN_OMITTED_FIELDS = new Set([
+  'cuid',
+  'type',
+  'subtype',
+  'date_created',
+  'date_trashed',
+]);
+const SYSTEM_MANAGED_FRONTMATTER_FIELDS = new Set([
+  'cuid',
+  'date_created',
+  'date_modified',
+  'date_trashed',
+]);
 
 function hasOwnValue(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
@@ -213,6 +228,63 @@ function cloneDefaultValue(value) {
 
 function isObjectLike(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function stripStorageMarker(frontmatter) {
+  if (!isObjectLike(frontmatter)) {
+    return {};
+  }
+
+  const nextFrontmatter = { ...frontmatter };
+  delete nextFrontmatter[AUTHORED_FRONTMATTER_STORAGE_KEY];
+  return nextFrontmatter;
+}
+
+function buildStoredAuthoredFrontmatter({
+  existingItem,
+  modifiedAt,
+  parsedFrontmatter,
+}) {
+  const storedFrontmatter = {
+    [AUTHORED_FRONTMATTER_STORAGE_KEY]: true,
+  };
+
+  Object.entries(parsedFrontmatter).forEach(([key, value]) => {
+    if (!SYSTEM_MANAGED_FRONTMATTER_FIELDS.has(key)) {
+      storedFrontmatter[key] = value;
+      return;
+    }
+
+    if (key === 'cuid') {
+      storedFrontmatter[key] = existingItem.cuid;
+      return;
+    }
+
+    if (key === 'date_created') {
+      storedFrontmatter[key] = existingItem.date_created;
+      return;
+    }
+
+    if (key === 'date_modified') {
+      storedFrontmatter[key] = modifiedAt;
+      return;
+    }
+
+    storedFrontmatter[key] = existingItem.date_trashed;
+  });
+
+  return storedFrontmatter;
+}
+
+function readStoredAuthoredFrontmatter(frontmatter) {
+  if (
+    !isObjectLike(frontmatter) ||
+    frontmatter[AUTHORED_FRONTMATTER_STORAGE_KEY] !== true
+  ) {
+    return null;
+  }
+
+  return stripStorageMarker(frontmatter);
 }
 
 function normalizeMarkdownText(value) {
@@ -454,9 +526,7 @@ function shouldIncludeKnownField(key, item, storedFrontmatter) {
 }
 
 function buildStoredFrontmatter(item) {
-  const storedFrontmatter = isObjectLike(item.frontmatter)
-    ? { ...item.frontmatter }
-    : {};
+  const storedFrontmatter = stripStorageMarker(item.frontmatter);
 
   FRONTMATTER_FIELD_ORDER.forEach((key) => {
     if (!shouldIncludeKnownField(key, item, storedFrontmatter)) {
@@ -491,7 +561,11 @@ function buildOrderedFrontmatterObject(frontmatter) {
   });
 
   Object.keys(frontmatter)
-    .filter((key) => !KNOWN_FRONTMATTER_FIELDS.has(key))
+    .filter(
+      (key) =>
+        key !== AUTHORED_FRONTMATTER_STORAGE_KEY &&
+        !KNOWN_FRONTMATTER_FIELDS.has(key),
+    )
     .forEach((key) => {
       orderedFrontmatter[key] = frontmatter[key];
     });
@@ -500,7 +574,13 @@ function buildOrderedFrontmatterObject(frontmatter) {
 }
 
 function serializeFrontmatter(frontmatter) {
-  return stringify(buildOrderedFrontmatterObject(frontmatter), {
+  const orderedFrontmatter = buildOrderedFrontmatterObject(frontmatter);
+
+  if (Object.keys(orderedFrontmatter).length === 0) {
+    return '';
+  }
+
+  return stringify(orderedFrontmatter, {
     lineWidth: 0,
   })
     .replace(/^([A-Za-z0-9_]+): null$/gm, '$1:')
@@ -528,6 +608,10 @@ function buildPersistedFieldValue(key, parsedFrontmatter, existingItem, modified
     return normalizeFrontmatterValue(key, parsedFrontmatter[key]);
   }
 
+  if (PRESERVED_WHEN_OMITTED_FIELDS.has(key)) {
+    return existingItem[key];
+  }
+
   if (hasOwnValue(FRONTMATTER_DEFAULTS, key)) {
     return cloneDefaultValue(FRONTMATTER_DEFAULTS[key]);
   }
@@ -542,7 +626,10 @@ export function buildEditorMarkdownDocument(item) {
     return legacyDocument.normalizedRawMarkdown;
   }
 
-  const serializedFrontmatter = serializeFrontmatter(buildStoredFrontmatter(item));
+  const authoredFrontmatter = readStoredAuthoredFrontmatter(item.frontmatter);
+  const serializedFrontmatter = serializeFrontmatter(
+    authoredFrontmatter ?? buildStoredFrontmatter(item),
+  );
   const normalizedBody = normalizeMarkdownText(item.content ?? '').replace(/^\n+/, '');
 
   return `---\n${serializedFrontmatter}\n---${normalizedBody ? `\n\n${normalizedBody}` : '\n'}`;
@@ -655,16 +742,12 @@ export function buildItemUpdatePayloadFromFrontmatter({
   modifiedAt,
   parsedFrontmatter,
 }) {
-  const unknownFrontmatter = {};
-
-  Object.entries(parsedFrontmatter).forEach(([key, value]) => {
-    if (!KNOWN_FRONTMATTER_FIELDS.has(key)) {
-      unknownFrontmatter[key] = value;
-    }
-  });
-
   const updatePayload = {
-    frontmatter: unknownFrontmatter,
+    frontmatter: buildStoredAuthoredFrontmatter({
+      existingItem,
+      modifiedAt,
+      parsedFrontmatter,
+    }),
   };
 
   FRONTMATTER_FIELD_ORDER.forEach((key) => {

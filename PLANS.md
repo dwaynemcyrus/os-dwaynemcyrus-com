@@ -758,3 +758,33 @@
    - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
    - Risks: if any old key survives in docs or parser order, saves will silently drift from the database contract.
    - Commit message: `fix(spec): align action date names`
+
+## Fix: preserve authored template frontmatter
+
+**Summary:** Make template and editor frontmatter behave more like Obsidian by preserving the authored property shape instead of regenerating a normalized full schema projection on save.
+
+**Agents involved:** @planner + @architecture
+
+**Research note:** Official Obsidian docs state that when you insert a template, “all the properties from the template will be added to the note” and existing note properties are merged with template properties. The current app already approximates merge-on-insert, but save/load still rebuilds known fields from database columns and defaults, which expands sparse template YAML and loses authored property presence.
+
+**Sequence:**
+
+1. **Frontmatter persistence contract**
+   - Files touched: `src/lib/frontmatter.js`, `src/lib/items.js`
+   - Steps:
+     1. Change the save contract so the `frontmatter` jsonb column preserves the authored frontmatter object for both known and unknown keys.
+     2. Continue projecting queryable known keys into dedicated columns on save.
+     3. Rebuild editor markdown from the authored `frontmatter` object first, falling back to synthesized frontmatter only when legacy rows do not have preserved authored frontmatter.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
+   - Risks: this is a behavioral persistence change and must not break existing legacy items that only have unknown keys in `frontmatter`.
+   - Commit message: `fix(editor): preserve authored frontmatter`
+
+2. **Template insert alignment**
+   - Files touched: `src/lib/frontmatter.js`, `src/components/command/CommandSheet.jsx`, `src/routes/items.$id.jsx`
+   - Steps:
+     1. Keep insert-template behavior based on the preserved authored frontmatter shape.
+     2. Ensure template insertion merges properties into the current note without forcing unrelated defaults into the note.
+     3. Verify sparse templates stay sparse after save and reopen.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds.
+   - Risks: merge behavior must stay consistent with the earlier Obsidian-like rules for title, subtitle, tags, dates, and body insertion.
+   - Commit message: `fix(command): preserve template shape`
