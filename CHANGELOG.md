@@ -2,6 +2,27 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.7.0] - 2026-04-04
+
+Recommended release: `v0.7.0`
+
+### Added
+- Inbox count badge on the navigation tab so unprocessed captures remain visible from the main shell.
+
+### Changed
+- Renamed item date fields from `start_date` and `end_date` to `date_start` and `date_end` across the schema, runtime parser, and source docs.
+- Removed runtime dependence on seeded system templates. New templates now open blank, runtime template flows use user-owned templates only, and missing template cases fail clearly instead of falling back implicitly.
+- Preserved authored frontmatter shape across saves so sparse templates and notes stay sparse instead of being regenerated with default metadata.
+- Stripped the app shell, navigation, command sheet, editor surfaces, and main routes back to a neutral dark structural baseline for manual UI rebuild work.
+
+### Fixed
+- Repaired template insertion so user-created templates merge correctly into documents instead of failing or wiping content.
+- Corrected template save behavior so authored frontmatter is no longer expanded with unrelated defaults on reopen.
+
+### Notes
+- This milestone shifts the app into a pre-`v1` UI hardening phase while keeping the feature set intact.
+- The current interface is intentionally reduced so the next passes can rebuild the visual system deliberately from a clean baseline.
+
 ## [0.6.1] - 2026-04-04
 
 Recommended release: `v0.6.1`
