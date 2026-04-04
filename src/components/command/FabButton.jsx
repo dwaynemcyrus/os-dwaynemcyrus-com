@@ -72,9 +72,8 @@ export function FabButton({ isSheetOpen, onOpen, onOpenDirectCreate }) {
       type="button"
     >
       <span aria-hidden="true" className={styles.fabButton__icon}>
-        +
+        {isSheetOpen ? '×' : '+'}
       </span>
-      <span className={styles.fabButton__hint}>Command sheet</span>
     </button>
   );
 }

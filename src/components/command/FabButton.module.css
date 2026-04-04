@@ -1,50 +1,38 @@
 .fabButton {
   align-items: center;
-  background: linear-gradient(135deg, #2f6f51 0%, #25543d 100%);
+  background: var(--color-accent);
   border: none;
-  border-radius: 999px;
+  border-radius: 1rem;
   bottom: calc(1rem + env(safe-area-inset-bottom));
-  box-shadow: 0 18px 36px rgba(37, 84, 61, 0.28);
-  color: #f8fafc;
+  color: var(--color-bg-app);
   cursor: pointer;
   display: inline-flex;
-  gap: 0.625rem;
   justify-content: center;
   left: 50%;
   min-height: 3.5rem;
   min-width: 3.5rem;
-  padding: 0 1.125rem;
+  padding: 0;
   position: fixed;
-  transform: translateX(-50%);
-  transition:
-    box-shadow 160ms ease,
-    opacity 160ms ease,
-    transform 160ms ease;
+  transform: translateX(-50%) rotate(45deg);
+  transition: transform 160ms ease, opacity 160ms ease;
   z-index: 20;
 }
 
 .fabButton:hover {
-  box-shadow: 0 22px 40px rgba(37, 84, 61, 0.32);
-  transform: translateX(-50%) translateY(-1px);
+  transform: translateX(-50%) rotate(45deg) translateY(-1px);
 }
 
 .fabButton:focus-visible {
-  box-shadow:
-    0 18px 36px rgba(37, 84, 61, 0.28),
-    0 0 0 3px rgba(58, 124, 165, 0.2);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
   outline: none;
 }
 
 .fabButton__icon {
-  font-size: 1.5rem;
+  display: inline-block;
+  font-size: 1.4rem;
   font-weight: 700;
   line-height: 1;
-}
-
-.fabButton__hint {
-  font-size: 0.95rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
+  transform: rotate(-45deg);
 }
 
 @media (min-width: 46.5rem) {

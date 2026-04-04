@@ -10,31 +10,26 @@ const PRIMARY_NAV_ITEMS = [
   {
     id: 'home',
     label: 'Home',
-    meta: 'Daily note',
     to: '/',
   },
   {
     id: 'inbox',
     label: 'Inbox',
-    meta: 'Process',
     to: '/inbox',
   },
   {
     id: 'items',
     label: 'Items',
-    meta: 'Library',
     to: '/items',
   },
   {
     id: 'templates',
     label: 'Templates',
-    meta: 'Patterns',
     to: '/templates',
   },
   {
     id: 'settings',
     label: 'Settings',
-    meta: 'Account',
     to: '/settings',
   },
 ];
@@ -138,7 +133,6 @@ export function AppNav({ children }) {
             </span>
           ) : null}
         </span>
-        <span className={styles.appNav__meta}>{item.meta}</span>
       </button>
     );
   }
@@ -146,14 +140,7 @@ export function AppNav({ children }) {
   return (
     <div className={styles.appShell}>
       <aside className={styles.appNav__sidebar}>
-        <div className={styles.appNav__brand}>
-          <p className={styles.appNav__eyebrow}>Personal OS</p>
-          <h1 className={styles.appNav__title}>Navigate the system.</h1>
-          <p className={styles.appNav__description}>
-            Move between capture, review, writing, and settings without leaving
-            the fixed app shell.
-          </p>
-        </div>
+        <p className={styles.appNav__eyebrow}>Personal OS</p>
 
         <nav aria-label="Primary" className={styles.appNav__list}>
           {PRIMARY_NAV_ITEMS.map((item) => renderNavButton(item, 'sidebar'))}
