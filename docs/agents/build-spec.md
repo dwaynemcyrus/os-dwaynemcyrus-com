@@ -154,7 +154,7 @@ resources jsonb default '[]'
 dependencies jsonb default '[]'
 blocked boolean default false
 slug text
-published boolean default false
+publish boolean default false
 tier text
 growth text
 rating integer
@@ -240,11 +240,20 @@ content text
 frontmatter jsonb default '{}'
 date_created timestamptz
 date_modified timestamptz
+date_published timestamptz
 date_trashed timestamptz
 tags jsonb default '[]'
 created_at timestamptz default now()
 updated_at timestamptz default now()
 ```
+
+### Publish and Date Sync Rules
+- `publish` is the only supported publish boolean field. `published` is not accepted.
+- `date_created`, `date_modified`, and `date_published` sync between frontmatter and database columns.
+- Plain date input such as `2026-04-05` normalizes to local-browser midnight before persistence.
+- If `date_modified` is omitted on save, the runtime updates it to the current save timestamp.
+- If `publish: true` and `date_published` is omitted, the runtime auto-fills it from the effective modified timestamp.
+- If `publish: false`, an existing `date_published` value is preserved.
 
 ---
 

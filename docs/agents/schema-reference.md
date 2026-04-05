@@ -1,7 +1,7 @@
 # schema-reference
 # Schema Reference — Personal OS
 **Version:** 3.0
-**Date:** 2026-04-02
+**Date:** 2026-04-05
 **Author:** Dwayne M Cyrus
 
 > The constitution of your document system.
@@ -43,10 +43,24 @@ tags:
 - `tier` — ONLY present when access is paywall; values: public | member | premium
 - `area` — wikilink to parent life area e.g. `[[business-development-1447-1448]]`
 - `workbench` — boolean; true surfaces the item for active focus, defaults to false
-- `date_created` — set once on creation, never changed
-- `date_modified` — updated on every save
+- `date_created` — authored timestamp synced to the column; if omitted on save, the existing row value is preserved
+- `date_modified` — authored timestamp synced to the column; if omitted on save, the runtime updates it to the current save timestamp
 - `date_trashed` — populated when moved to trash, null otherwise
 - `tags` — freeform array of strings
+
+## Publish Fields
+
+Present on publishable content subtypes only.
+
+```yaml
+publish: false
+date_published:
+```
+
+- `publish` — boolean publish state. `published:` is not supported.
+- `date_published` — authored timestamp synced to the column. If `publish: true` and this field is omitted on save, the runtime auto-fills it from the effective modified timestamp.
+- If `publish: false`, an existing `date_published` value is preserved.
+- Plain date input such as `2026-04-05` normalizes to local-browser midnight before persistence.
 
 ## Template Runtime Rules
 
@@ -438,7 +452,8 @@ growth: seedling
 tier:
 cover_link:
 cover_alt_text:
-published: false
+publish: false
+date_published:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -478,7 +493,8 @@ slug:
 description:
 growth: seedling
 tier:
-published: false
+publish: false
+date_published:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -533,7 +549,8 @@ slug:
 description:
 growth: seedling
 tier:
-published: false
+publish: false
+date_published:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
 date_trashed:
@@ -583,7 +600,8 @@ growth: seedling
 chapter_count: 0
 date_start:
 date_end:
-published: false
+publish: false
+date_published:
 tier:
 cover_link:
 cover_alt_text:
@@ -643,7 +661,8 @@ series:
 series_position:
 date_start:
 date_end:
-published: false
+publish: false
+date_published:
 tier:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
@@ -688,7 +707,8 @@ issue:
 growth: seedling
 date_start:
 date_end:
-published: false
+publish: false
+date_published:
 tier:
 cover_link:
 cover_alt_text:
@@ -751,7 +771,8 @@ collection:
 series:
 series_position:
 growth: seedling
-published: false
+publish: false
+date_published:
 tier:
 cover_link:
 cover_alt_text:
@@ -793,7 +814,8 @@ series:
 series_position:
 genre:
 growth: seedling
-published: false
+publish: false
+date_published:
 tier:
 cover_link:
 cover_alt_text:
@@ -847,7 +869,8 @@ price:
 currency: CHF
 sold: false
 exhibited: false
-published: false
+publish: false
+date_published:
 tier:
 cover_link:
 cover_alt_text:
@@ -899,7 +922,8 @@ resources:
 project: "[[]]"
 outcome:
 growth: seedling
-published: false
+publish: false
+date_published:
 tier:
 cover_link:
 cover_alt_text:
@@ -957,7 +981,8 @@ platform:
 date_delivered:
 attendees: 0
 recording_link:
-published: false
+publish: false
+date_published:
 tier:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
@@ -1018,7 +1043,8 @@ series_position:
 episode:
 season:
 recording_link:
-published: false
+publish: false
+date_published:
 tier:
 date_created: "{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}"
 date_modified:
@@ -1314,7 +1340,8 @@ area:
 workbench: false
 resources:
   - "[[]]"
-published: false
+publish: false
+date_published:
 tier:
 cover_link:
 cover_alt_text:

@@ -952,3 +952,10 @@
 - [x] Use the saved template settings as the global defaults for template insertion, slash-command creation, daily-note creation, and inbox processing.
 - [x] Add a persisted daily-note folder setting with autocomplete from existing folders.
 - [x] Offer a post-save confirmation modal to bulk-update existing active daily notes after the daily-note folder changes.
+
+## Fix: sync publish dates
+
+- [x] Rename `published` to `publish` and add `date_published` to the `items` schema.
+- [x] Sync `date_created`, `date_modified`, and `date_published` between frontmatter and columns.
+- [x] Normalize plain date input to local-browser midnight before persistence.
+- [x] Auto-fill `date_published` when `publish: true` and the field is omitted, while preserving existing publish dates when `publish: false`.
