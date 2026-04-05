@@ -1,7 +1,7 @@
 import { supabase } from './supabase';
 
 export const DEFAULT_DAILY_NOTE_FOLDER = '';
-export const DEFAULT_TEMPLATE_FOLDER = 'template';
+export const DEFAULT_TEMPLATE_FOLDER = '';
 export const DEFAULT_TEMPLATE_DATE_FORMAT = 'YYYY-MM-DD';
 export const DEFAULT_TEMPLATE_TIME_FORMAT = 'HH:mm:ss';
 const MISSING_DAILY_TEMPLATE_ERROR_MESSAGE =
@@ -303,10 +303,7 @@ export async function fetchTemplateSettings({ userId }) {
   const settingsRow = await fetchUserSettingsRow(userId);
 
   return {
-    folder: normalizeTemplateFormat(
-      settingsRow?.template_folder,
-      DEFAULT_TEMPLATE_FOLDER,
-    ),
+    folder: normalizeOptionalText(settingsRow?.template_folder),
     dateFormat: normalizeTemplateFormat(
       settingsRow?.template_date_format,
       DEFAULT_TEMPLATE_DATE_FORMAT,
@@ -324,10 +321,7 @@ export async function saveTemplateSettings({
   timeFormat,
   userId,
 }) {
-  const normalizedFolder = normalizeTemplateFormat(
-    folder,
-    DEFAULT_TEMPLATE_FOLDER,
-  );
+  const normalizedFolder = normalizeOptionalText(folder);
   const normalizedDateFormat = normalizeTemplateFormat(
     dateFormat,
     DEFAULT_TEMPLATE_DATE_FORMAT,
@@ -341,7 +335,7 @@ export async function saveTemplateSettings({
     .upsert(
       {
         template_date_format: normalizedDateFormat,
-        template_folder: normalizedFolder,
+        template_folder: normalizedFolder || null,
         template_time_format: normalizedTimeFormat,
         user_id: userId,
       },
@@ -357,10 +351,7 @@ export async function saveTemplateSettings({
   }
 
   return {
-    folder: normalizeTemplateFormat(
-      data.template_folder,
-      DEFAULT_TEMPLATE_FOLDER,
-    ),
+    folder: normalizeOptionalText(data.template_folder),
     dateFormat: normalizeTemplateFormat(
       data.template_date_format,
       DEFAULT_TEMPLATE_DATE_FORMAT,

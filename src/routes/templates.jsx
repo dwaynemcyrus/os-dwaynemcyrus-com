@@ -409,6 +409,7 @@ export const templatesRoute = createRoute({
                     setSettingsErrorMessage('');
                     setSettingsStatusMessage('');
                   }}
+                  placeholder="No folder"
                   type="text"
                   value={templateSettings.folder}
                 />
