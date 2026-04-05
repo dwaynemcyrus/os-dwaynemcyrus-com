@@ -1084,5 +1084,6 @@
 ## Fix: editor frontmatter typing and clearance
 
 - [x] Make editor parsing tolerate an unfinished opening frontmatter fence while typing, without weakening save-time validation.
+- [x] Make editor parsing tolerate malformed or non-object draft YAML while typing, without weakening save-time validation.
 - [x] Remove the recent CodeMirror content/gutter top-padding clearance that broke gutter alignment.
 - [x] Reapply editor top clearance at the wrapper/layout layer so the first lines start below the chrome stripe.

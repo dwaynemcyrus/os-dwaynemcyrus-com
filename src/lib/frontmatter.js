@@ -599,10 +599,17 @@ function normalizeFrontmatterValue(key, value) {
   }
 }
 
-function parseFrontmatterText(frontmatterText) {
+function parseFrontmatterText(
+  frontmatterText,
+  { allowInvalidDraft = false } = {},
+) {
   const document = parseDocument(frontmatterText);
 
   if (document.errors.length > 0) {
+    if (allowInvalidDraft) {
+      return {};
+    }
+
     throw new Error(document.errors[0].message);
   }
 
@@ -613,6 +620,10 @@ function parseFrontmatterText(frontmatterText) {
   }
 
   if (!isObjectLike(parsedFrontmatter)) {
+    if (allowInvalidDraft) {
+      return {};
+    }
+
     throw new Error('The YAML frontmatter must parse to an object.');
   }
 
@@ -910,7 +921,9 @@ export function parseEditorMarkdownDocument(
     bodyStartIndex: splitDocument.bodyStartIndex,
     frontmatter:
       splitDocument.hasFrontmatter && !splitDocument.isFrontmatterIncomplete
-      ? parseFrontmatterText(splitDocument.frontmatterText)
+      ? parseFrontmatterText(splitDocument.frontmatterText, {
+          allowInvalidDraft: allowIncompleteFrontmatter,
+        })
         : {},
     frontmatterText: splitDocument.frontmatterText,
     isFrontmatterIncomplete: splitDocument.isFrontmatterIncomplete === true,
