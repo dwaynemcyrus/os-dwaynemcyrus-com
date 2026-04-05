@@ -14,6 +14,7 @@ import {
   fetchTemplateSettings,
   saveTemplateSettings,
 } from '../lib/settings';
+import { formatFilenameForDisplay } from '../lib/filenames';
 import {
   formatTemplateGroupLabel,
   formatSubtypeLabel,
@@ -51,15 +52,13 @@ function formatTemplateMeta(templateItem) {
 }
 
 function formatTemplateTitle(templateItem) {
-  if (templateItem.title?.trim()) {
-    return templateItem.title.trim();
-  }
-
-  if (templateItem.subtype?.trim()) {
-    return formatSubtypeLabel(templateItem.subtype);
-  }
-
-  return 'Untitled template';
+  return formatFilenameForDisplay(
+    templateItem.filename,
+    templateItem.title?.trim() ||
+      (templateItem.subtype?.trim()
+        ? formatSubtypeLabel(templateItem.subtype)
+        : 'Untitled template'),
+  );
 }
 
 function formatTemplatePreview(templateItem) {

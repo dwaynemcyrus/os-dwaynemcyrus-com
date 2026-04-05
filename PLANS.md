@@ -1011,3 +1011,66 @@
 
 **Open questions before execution:**
 - None. The current route structure and the approved Settings-owned sheet model are specific enough to implement directly.
+
+## Feature: global top chrome and writing shell
+
+**Summary:** Introduce a shared floating top chrome across the app and convert the item/template editor into a full-screen writing surface that scrolls beneath it.
+
+**Agents involved:** both
+
+**Sequence:**
+
+### Phase 1 — Shell and editor chrome
+
+**Agent:** @planner
+
+**Goal:** Establish the global top stripe first, then wire the editor-specific controls and filename behavior into it.
+
+**Chunks:**
+
+1. **Global top chrome**
+   - Status: completed
+   - Files touched: `src/components/layout/AppNav.jsx`, `src/components/layout/AppNav.module.css`, `src/lib/navigation.js`, optional new shared chrome context helper
+   - Steps:
+     1. Add a shared top chrome band that floats above page content on all screens.
+     2. Support back, meta stripe, info, and more slots with route defaults plus screen-level overrides.
+     3. Add content top padding so screen text never loads beneath the chrome.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; app screens render beneath the floating chrome without overlap.
+   - Risks: shell changes can accidentally affect every route, so defaults must stay conservative.
+   - Commit message: `refactor(shell): add top chrome`
+
+2. **Writing surface conversion**
+   - Status: completed
+   - Files touched: `src/components/editor/ItemEditorScreen.jsx`, `src/routes/index.jsx`, `src/routes/HomeRoute.module.css`
+   - Steps:
+     1. Remove the editor page-style header and let the editor fill the available screen beneath the chrome.
+     2. Move Home’s local top-right more button into the shared chrome system.
+     3. Reuse the template placeholder guidance as the template editor placeholder text.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; both item and template editors behave like full-screen writing surfaces.
+   - Risks: editor layout and Home chrome behavior are both changing at once, so route-specific overrides must remain isolated.
+   - Commit message: `refactor(editor): fill writing shell`
+
+3. **Editor controls and filename surface**
+   - Status: completed
+   - Files touched: `src/components/editor/ItemEditorScreen.jsx`, `src/components/layout/AppNav.jsx`, `src/components/layout/AppNav.module.css`
+   - Steps:
+     1. Move `Save` and `Workbench` into the editor `More` menu.
+     2. Add the `Info` dropdown for `Last saved`.
+     3. Add the compact filename stripe behavior with a centered edit dialog using human-readable input normalized on save.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; editor controls live in the top chrome and filename editing works from the stripe.
+   - Risks: menu action wiring must not break the explicit-save contract.
+   - Commit message: `feat(editor): add chrome controls`
+
+4. **Filename display in Settings**
+   - Status: completed
+   - Files touched: `src/routes/templates.jsx`, `src/lib/settings.js`
+   - Steps:
+     1. Display templates by human-readable filename within Settings-owned surfaces.
+     2. Keep daily-note template selection and template list labels aligned with the same filename display rules.
+     3. Fall back safely when filename is blank.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; Settings template labels use filename-first display.
+   - Risks: title-based fallbacks must remain stable for legacy rows without filenames.
+   - Commit message: `fix(settings): use filename labels`
+
+**Open questions before execution:**
+- None. The chrome order, menu contents, and filename-edit interaction are defined tightly enough to implement directly.

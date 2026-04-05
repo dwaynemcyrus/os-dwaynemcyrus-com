@@ -82,7 +82,7 @@ function buildWikilinkTargetFieldsQuery() {
 }
 
 function buildManagedTemplateFieldsQuery() {
-  return 'id,cuid,type,subtype,title,folder,content,date_created,date_modified,date_trashed,is_template,user_id';
+  return 'id,cuid,type,subtype,title,filename,folder,content,date_created,date_modified,date_trashed,is_template,user_id';
 }
 
 function buildTrashItemFieldsQuery() {

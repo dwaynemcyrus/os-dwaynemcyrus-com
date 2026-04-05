@@ -1,4 +1,5 @@
 import { supabase } from './supabase';
+import { formatFilenameForDisplay } from './filenames';
 
 export const DEFAULT_DAILY_NOTE_FOLDER = '';
 export const DEFAULT_TEMPLATE_FOLDER = '';
@@ -127,7 +128,10 @@ function sortDailyTemplateItems(leftItem, rightItem) {
 }
 
 function formatDailyTemplateOptionLabel(templateItem) {
-  return templateItem.title?.trim() || 'Daily';
+  return formatFilenameForDisplay(
+    templateItem.filename,
+    templateItem.title?.trim() || 'Daily',
+  );
 }
 
 async function fetchAvailableFolderOptions({ userId }) {
@@ -178,7 +182,7 @@ export async function fetchDailyNoteSettings({ userId }) {
     fetchUserSettingsRow(userId),
     supabase
       .from('items')
-      .select('id,title,subtype,date_modified')
+      .select('id,title,filename,subtype,date_modified')
       .eq('user_id', userId)
       .eq('is_template', true)
       .eq('subtype', 'daily')
