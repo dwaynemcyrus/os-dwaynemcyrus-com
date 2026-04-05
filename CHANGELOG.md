@@ -2,6 +2,27 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.8.0] - 2026-04-05
+
+Recommended release: `v0.8.0`
+
+### Added
+- Daily note folder preferences in Settings, including autocomplete from existing folders and an optional post-save bulk update for existing daily notes.
+- A shared centered dialog primitive for app-wide modal confirmations and warnings.
+
+### Changed
+- Daily Note settings now follow the reference sheet structure more closely, with template selection, folder location, and a placeholder date-format row.
+- Newly created daily notes now apply the saved daily note folder preference automatically.
+- The Home screen now labels the primary daily-note action as `Create Today's Note` until today’s note exists, then switches to `Open Today's Note`.
+
+### Fixed
+- Missing-template warnings for Today’s Note now appear as a centered modal and route directly to `settings/daily-note`.
+- Stale saved daily-template ids are now treated as missing-template state instead of leaking Supabase 406 errors, and invalid saved ids are cleared automatically from `user_settings`.
+
+### Notes
+- This milestone continues the mobile app rebuild by tightening the daily-note flow, the Settings support stack, and shared modal behavior.
+- The new dialog primitive now backs the Home warning, daily-note folder bulk update confirmation, and template delete confirmation.
+
 ## [0.7.0] - 2026-04-04
 
 Recommended release: `v0.7.0`
