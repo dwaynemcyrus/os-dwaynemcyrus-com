@@ -261,78 +261,85 @@
 
 ## Feature: UI/UX hardening (v0 polish)
 
-**Summary:** Align the current app with the dark, single-card, text-first design system in `docs/agents/design-system-spec.md` and the reference images in `docs/agents/image-reference/`, then work through the high-friction interaction kinks screen by screen.
+**Summary:** Rebuild the app from the stripped baseline into the correct mobile SPA structure first, then build the iPhone 16 design system surface by surface.
 
 **Agents involved:** both
 
 **Sequence:**
 
-### Phase 14 — UI/UX hardening
+### Phase 14 — Rebuild checklist
 
 **Agent:** @planner
 
-**Goal:** Rework the app shell and primary surfaces in a deliberate order so visual language, layout behavior, and interaction states become consistent before route-level polish.
+**Checklist**
 
-**Chunks:**
+### Done
+- [x] Strip the app back to a neutral dark structural baseline.
+- [x] Remove the old warm card-heavy visual language from the shell, command sheet, editor surfaces, and route screens.
+- [x] Lock the rebuild direction to mobile-first iPhone 16 only.
 
-1. **Design token foundation**
-   - Files touched: `src/styles/variables.css`, `src/styles/reset.css`, `src/routes/RootLayout.module.css`, `src/routes/__root.jsx`
-   - Steps:
-     1. Introduce the dark-mode token set from the design-system spec as the active UI foundation.
-     2. Establish the viewport background, content-card constraints, safe-area handling, and focus rules at the root.
-     3. Remove the current warm gradient foundation so later route work inherits the correct visual language.
-   - Exit conditions: `npm run build` succeeds; the root shell renders on a dark background with a fixed viewport and no page scroll.
-   - Risks: root token and shell changes will cascade into every route, so visual regressions are likely until the next chunks land.
-   - Commit message: `style(app): add dark design tokens`
+### Structural reset
+- [ ] Remove the old framed shell/card model from the authenticated app.
+- [ ] Remove the persistent bottom tab bar model.
+- [ ] Rebuild the authenticated app as a full-bleed mobile SPA on `#1A1816`.
+- [ ] Make the FAB the only persistent global control.
+- [ ] Keep tap FAB -> command sheet.
+- [ ] Add hold FAB -> context sheet.
+- [ ] Keep command sheet limited to creation/search/slash commands only.
+- [ ] Make the context sheet the primary grouped navigation surface.
+- [x] Move inbox onto the Home/Now screen.
+- [ ] Move templates under settings.
+- [ ] Replace the current transitional route map with the grouped model.
+- [ ] Define the grouped model in-app:
+  - [ ] execution / tasks
+  - [ ] strategy / plans
+  - [ ] knowledge / notes
+- [ ] Define the fixed back-map for every non-home screen.
+- [ ] Make browser/body scroll impossible.
+- [ ] Make scroll behavior global to the app shell/container model.
 
-2. **Navigation shell alignment**
-   - Files touched: `src/components/layout/AppNav.jsx`, `src/components/layout/AppNav.module.css`, `src/routes/_authenticated.jsx`, `src/components/command/FabButton.module.css`
-   - Steps:
-     1. Rebuild the authenticated shell around the single-card layout from the spec.
-     2. Restyle the desktop and mobile navigation to the text-first card/tab model while preserving the existing route map.
-     3. Bring the diamond FAB, tab bar, and shell spacing into alignment with the reference images.
-   - Exit conditions: `npm run build` succeeds; mobile and desktop both use the same dark shell model and the FAB remains outside the card.
-   - Risks: current five-tab navigation does not exactly match the four-tab references, so the implementation must adapt the system without inventing a second navigation pattern.
-   - Commit message: `style(nav): align app shell`
+### Shell rebuild
+- [ ] Rebuild the root authenticated shell for the new mobile SPA structure.
+- [ ] Rebuild route composition so screens behave like app views, not webpages.
+- [ ] Set the final safe-area, FAB clearance, and shared screen padding model.
+- [ ] Remove any remaining desktop-first or website-like assumptions from the shell files.
 
-3. **Command sheet redesign**
-   - Files touched: `src/components/command/CommandSheet.jsx`, `src/components/command/CommandSheet.module.css`, `src/components/command/FabButton.jsx`
-   - Steps:
-     1. Restyle the command sheet to the black card modal pattern shown in the references.
-     2. Rework section spacing, footer controls, and empty states to match the text-first search/create model.
-     3. Preserve current functionality while tightening keyboard/mobile behavior and removing visual noise.
-   - Exit conditions: `npm run build` succeeds; the command sheet stays within the viewport, matches the reference visual language, and remains fully usable on mobile.
-   - Risks: this surface combines search, capture, slash commands, and insert mode, so it is easy to over-polish one mode and regress another.
-   - Commit message: `style(command): redesign sheet`
+### Overlay system
+- [ ] Rebuild the command sheet as the canonical create/search/slash surface.
+- [ ] Build the context sheet as the canonical global jump surface.
+- [ ] Add the 3 context tabs:
+  - [ ] execution
+  - [ ] strategy
+  - [ ] knowledge
+- [ ] Define shortcut rows and counts inside the context sheet tabs.
 
-4. **Editor and utility panels**
-   - Files touched: `src/components/editor/ItemEditor.module.css`, `src/routes/items.$id.jsx`, `src/components/editor/BacklinksPanel.jsx`, `src/components/editor/BacklinksPanel.module.css`
-   - Steps:
-     1. Restyle the editor surface to the darker writing-mode direction shown in the references.
-     2. Tighten header controls, saved-state messaging, and panel styling for backlinks and future info utilities.
-     3. Fix any remaining editor interaction friction surfaced during the visual pass, without changing the save contract.
-   - Exit conditions: `npm run build` succeeds; editor focus, scrolling, and panels remain stable while the surface matches the darker design system.
-   - Risks: editor UX is the most fragile interactive area in the app and should not be bundled with unrelated route refactors.
-   - Commit message: `style(editor): polish writing ui`
+### Screen rebuild
+- [x] Rebuild Home/Now.
+- [ ] Rebuild execution screens.
+- [ ] Rebuild strategy screens.
+- [ ] Rebuild knowledge screens.
+- [ ] Rebuild settings as the support/inventory screen.
+- [ ] Rebuild auth screens to match the app language.
+- [ ] Rebuild trash as a support screen inside the new model.
 
-5. **Route-level polish and empty states**
-   - Files touched: `src/routes/index.jsx`, `src/routes/inbox.jsx`, `src/routes/items.jsx`, `src/routes/templates.jsx`, `src/routes/settings.jsx`, `src/routes/trash.jsx`
-   - Steps:
-     1. Bring home, inbox, items, templates, settings, and trash into a consistent section/row/empty-state language.
-     2. Replace ad hoc inline styles and inconsistent card treatments with the shared visual system.
-     3. Audit touch targets, focus states, placeholder copy, and no-data states against the design-system spec and UI review rules.
-   - Exit conditions: `npm run build` succeeds; the primary routes feel visually consistent and no longer mix multiple card systems.
-   - Risks: this chunk touches many screens, so it should stay strictly presentational and avoid scope expansion into new features.
-   - Commit message: `style(routes): unify screen polish`
+### Editor and utilities
+- [ ] Rebuild the editor header and writing surface.
+- [ ] Rebuild backlinks and utility panels.
+- [ ] Recheck editor interaction stability after the structural rebuild.
 
-**Current audit findings before execution:**
-- The current shell uses warm gradients, shadows, and multiple card treatments, while the target system is dark, flatter, and single-card.
-- The command sheet visually diverges the most from the reference direction and should be treated as a first-class redesign, not a small restyle.
-- The editor and supporting panels need to move closer to the darker writing/info utility patterns shown in the references.
-- Several primary routes still rely heavily on inline styles, which will slow down consistent UI refinement until the shell/tokens are fixed first.
+### State system
+- [ ] Unify loading states.
+- [ ] Unify empty states.
+- [ ] Unify error states.
+- [ ] Unify success and destructive states.
+- [ ] Unify selected, active, and disabled states.
 
-**Open questions before execution:**
-- None yet. Waiting for explicit approval to start Phase 14, Chunk 1.
+### Final pass
+- [ ] Review the entire app on iPhone 16 dimensions.
+- [ ] Fix spacing inconsistencies.
+- [ ] Fix hierarchy/typography inconsistencies.
+- [ ] Fix touch-target and focus issues.
+- [ ] Fix route-to-route consistency issues.
 
 ## Feature: Daily Note (step 9)
 
