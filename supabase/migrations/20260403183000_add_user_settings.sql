@@ -3,6 +3,7 @@ begin;
 create table public.user_settings (
   user_id uuid primary key references auth.users(id) on delete cascade,
   daily_template_id uuid references public.items(id) on delete set null,
+  template_folder text,
   template_date_format text,
   template_time_format text,
   created_at timestamptz not null default now(),

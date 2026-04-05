@@ -1,5 +1,36 @@
 import { supabase } from './supabase';
 
+export const DEFAULT_TEMPLATE_DATE_FORMAT = 'YYYY-MM-DD';
+export const DEFAULT_TEMPLATE_TIME_FORMAT = 'HH:mm:ss';
+
+function buildUserSettingsFieldsQuery() {
+  return 'daily_template_id,template_folder,template_date_format,template_time_format';
+}
+
+function normalizeOptionalText(value) {
+  const normalizedValue = String(value ?? '').trim();
+
+  return normalizedValue || '';
+}
+
+function normalizeTemplateFormat(value, fallbackValue) {
+  return normalizeOptionalText(value) || fallbackValue;
+}
+
+async function fetchUserSettingsRow(userId) {
+  const { data, error } = await supabase
+    .from('user_settings')
+    .select(buildUserSettingsFieldsQuery())
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? null;
+}
+
 function sortDailyTemplateItems(leftItem, rightItem) {
   const titleComparison = String(leftItem.title ?? '').localeCompare(
     String(rightItem.title ?? ''),
@@ -20,14 +51,10 @@ function formatDailyTemplateOptionLabel(templateItem) {
 
 export async function fetchDailyTemplateSettings({ userId }) {
   const [
-    { data: settingsRow, error: settingsError },
+    settingsRow,
     { data: templateItems, error: templatesError },
   ] = await Promise.all([
-    supabase
-      .from('user_settings')
-      .select('daily_template_id')
-      .eq('user_id', userId)
-      .maybeSingle(),
+    fetchUserSettingsRow(userId),
     supabase
       .from('items')
       .select('id,title,subtype,date_modified')
@@ -36,10 +63,6 @@ export async function fetchDailyTemplateSettings({ userId }) {
       .eq('subtype', 'daily')
       .is('date_trashed', null),
   ]);
-
-  if (settingsError) {
-    throw settingsError;
-  }
 
   if (templatesError) {
     throw templatesError;
@@ -99,6 +122,70 @@ export async function saveDailyTemplatePreference({
   }
 
   return data.daily_template_id;
+}
+
+export async function fetchTemplateSettings({ userId }) {
+  const settingsRow = await fetchUserSettingsRow(userId);
+
+  return {
+    folder: normalizeOptionalText(settingsRow?.template_folder),
+    dateFormat: normalizeTemplateFormat(
+      settingsRow?.template_date_format,
+      DEFAULT_TEMPLATE_DATE_FORMAT,
+    ),
+    timeFormat: normalizeTemplateFormat(
+      settingsRow?.template_time_format,
+      DEFAULT_TEMPLATE_TIME_FORMAT,
+    ),
+  };
+}
+
+export async function saveTemplateSettings({
+  dateFormat,
+  folder,
+  timeFormat,
+  userId,
+}) {
+  const normalizedFolder = normalizeOptionalText(folder) || null;
+  const normalizedDateFormat = normalizeTemplateFormat(
+    dateFormat,
+    DEFAULT_TEMPLATE_DATE_FORMAT,
+  );
+  const normalizedTimeFormat = normalizeTemplateFormat(
+    timeFormat,
+    DEFAULT_TEMPLATE_TIME_FORMAT,
+  );
+  const { data, error } = await supabase
+    .from('user_settings')
+    .upsert(
+      {
+        template_date_format: normalizedDateFormat,
+        template_folder: normalizedFolder,
+        template_time_format: normalizedTimeFormat,
+        user_id: userId,
+      },
+      {
+        onConflict: 'user_id',
+      },
+    )
+    .select('template_folder,template_date_format,template_time_format')
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return {
+    folder: normalizeOptionalText(data.template_folder),
+    dateFormat: normalizeTemplateFormat(
+      data.template_date_format,
+      DEFAULT_TEMPLATE_DATE_FORMAT,
+    ),
+    timeFormat: normalizeTemplateFormat(
+      data.template_time_format,
+      DEFAULT_TEMPLATE_TIME_FORMAT,
+    ),
+  };
 }
 
 export async function fetchResolvedDailyTemplateId({ userId }) {

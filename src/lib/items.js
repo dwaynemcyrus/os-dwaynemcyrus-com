@@ -6,7 +6,7 @@ import {
   parseEditorMarkdownDocument,
   replaceEditorFrontmatterField,
 } from './frontmatter';
-import { fetchResolvedDailyTemplateId } from './settings';
+import { fetchResolvedDailyTemplateId, fetchTemplateSettings } from './settings';
 import { supabase } from './supabase';
 import { buildBacklinkGroups, resolveDocumentWikilinks } from './wikilinks';
 
@@ -68,7 +68,7 @@ function buildWikilinkTargetFieldsQuery() {
 }
 
 function buildManagedTemplateFieldsQuery() {
-  return 'id,cuid,type,subtype,title,content,date_created,date_modified,date_trashed,is_template,user_id';
+  return 'id,cuid,type,subtype,title,folder,content,date_created,date_modified,date_trashed,is_template,user_id';
 }
 
 function buildTrashItemFieldsQuery() {
@@ -146,6 +146,7 @@ function buildClonedTemplatePayload({
 function buildBlankTemplatePayload({
   collisionIndex,
   createdAt,
+  folder,
   userId,
 }) {
   const timestamp = createdAt.toISOString();
@@ -156,6 +157,7 @@ function buildBlankTemplatePayload({
     date_created: timestamp,
     date_modified: timestamp,
     date_trashed: null,
+    folder: folder || null,
     frontmatter: createStoredAuthoredFrontmatter(),
     is_template: true,
     user_id: userId,
@@ -808,12 +810,15 @@ export async function createItemFromTemplate({ templateId, userId }) {
 
 export async function createBlankTemplate({ userId }) {
   const createdAt = new Date();
+  const templateSettings = await fetchTemplateSettings({ userId });
+
   for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
     const { data, error } = await supabase
       .from('items')
       .insert(buildBlankTemplatePayload({
         collisionIndex,
         createdAt,
+        folder: templateSettings.folder,
         userId,
       }))
       .select(buildManagedTemplateFieldsQuery())
