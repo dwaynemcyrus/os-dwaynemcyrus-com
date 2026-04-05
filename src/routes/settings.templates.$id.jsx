@@ -10,6 +10,7 @@ export const settingsTemplateEditorRoute = createRoute({
     const { id } = settingsTemplateEditorRoute.useParams();
 
     return createElement(ItemEditorScreen, {
+      editorKind: 'template',
       itemId: id,
     });
   },

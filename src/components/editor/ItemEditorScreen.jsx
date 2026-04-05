@@ -30,7 +30,29 @@ function formatEditorDate(value) {
   }).format(new Date(value));
 }
 
-export function ItemEditorScreen({ itemId }) {
+function getEditorHeading({ isTemplateEditor, item }) {
+  const normalizedTitle = String(item?.title ?? '').trim();
+
+  if (normalizedTitle) {
+    return normalizedTitle;
+  }
+
+  return isTemplateEditor ? 'Untitled Template' : 'Item Editor';
+}
+
+function getEditorDescription({ isReadOnlyTemplate, isTemplateEditor, itemId }) {
+  if (isReadOnlyTemplate) {
+    return 'This system template opens in the shared editor surface for review, but it is read only.';
+  }
+
+  if (isTemplateEditor) {
+    return 'Draft reusable markdown and optional YAML frontmatter for this template. Save when you are ready to use it elsewhere in the app.';
+  }
+
+  return `Raw markdown editing is now active for item ${itemId}. Use the save button or Cmd/Ctrl+S, and use the FAB to merge template frontmatter while inserting template body content at the current cursor position.`;
+}
+
+export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const auth = useAuth();
   const navigate = useNavigate();
   const { setInsertTemplateTarget } = useCommandContext();
@@ -52,8 +74,23 @@ export function ItemEditorScreen({ itemId }) {
   const editorRef = useRef(null);
   const draftValueRef = useRef('');
   const itemRef = useRef(null);
+  const isTemplateEditor = editorKind === 'template';
   const isReadOnlyTemplate = item?.is_template === true && item?.user_id == null;
   const isDirty = draftValue !== lastSavedValue;
+  const editorHeading = getEditorHeading({
+    isTemplateEditor,
+    item,
+  });
+  const editorDescription = getEditorDescription({
+    isReadOnlyTemplate,
+    isTemplateEditor,
+    itemId,
+  });
+  const placeholderText = isTemplateEditor
+    ? 'Write template markdown with optional YAML frontmatter here.'
+    : 'Write raw markdown with YAML frontmatter here.';
+  const shouldShowWorkbenchToggle = !isTemplateEditor;
+  const shouldShowBacklinksPanel = !isTemplateEditor;
 
   draftValueRef.current = draftValue;
   itemRef.current = item;
@@ -363,12 +400,8 @@ export function ItemEditorScreen({ itemId }) {
             gap: '0.5rem',
           }}
         >
-          <h1 style={{ margin: 0 }}>{item?.title || 'Item Editor'}</h1>
-          <p style={{ margin: 0 }}>
-            {isReadOnlyTemplate
-              ? 'This system template opens in the shared editor surface for review, but it is read only.'
-              : `Raw markdown editing is now active for item ${itemId}. Use the save button or Cmd/Ctrl+S, and use the FAB to merge template frontmatter while inserting template body content at the current cursor position.`}
-          </p>
+          <h1 style={{ margin: 0 }}>{editorHeading}</h1>
+          <p style={{ margin: 0 }}>{editorDescription}</p>
           <p
             style={{
               color: 'var(--color-text-secondary)',
@@ -389,29 +422,31 @@ export function ItemEditorScreen({ itemId }) {
             gap: '0.75rem',
           }}
         >
-          <button
-            aria-pressed={isWorkbenchEnabled}
-            disabled={isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate}
-            onClick={handleWorkbenchToggle}
-            style={{
-              background: isWorkbenchEnabled
-                ? 'var(--color-bg-surface)'
-                : 'transparent',
-              border: '1px solid var(--color-border-card)',
-              cursor:
-                isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate
-                  ? 'not-allowed'
-                  : 'pointer',
-              font: 'inherit',
-              fontWeight: 700,
-              minHeight: '3rem',
-              minWidth: '10rem',
-              padding: '0 1.25rem',
-            }}
-            type="button"
-          >
-            {isWorkbenchEnabled ? 'Workbench On' : 'Workbench Off'}
-          </button>
+          {shouldShowWorkbenchToggle ? (
+            <button
+              aria-pressed={isWorkbenchEnabled}
+              disabled={isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate}
+              onClick={handleWorkbenchToggle}
+              style={{
+                background: isWorkbenchEnabled
+                  ? 'var(--color-bg-surface)'
+                  : 'transparent',
+                border: '1px solid var(--color-border-card)',
+                cursor:
+                  isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate
+                    ? 'not-allowed'
+                    : 'pointer',
+                font: 'inherit',
+                fontWeight: 700,
+                minHeight: '3rem',
+                minWidth: '10rem',
+                padding: '0 1.25rem',
+              }}
+              type="button"
+            >
+              {isWorkbenchEnabled ? 'Workbench On' : 'Workbench Off'}
+            </button>
+          ) : null}
 
           <button
             disabled={isLoading || isSaving || !isDirty || isReadOnlyTemplate}
@@ -502,7 +537,7 @@ export function ItemEditorScreen({ itemId }) {
           onSave() {
             handleSave();
           },
-          placeholderText: 'Write raw markdown with YAML frontmatter here.',
+          placeholderText,
           ref: editorRef,
           syncVersion: editorSyncVersion,
           value: draftValue,
@@ -510,21 +545,23 @@ export function ItemEditorScreen({ itemId }) {
         })}
       </div>
 
-      {createElement(BacklinksPanel, {
-        backlinkGroups,
-        errorMessage: backlinkErrorMessage,
-        isLoading: isLoadingBacklinks,
-        isReadOnlyTemplate,
-        onOpenItem(openItemId) {
-          return navigate({
-            params: {
-              id: openItemId,
+      {shouldShowBacklinksPanel
+        ? createElement(BacklinksPanel, {
+            backlinkGroups,
+            errorMessage: backlinkErrorMessage,
+            isLoading: isLoadingBacklinks,
+            isReadOnlyTemplate,
+            onOpenItem(openItemId) {
+              return navigate({
+                params: {
+                  id: openItemId,
+                },
+                to: '/items/$id',
+              });
             },
-            to: '/items/$id',
-          });
-        },
-        savedTitle: item?.title ?? '',
-      })}
+            savedTitle: item?.title ?? '',
+          })
+        : null}
     </section>
   );
 }

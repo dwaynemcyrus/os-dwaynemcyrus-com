@@ -988,6 +988,7 @@
    - Commit message: `fix(templates): mount editor route`
 
 2. **Create-to-editor flow**
+   - Status: completed
    - Files touched: `src/routes/templates.jsx`, `src/lib/items.js`
    - Steps:
      1. Keep blank-template creation server-confirmed, but navigate straight into `/settings/templates/$id` after insert.
@@ -998,6 +999,7 @@
    - Commit message: `fix(templates): open editor on create`
 
 3. **Template editor polish**
+   - Status: completed
    - Files touched: `src/components/editor/ItemEditorScreen.jsx`, `src/lib/navigation.js`, `src/routes/TemplatesRoute.module.css`
    - Steps:
      1. Verify the template editor uses the correct back target of `/settings/templates`.
