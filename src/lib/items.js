@@ -3,6 +3,7 @@ import {
   buildEditorMarkdownDocument,
   buildItemUpdatePayloadFromFrontmatter,
   createStoredAuthoredFrontmatter,
+  normalizeFilenameValue,
   parseEditorMarkdownDocument,
   replaceEditorFrontmatterField,
 } from './frontmatter';
@@ -26,6 +27,7 @@ const TEMPLATE_DATE_TOKEN_PATTERN = /\{\{date(?::([^}]*))?\}\}/g;
 const TEMPLATE_TIME_TOKEN_PATTERN = /\{\{time(?::([^}]*))?\}\}/g;
 const TEMPLATE_FORMAT_TOKEN_PATTERN = /YYYY|YY|MM|DD|HH|mm|ss|M|D|H|m|s/g;
 const LEGACY_CUID_TEMPLATE_TOKEN = '{{date:YYYYMMDD}}{{time:HHmmss}}';
+const TEMPLATE_VARIABLE_PATTERN = /\{\{[^}]+\}\}/;
 const pendingDailyNoteRequests = new Map();
 
 function escapeIlikePattern(value) {
@@ -130,6 +132,65 @@ function sanitizeTemplateFields(templateItem) {
   delete templateFields.updated_at;
 
   return templateFields;
+}
+
+function deriveFilenameFromTitle(title) {
+  const normalizedTitle = String(title ?? '').trim();
+
+  if (!normalizedTitle || TEMPLATE_VARIABLE_PATTERN.test(normalizedTitle)) {
+    return null;
+  }
+
+  return normalizeFilenameValue(normalizedTitle);
+}
+
+function resolveNextFilename({
+  parsedFrontmatter,
+  title,
+}) {
+  if (Object.prototype.hasOwnProperty.call(parsedFrontmatter, 'filename')) {
+    const explicitFilename = normalizeFilenameValue(parsedFrontmatter.filename);
+
+    if (explicitFilename) {
+      return explicitFilename;
+    }
+  }
+
+  return deriveFilenameFromTitle(title);
+}
+
+async function ensureFilenameIsUnique({
+  excludeItemId,
+  filename,
+  userId,
+}) {
+  if (!filename) {
+    return;
+  }
+
+  let request = supabase
+    .from('items')
+    .select('id', {
+      count: 'exact',
+      head: true,
+    })
+    .eq('user_id', userId)
+    .eq('filename', filename)
+    .is('date_trashed', null);
+
+  if (excludeItemId) {
+    request = request.neq('id', excludeItemId);
+  }
+
+  const { count, error } = await request;
+
+  if (error) {
+    throw error;
+  }
+
+  if ((count ?? 0) > 0) {
+    throw new Error(`Another item already uses the filename "${filename}".`);
+  }
 }
 
 function buildClonedTemplatePayload({
@@ -1065,13 +1126,33 @@ export async function saveEditorItem({
 
   const { body, frontmatter } = parseEditorMarkdownDocument(rawMarkdown);
   const modifiedAt = new Date().toISOString();
+  const frontmatterPayload = buildItemUpdatePayloadFromFrontmatter({
+    existingItem,
+    modifiedAt,
+    parsedFrontmatter: frontmatter,
+  });
+  const nextTitle = String(frontmatterPayload.title ?? '').trim() || null;
+  const nextFilename = resolveNextFilename({
+    parsedFrontmatter: frontmatter,
+    title: nextTitle,
+  });
+
+  if (existingItem.is_template !== true && !nextFilename) {
+    throw new Error(
+      'Add a title or filename with letters or numbers before saving.',
+    );
+  }
+
+  await ensureFilenameIsUnique({
+    excludeItemId: itemId,
+    filename: nextFilename,
+    userId,
+  });
+
   const updatePayload = {
-    ...buildItemUpdatePayloadFromFrontmatter({
-      existingItem,
-      modifiedAt,
-      parsedFrontmatter: frontmatter,
-    }),
+    ...frontmatterPayload,
     content: body,
+    filename: nextFilename,
     date_modified: modifiedAt,
   };
   const savedSnapshot = buildEditorMarkdownDocument({

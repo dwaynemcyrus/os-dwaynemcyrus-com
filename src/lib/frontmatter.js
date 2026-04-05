@@ -100,6 +100,7 @@ const FRONTMATTER_FIELD_ORDER = [
   'type',
   'subtype',
   'title',
+  'filename',
   'status',
   'access',
   'area',
@@ -253,6 +254,22 @@ function buildStoredAuthoredFrontmatter({
   const storedFrontmatter = createStoredAuthoredFrontmatter();
 
   Object.entries(parsedFrontmatter).forEach(([key, value]) => {
+    if (key === 'filename') {
+      const normalizedFilename = normalizeFilenameValue(value);
+
+      if (normalizedFilename == null) {
+        return;
+      }
+
+      storedFrontmatter[key] = normalizedFilename;
+      return;
+    }
+
+    if (existingItem.is_template === true) {
+      storedFrontmatter[key] = value;
+      return;
+    }
+
     if (!SYSTEM_MANAGED_FRONTMATTER_FIELDS.has(key)) {
       storedFrontmatter[key] = value;
       return;
@@ -426,6 +443,32 @@ function normalizeScalarStringValue(value) {
   return String(value);
 }
 
+export function normalizeFilenameValue(value) {
+  const normalizedInput = String(value ?? '').trim();
+
+  if (!normalizedInput) {
+    return null;
+  }
+
+  if (normalizedInput.includes('{{') || normalizedInput.includes('}}')) {
+    throw new Error('cannot use template tokens.');
+  }
+
+  const safeFilename = normalizedInput
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  if (!safeFilename) {
+    throw new Error('must include letters or numbers.');
+  }
+
+  return safeFilename;
+}
+
 function hasExistingScalarValue(value) {
   if (value == null) {
     return false;
@@ -461,6 +504,10 @@ function mergeTagValues(currentTags, templateTags) {
 
 function normalizeFrontmatterValue(key, value) {
   try {
+    if (key === 'filename') {
+      return normalizeFilenameValue(value);
+    }
+
     if (ARRAY_FIELDS.has(key)) {
       return normalizeArrayValue(value);
     }
@@ -513,6 +560,10 @@ function shouldIncludeKnownField(key, item, storedFrontmatter) {
 
   if (hasOwnValue(storedFrontmatter, key)) {
     return true;
+  }
+
+  if (key === 'filename') {
+    return false;
   }
 
   const itemValue = item[key];
