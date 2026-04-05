@@ -1,0 +1,190 @@
+.templatesRoute {
+  gap: 1.5rem;
+}
+
+.templatesRoute__createSection,
+.templatesRoute__emptyState,
+.templatesRoute__group,
+.templatesRoute__loadingGroup {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.templatesRoute__createForm,
+.templatesRoute__groups,
+.templatesRoute__item,
+.templatesRoute__loadingList,
+.templatesRoute__loadingGroup {
+  display: grid;
+}
+
+.templatesRoute__createForm,
+.templatesRoute__groups,
+.templatesRoute__loadingList {
+  gap: 1.25rem;
+}
+
+.templatesRoute__createButton {
+  inline-size: 100%;
+}
+
+.templatesRoute__groupHeader {
+  align-items: baseline;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.templatesRoute__groupTitle,
+.templatesRoute__groupCount,
+.templatesRoute__itemPreview {
+  margin: 0;
+}
+
+.templatesRoute__groupTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.templatesRoute__groupCount {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.templatesRoute__itemList {
+  display: grid;
+  gap: 1rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.templatesRoute__item {
+  gap: 0.65rem;
+}
+
+.templatesRoute__itemButton {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.templatesRoute__itemButton:focus-visible,
+.templatesRoute__deleteButton:focus-visible,
+.templatesRoute__dialogDismiss:focus-visible,
+.templatesRoute__dialogInput:focus-visible,
+.templatesRoute__dangerButton:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.templatesRoute__itemTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.templatesRoute__itemMeta,
+.templatesRoute__itemPreview {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.templatesRoute__itemActions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.templatesRoute__deleteButton {
+  background: transparent;
+  border: none;
+  color: var(--color-danger);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  min-height: 2.5rem;
+  padding: 0;
+}
+
+.templatesRoute__loadingLabel,
+.templatesRoute__loadingRow {
+  background: var(--color-bg-surface);
+}
+
+.templatesRoute__loadingLabel {
+  block-size: 0.95rem;
+  inline-size: 8rem;
+}
+
+.templatesRoute__loadingRow {
+  block-size: 4rem;
+}
+
+.templatesRoute__dialogOverlay {
+  align-items: center;
+  background: rgba(0, 0, 0, 0.42);
+  display: grid;
+  inset: 0;
+  padding: 1rem;
+  position: fixed;
+  z-index: 40;
+}
+
+.templatesRoute__dialogDismiss {
+  background: transparent;
+  border: none;
+  inset: 0;
+  padding: 0;
+  position: absolute;
+}
+
+.templatesRoute__dialog {
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border-card);
+  display: grid;
+  gap: 1rem;
+  inline-size: min(100%, 32rem);
+  padding: 1.25rem;
+  position: relative;
+  z-index: 1;
+}
+
+.templatesRoute__dialogInput {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  font: inherit;
+  min-height: 3.25rem;
+  padding: 0 1rem;
+  width: 100%;
+}
+
+.templatesRoute__dialogActions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.templatesRoute__dangerButton {
+  color: var(--color-danger);
+}
+
+.templatesRoute__dangerButton:disabled {
+  color: var(--color-text-secondary);
+}
+
+@media (min-width: 28rem) {
+  .templatesRoute__dialogActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

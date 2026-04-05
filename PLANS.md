@@ -322,6 +322,7 @@
 - [x] Move Daily Note settings to `/settings/daily-note`.
 - [x] Move Templates to `/settings/templates`.
 - [x] Move template editing to `/settings/templates/$id`.
+- [x] Rebuild templates as a support screen inside settings.
 - [x] Move Keyboard Shortcuts to `/settings/keyboard-shortcuts`.
 - [x] Move Slash Commands to `/settings/slash-commands`.
 - [x] Move Trash to `/settings/trash`.
