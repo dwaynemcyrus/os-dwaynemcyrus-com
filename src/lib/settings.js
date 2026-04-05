@@ -71,6 +71,19 @@ function buildDailyTemplateLookupQuery(userId) {
     .is('date_trashed', null);
 }
 
+async function clearPersistedDailyTemplateId(userId) {
+  const { error } = await supabase
+    .from('user_settings')
+    .update({
+      daily_template_id: null,
+    })
+    .eq('user_id', userId);
+
+  if (error) {
+    throw error;
+  }
+}
+
 async function resolvePersistedDailyTemplateId({ userId }) {
   const settingsRow = await fetchUserSettingsRow(userId);
   const selectedTemplateId = normalizeOptionalText(settingsRow?.daily_template_id);
@@ -89,6 +102,7 @@ async function resolvePersistedDailyTemplateId({ userId }) {
   }
 
   if (!templateItem?.id) {
+    await clearPersistedDailyTemplateId(userId);
     throw new Error(MISSING_DAILY_TEMPLATE_ERROR_MESSAGE);
   }
 
@@ -177,12 +191,17 @@ export async function fetchDailyNoteSettings({ userId }) {
   }
 
   const sortedTemplateItems = [...(templateItems ?? [])].sort(sortDailyTemplateItems);
-  const selectedTemplateId = sortedTemplateItems.some(
+  const hasSelectedTemplate = sortedTemplateItems.some(
     (item) => item.id === settingsRow?.daily_template_id,
-  )
+  );
+  const selectedTemplateId = hasSelectedTemplate
     ? settingsRow.daily_template_id
     : '';
   const dailyNoteFolder = normalizeDailyNoteFolder(settingsRow?.daily_note_folder);
+
+  if (settingsRow?.daily_template_id && !hasSelectedTemplate) {
+    await clearPersistedDailyTemplateId(userId);
+  }
 
   return {
     folder: dailyNoteFolder,
