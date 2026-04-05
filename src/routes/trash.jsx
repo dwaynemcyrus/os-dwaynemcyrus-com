@@ -6,6 +6,7 @@ import {
   permanentlyDeleteTrashedItem,
   restoreTrashedItem,
 } from '../lib/items';
+import sheetStyles from './SettingsRoute.module.css';
 import styles from './TrashRoute.module.css';
 import { settingsRoute } from './settings';
 
@@ -62,10 +63,19 @@ function formatItemMeta(item) {
 
 function formatTrashCountLabel(itemCount) {
   if (itemCount === 1) {
-    return '1 item in trash';
+    return '1 item';
   }
 
-  return `${itemCount} items in trash`;
+  return `${itemCount} items`;
+}
+
+function getSheetMessageClassName(kind) {
+  return [
+    sheetStyles.settingsScreen__message,
+    kind === 'error'
+      ? sheetStyles['settingsScreen__message--error']
+      : sheetStyles['settingsScreen__message--status'],
+  ].join(' ');
 }
 
 export const trashRoute = createRoute({
@@ -227,170 +237,171 @@ export const trashRoute = createRoute({
     }
 
     return (
-      <section className={styles.trashRoute}>
-        <section className={styles.trashRoute__hero}>
-          <p className={styles.trashRoute__eyebrow}>Workspace</p>
-          <h1 className={styles.trashRoute__title}>Trash</h1>
-          <p className={styles.trashRoute__description}>
-            Trashed items stay hidden from active views. Review what was
-            discarded here before restoring it or deleting it permanently.
+      <section className={`${sheetStyles.settingsScreen} ${styles.trashRoute}`}>
+        <header className={sheetStyles.settingsScreen__header}>
+          <p className={sheetStyles.settingsScreen__eyebrow}>Settings</p>
+          <h1 className={sheetStyles.settingsScreen__title}>Trash</h1>
+          <p className={sheetStyles.settingsScreen__copy}>
+            {isLoading ? 'Loading trash...' : trashCountLabel}
           </p>
-        </section>
+        </header>
 
-        <div className={styles.trashRoute__layout}>
-          <section className={styles.trashRoute__panel}>
-            <header className={styles.trashRoute__panelHeader}>
-              <p className={styles.trashRoute__eyebrow}>Discarded</p>
-              <h2 className={styles.trashRoute__panelTitle}>Trashed Items</h2>
-              <p className={styles.trashRoute__summary}>
-                {isLoading ? 'Loading trash...' : trashCountLabel}
-              </p>
-            </header>
+        {errorMessage ? (
+          <p className={getSheetMessageClassName('error')} role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
 
-            {errorMessage ? (
-              <p className={styles.trashRoute__error} role="alert">
-                {errorMessage}
-              </p>
-            ) : null}
+        {isLoading ? (
+          <section aria-hidden="true" className={styles.trashRoute__loadingList}>
+            {SKELETON_ROWS.map((rowId) => (
+              <div className={styles.trashRoute__loadingRow} key={rowId} />
+            ))}
+          </section>
+        ) : null}
 
-            {isLoading ? (
-              <div className={styles.trashRoute__skeletonList}>
-                {SKELETON_ROWS.map((rowId) => (
-                  <div className={styles.trashRoute__skeletonRow} key={rowId} />
-                ))}
-              </div>
-            ) : trashedItems.length > 0 ? (
-              <ul className={styles.trashRoute__list}>
-                {trashedItems.map((item) => (
-                  <li key={item.id}>
+        {!isLoading && !errorMessage && trashedItems.length === 0 ? (
+          <section className={styles.trashRoute__emptyState}>
+            <h2 className={sheetStyles.settingsScreen__sectionTitle}>Trash is empty</h2>
+            <p className={sheetStyles.settingsScreen__copy}>
+              Deleted items will surface here until you restore them or remove
+              them permanently.
+            </p>
+          </section>
+        ) : null}
+
+        {!isLoading && !errorMessage && trashedItems.length > 0 ? (
+          <div className={styles.trashRoute__sections}>
+            <section className={styles.trashRoute__section}>
+              <header className={styles.trashRoute__sectionHeader}>
+                <h2 className={sheetStyles.settingsScreen__sectionTitle}>Items</h2>
+                <p className={sheetStyles.settingsScreen__copy}>{trashCountLabel}</p>
+              </header>
+
+              <ul className={styles.trashRoute__itemList}>
+                {trashedItems.map((item) => {
+                  const isActive = selectedItemId === item.id;
+
+                  return (
+                    <li key={item.id}>
+                      <button
+                        className={`${styles.trashRoute__itemButton} ${
+                          isActive ? styles['trashRoute__itemButton--active'] : ''
+                        }`}
+                        onClick={() => {
+                          setSelectedItemId(item.id);
+                        }}
+                        type="button"
+                      >
+                        <span className={styles.trashRoute__itemTitle}>
+                          {formatItemLabel(item)}
+                        </span>
+                        <span className={styles.trashRoute__itemMeta}>
+                          {formatItemMeta(item)}
+                        </span>
+                        <span className={styles.trashRoute__itemPreview}>
+                          {formatPreview(item)}
+                        </span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+
+            <section className={styles.trashRoute__section}>
+              <header className={styles.trashRoute__sectionHeader}>
+                <h2 className={sheetStyles.settingsScreen__sectionTitle}>Detail</h2>
+              </header>
+
+              {selectedItem ? (
+                <div className={styles.trashRoute__detail}>
+                  <div className={styles.trashRoute__detailCopyBlock}>
+                    <p className={styles.trashRoute__detailTitle}>
+                      {formatItemLabel(selectedItem)}
+                    </p>
+                    <p className={styles.trashRoute__detailMeta}>
+                      {formatItemMeta(selectedItem)}
+                    </p>
+                    <p className={styles.trashRoute__detailPreview}>
+                      {formatPreview(selectedItem)}
+                    </p>
+                  </div>
+
+                  {actionErrorMessage ? (
+                    <p className={getSheetMessageClassName('error')} role="alert">
+                      {actionErrorMessage}
+                    </p>
+                  ) : null}
+
+                  {actionStatusMessage ? (
+                    <p className={getSheetMessageClassName('status')} role="status">
+                      {actionStatusMessage}
+                    </p>
+                  ) : null}
+
+                  <div className={styles.trashRoute__actions}>
                     <button
-                      className={`${styles.trashRoute__itemButton} ${
-                        selectedItemId === item.id
-                          ? styles['trashRoute__itemButton--active']
-                          : ''
-                      }`}
+                      className={sheetStyles.settingsScreen__actionButton}
+                      disabled={isRestoring || isDeleting}
                       onClick={() => {
-                        setSelectedItemId(item.id);
+                        void handleRestoreItem();
                       }}
                       type="button"
                     >
-                      <span className={styles.trashRoute__itemTitle}>
-                        {formatItemLabel(item)}
-                      </span>
-                      <span className={styles.trashRoute__itemMeta}>
-                        {formatItemMeta(item)}
-                      </span>
-                      <p className={styles.trashRoute__itemPreview}>
-                        {formatPreview(item)}
-                      </p>
+                      {isRestoring ? 'Restoring...' : 'Restore Item'}
                     </button>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className={styles.trashRoute__emptyState}>
-                Trash is empty right now. Deleted items will surface here until
-                you restore them or remove them permanently.
-              </p>
-            )}
-          </section>
 
-          <section className={styles.trashRoute__panel}>
-            <header className={styles.trashRoute__panelHeader}>
-              <p className={styles.trashRoute__eyebrow}>Selection</p>
-              <h2 className={styles.trashRoute__panelTitle}>Item Detail</h2>
-            </header>
-
-            {selectedItem ? (
-              <div className={styles.trashRoute__detailBody}>
-                <h3 className={styles.trashRoute__itemTitle}>
-                  {formatItemLabel(selectedItem)}
-                </h3>
-                <p className={styles.trashRoute__detailMeta}>
-                  {formatItemMeta(selectedItem)}
-                </p>
-                <p className={styles.trashRoute__detailCopy}>
-                  {formatPreview(selectedItem)}
-                </p>
-                {actionErrorMessage ? (
-                  <p
-                    className={`${styles.trashRoute__message} ${styles['trashRoute__message--error']}`}
-                    role="alert"
-                  >
-                    {actionErrorMessage}
-                  </p>
-                ) : null}
-
-                {actionStatusMessage ? (
-                  <p
-                    className={`${styles.trashRoute__message} ${styles['trashRoute__message--success']}`}
-                    role="status"
-                  >
-                    {actionStatusMessage}
-                  </p>
-                ) : null}
-
-                <div className={styles.trashRoute__actions}>
-                  <button
-                    className={styles.trashRoute__restoreButton}
-                    disabled={isRestoring || isDeleting}
-                    onClick={() => {
-                      void handleRestoreItem();
-                    }}
-                    type="button"
-                  >
-                    {isRestoring ? 'Restoring...' : 'Restore Item'}
-                  </button>
-
-                  <form
-                    className={styles.trashRoute__deleteBlock}
-                    onSubmit={(event) => {
-                      void handlePermanentDelete(event);
-                    }}
-                  >
-                    <label className={styles.trashRoute__deleteLabel}>
-                      Type the exact title to permanently delete
-                      <input
-                        className={styles.trashRoute__deleteInput}
-                        onChange={(event) => {
-                          setDeleteConfirmationValue(event.target.value);
-                          setActionErrorMessage('');
-                          setActionStatusMessage('');
-                        }}
-                        placeholder={deleteConfirmationLabel}
-                        spellCheck={false}
-                        type="text"
-                        value={deleteConfirmationValue}
-                      />
-                    </label>
-
-                    <p className={styles.trashRoute__deleteHelp}>
-                      This removes the item permanently and cascades deletion to
-                      any related history or log-entry records.
-                    </p>
-
-                    <button
-                      className={styles.trashRoute__deleteButton}
-                      disabled={
-                        isDeleting ||
-                        isRestoring ||
-                        deleteConfirmationValue !== deleteConfirmationLabel
-                      }
-                      type="submit"
+                    <form
+                      className={styles.trashRoute__deleteBlock}
+                      onSubmit={(event) => {
+                        void handlePermanentDelete(event);
+                      }}
                     >
-                      {isDeleting ? 'Deleting...' : 'Delete Permanently'}
-                    </button>
-                  </form>
+                      <label className={sheetStyles.settingsScreen__label}>
+                        <span>Type the exact title to delete permanently</span>
+                        <input
+                          className={styles.trashRoute__deleteInput}
+                          onChange={(event) => {
+                            setDeleteConfirmationValue(event.target.value);
+                            setActionErrorMessage('');
+                            setActionStatusMessage('');
+                          }}
+                          placeholder={deleteConfirmationLabel}
+                          spellCheck={false}
+                          type="text"
+                          value={deleteConfirmationValue}
+                        />
+                      </label>
+
+                      <p className={sheetStyles.settingsScreen__copy}>
+                        This permanently removes the item and any related history
+                        or log records.
+                      </p>
+
+                      <button
+                        className={`${sheetStyles.settingsScreen__actionButton} ${styles.trashRoute__dangerButton}`}
+                        disabled={
+                          isDeleting ||
+                          isRestoring ||
+                          deleteConfirmationValue !== deleteConfirmationLabel
+                        }
+                        type="submit"
+                      >
+                        {isDeleting ? 'Deleting...' : 'Delete Permanently'}
+                      </button>
+                    </form>
+                  </div>
                 </div>
-              </div>
-            ) : (
-              <p className={styles.trashRoute__detailEmpty}>
-                Select a trashed item to review its details before deciding what
-                to do with it.
-              </p>
-            )}
-          </section>
-        </div>
+              ) : (
+                <p className={sheetStyles.settingsScreen__copy}>
+                  Select a trashed item to review it before restoring or
+                  deleting it.
+                </p>
+              )}
+            </section>
+          </div>
+        ) : null}
       </section>
     );
   },

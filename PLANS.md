@@ -328,7 +328,7 @@
 - [x] Move Trash to `/settings/trash`.
 - [x] Remove the old top-level `/templates` and `/trash` routes entirely.
 - [ ] Rebuild auth screens to match the app language.
-- [ ] Rebuild trash as a support screen inside the new model.
+- [x] Rebuild trash as a support screen inside the new model.
 
 ### Editor and utilities
 - [ ] Rebuild the editor header and writing surface.
