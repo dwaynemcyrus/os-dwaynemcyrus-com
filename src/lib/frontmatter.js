@@ -14,11 +14,17 @@ const ARRAY_FIELDS = new Set([
 const BOOLEAN_FIELDS = new Set([
   'workbench',
   'blocked',
-  'published',
+  'publish',
   'bookmark',
   'for_sale',
   'sold',
   'exhibited',
+]);
+
+const TIMESTAMPTZ_FIELDS = new Set([
+  'date_created',
+  'date_modified',
+  'date_published',
 ]);
 
 const INTEGER_FIELDS = new Set([
@@ -67,7 +73,7 @@ const FRONTMATTER_DEFAULTS = {
   month_expenses_chf: 0,
   month_profit_chf: 0,
   month_revenue_chf: 0,
-  published: false,
+  publish: false,
   resources: [],
   sold: false,
   stack: [],
@@ -109,7 +115,7 @@ const FRONTMATTER_FIELD_ORDER = [
   'dependencies',
   'blocked',
   'slug',
-  'published',
+  'publish',
   'tier',
   'growth',
   'rating',
@@ -190,6 +196,7 @@ const FRONTMATTER_FIELD_ORDER = [
   'description',
   'date_start',
   'date_end',
+  'date_published',
   'date_created',
   'date_modified',
   'date_trashed',
@@ -204,8 +211,6 @@ const PRESERVED_WHEN_OMITTED_FIELDS = new Set([
 ]);
 const SYSTEM_MANAGED_FRONTMATTER_FIELDS = new Set([
   'cuid',
-  'date_created',
-  'date_modified',
   'date_trashed',
 ]);
 
@@ -248,7 +253,6 @@ export function createStoredAuthoredFrontmatter(frontmatter = {}) {
 
 function buildStoredAuthoredFrontmatter({
   existingItem,
-  modifiedAt,
   parsedFrontmatter,
 }) {
   const storedFrontmatter = createStoredAuthoredFrontmatter();
@@ -277,16 +281,6 @@ function buildStoredAuthoredFrontmatter({
 
     if (key === 'cuid') {
       storedFrontmatter[key] = existingItem.cuid;
-      return;
-    }
-
-    if (key === 'date_created') {
-      storedFrontmatter[key] = existingItem.date_created;
-      return;
-    }
-
-    if (key === 'date_modified') {
-      storedFrontmatter[key] = modifiedAt;
       return;
     }
 
@@ -443,6 +437,59 @@ function normalizeScalarStringValue(value) {
   return String(value);
 }
 
+function normalizeTimestampValue(value) {
+  if (value == null || value === '') {
+    return null;
+  }
+
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) {
+      throw new Error('must be a valid date or datetime.');
+    }
+
+    return value.toISOString();
+  }
+
+  if (Array.isArray(value) || isObjectLike(value)) {
+    throw new Error('must be a plain scalar value.');
+  }
+
+  const normalizedInput = String(value).trim();
+
+  if (!normalizedInput) {
+    return null;
+  }
+
+  const plainDateMatch = normalizedInput.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+  if (plainDateMatch) {
+    const [, yearValue, monthValue, dayValue] = plainDateMatch;
+    const normalizedDate = new Date(
+      Number.parseInt(yearValue, 10),
+      Number.parseInt(monthValue, 10) - 1,
+      Number.parseInt(dayValue, 10),
+      0,
+      0,
+      0,
+      0,
+    );
+
+    if (Number.isNaN(normalizedDate.getTime())) {
+      throw new Error('must be a valid date or datetime.');
+    }
+
+    return normalizedDate.toISOString();
+  }
+
+  const parsedDate = new Date(normalizedInput);
+
+  if (Number.isNaN(parsedDate.getTime())) {
+    throw new Error('must be a valid date or datetime.');
+  }
+
+  return parsedDate.toISOString();
+}
+
 export function normalizeFilenameValue(value) {
   const normalizedInput = String(value ?? '').trim();
 
@@ -506,6 +553,10 @@ function normalizeFrontmatterValue(key, value) {
   try {
     if (key === 'filename') {
       return normalizeFilenameValue(value);
+    }
+
+    if (TIMESTAMPTZ_FIELDS.has(key)) {
+      return normalizeTimestampValue(value);
     }
 
     if (ARRAY_FIELDS.has(key)) {
@@ -638,6 +689,10 @@ function serializeFrontmatter(frontmatter) {
     lineWidth: 0,
   })
     .replace(/^([A-Za-z0-9_]+): null$/gm, '$1:')
+    .replace(
+      /^([A-Za-z0-9_]+): (\d{4}-\d{2}-\d{2})T00:00:00\.000Z$/gm,
+      '$1: $2',
+    )
     .trimEnd();
 }
 
@@ -670,14 +725,6 @@ function buildPersistedFieldValue(key, parsedFrontmatter, existingItem, modified
     return existingItem.cuid;
   }
 
-  if (key === 'date_created') {
-    return existingItem.date_created;
-  }
-
-  if (key === 'date_modified') {
-    return modifiedAt;
-  }
-
   if (key === 'date_trashed') {
     return existingItem.date_trashed;
   }
@@ -692,6 +739,32 @@ function buildPersistedFieldValue(key, parsedFrontmatter, existingItem, modified
 
   if (hasOwnValue(FRONTMATTER_DEFAULTS, key)) {
     return cloneDefaultValue(FRONTMATTER_DEFAULTS[key]);
+  }
+
+  if (key === 'date_created') {
+    return existingItem.date_created;
+  }
+
+  if (key === 'date_modified') {
+    return modifiedAt;
+  }
+
+  if (key === 'date_published') {
+    if (existingItem.date_published != null) {
+      return existingItem.date_published;
+    }
+
+    const effectivePublishValue = hasOwnValue(parsedFrontmatter, 'publish')
+      ? normalizeFrontmatterValue('publish', parsedFrontmatter.publish)
+      : existingItem.publish;
+    const effectiveDateModifiedValue = hasOwnValue(parsedFrontmatter, 'date_modified')
+      ? normalizeFrontmatterValue(
+          'date_modified',
+          parsedFrontmatter.date_modified,
+        )
+      : modifiedAt;
+
+    return effectivePublishValue ? effectiveDateModifiedValue : null;
   }
 
   return null;
@@ -831,7 +904,6 @@ export function buildItemUpdatePayloadFromFrontmatter({
   const updatePayload = {
     frontmatter: buildStoredAuthoredFrontmatter({
       existingItem,
-      modifiedAt,
       parsedFrontmatter,
     }),
   };
