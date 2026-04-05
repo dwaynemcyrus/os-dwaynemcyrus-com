@@ -9,7 +9,7 @@
     1rem
     calc(6rem + env(safe-area-inset-bottom));
   position: fixed;
-  z-index: 16;
+  z-index: var(--z-index-sheet);
 }
 
 .contextSheet__panel {

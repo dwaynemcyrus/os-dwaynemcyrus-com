@@ -53,8 +53,11 @@
   --space-tab-bar-height: 4.5rem;
   --space-fab-offset: 5.5rem;
 
+  --z-index-surface-overlay: 10;
   --z-index-chrome: 20;
-  --z-index-overlay: 30;
+  --z-index-fab: 30;
+  --z-index-sheet: 40;
+  --z-index-dialog: 50;
   --shadow-none: none;
 }
 

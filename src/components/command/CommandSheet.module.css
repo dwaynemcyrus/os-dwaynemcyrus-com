@@ -27,7 +27,7 @@
     1rem
     calc(6rem + env(safe-area-inset-bottom));
   position: fixed;
-  z-index: 15;
+  z-index: var(--z-index-sheet);
 }
 
 .commandSheet__panel {

@@ -15,7 +15,7 @@
   position: fixed;
   transform: translateX(-50%) rotate(45deg);
   transition: transform 160ms ease, opacity 160ms ease;
-  z-index: 20;
+  z-index: var(--z-index-fab);
 }
 
 .fabButton:hover {

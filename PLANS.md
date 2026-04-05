@@ -1074,3 +1074,9 @@
 
 **Open questions before execution:**
 - None. The chrome order, menu contents, and filename-edit interaction are defined tightly enough to implement directly.
+
+## Fix: shell overlay z-index stack
+
+- [x] Lower the template editor surface overlay beneath the shared chrome.
+- [x] Raise the FAB and command/context sheets above the editor surface.
+- [x] Keep dialogs at the top of the overlay stack.

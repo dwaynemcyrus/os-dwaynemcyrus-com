@@ -8,7 +8,7 @@
     var(--space-screen-pad)
     max(1rem, env(safe-area-inset-bottom));
   position: fixed;
-  z-index: 40;
+  z-index: var(--z-index-dialog);
 }
 
 .appDialog__backdrop {
