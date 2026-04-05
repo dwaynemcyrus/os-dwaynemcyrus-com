@@ -1080,3 +1080,9 @@
 - [x] Lower the template editor surface overlay beneath the shared chrome.
 - [x] Raise the FAB and command/context sheets above the editor surface.
 - [x] Keep dialogs at the top of the overlay stack.
+
+## Fix: editor frontmatter typing and clearance
+
+- [x] Make editor parsing tolerate an unfinished opening frontmatter fence while typing, without weakening save-time validation.
+- [ ] Remove the recent CodeMirror content/gutter top-padding clearance that broke gutter alignment.
+- [ ] Reapply editor top clearance at the wrapper/layout layer so the first lines start below the chrome stripe.

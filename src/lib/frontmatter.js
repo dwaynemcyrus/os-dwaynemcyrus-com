@@ -305,7 +305,10 @@ function normalizeMarkdownText(value) {
   return String(value ?? '').replaceAll('\r\n', '\n');
 }
 
-function splitMarkdownDocument(rawMarkdown) {
+function splitMarkdownDocument(
+  rawMarkdown,
+  { allowIncompleteFrontmatter = false } = {},
+) {
   const normalizedRawMarkdown = normalizeMarkdownText(rawMarkdown);
 
   if (!normalizedRawMarkdown.startsWith('---\n')) {
@@ -321,6 +324,17 @@ function splitMarkdownDocument(rawMarkdown) {
   const frontmatterEndIndex = normalizedRawMarkdown.indexOf('\n---\n', 4);
 
   if (frontmatterEndIndex === -1) {
+    if (allowIncompleteFrontmatter) {
+      return {
+        body: '',
+        bodyStartIndex: normalizedRawMarkdown.length,
+        frontmatterText: normalizedRawMarkdown.slice(4),
+        hasFrontmatter: true,
+        isFrontmatterIncomplete: true,
+        normalizedRawMarkdown,
+      };
+    }
+
     throw new Error('The frontmatter block must end with a closing --- line.');
   }
 
@@ -334,6 +348,7 @@ function splitMarkdownDocument(rawMarkdown) {
     bodyStartIndex,
     frontmatterText: normalizedRawMarkdown.slice(4, frontmatterEndIndex),
     hasFrontmatter: true,
+    isFrontmatterIncomplete: false,
     normalizedRawMarkdown,
   };
 }
@@ -882,16 +897,23 @@ export function mergeTemplateIntoEditorDocument({
   };
 }
 
-export function parseEditorMarkdownDocument(rawMarkdown) {
-  const splitDocument = splitMarkdownDocument(rawMarkdown);
+export function parseEditorMarkdownDocument(
+  rawMarkdown,
+  { allowIncompleteFrontmatter = false } = {},
+) {
+  const splitDocument = splitMarkdownDocument(rawMarkdown, {
+    allowIncompleteFrontmatter,
+  });
 
   return {
     body: splitDocument.body,
     bodyStartIndex: splitDocument.bodyStartIndex,
-    frontmatter: splitDocument.hasFrontmatter
+    frontmatter:
+      splitDocument.hasFrontmatter && !splitDocument.isFrontmatterIncomplete
       ? parseFrontmatterText(splitDocument.frontmatterText)
-      : {},
+        : {},
     frontmatterText: splitDocument.frontmatterText,
+    isFrontmatterIncomplete: splitDocument.isFrontmatterIncomplete === true,
     normalizedRawMarkdown: splitDocument.normalizedRawMarkdown,
   };
 }

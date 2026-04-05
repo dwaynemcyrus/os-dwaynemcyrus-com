@@ -93,7 +93,10 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const isReadOnlyTemplate = item?.is_template === true && item?.user_id == null;
   const isDirty = draftValue !== lastSavedValue;
   const currentFrontmatter = useMemo(
-    () => parseEditorMarkdownDocument(draftValue).frontmatter,
+    () =>
+      parseEditorMarkdownDocument(draftValue, {
+        allowIncompleteFrontmatter: true,
+      }).frontmatter,
     [draftValue],
   );
   const currentTitle = String(
@@ -400,13 +403,15 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
 
     setInsertTemplateTarget({
       getTemplateContext() {
-        const { frontmatter } = parseEditorMarkdownDocument(draftValueRef.current);
+        const draftDocument = parseEditorMarkdownDocument(draftValueRef.current, {
+          allowIncompleteFrontmatter: true,
+        });
         const currentItem = itemRef.current;
         const title = String(
-          frontmatter.title ?? currentItem?.title ?? '',
+          draftDocument.frontmatter.title ?? currentItem?.title ?? '',
         ).trim();
         const filename = String(
-          frontmatter.filename ?? currentItem?.filename ?? '',
+          draftDocument.frontmatter.filename ?? currentItem?.filename ?? '',
         ).trim();
 
         return {
