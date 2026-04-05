@@ -1,4 +1,7 @@
 .editor {
+  --editor-content-inline-pad: 1rem;
+  --editor-scroll-clearance-top:
+    calc(var(--space-top-chrome-height) + var(--space-top-chrome-gap) + 1rem);
   block-size: 100%;
   display: flex;
   flex: 1 1 auto;
@@ -23,20 +26,21 @@
   font-family: var(--font-family-mono);
   min-block-size: 0;
   overflow: auto;
+  scroll-padding-top: var(--editor-scroll-clearance-top);
 }
 
 .editor :global(.cm-content),
 .editor :global(.cm-gutter) {
   min-block-size: 100%;
   padding-bottom: 1rem;
-  padding-top: 1rem;
+  padding-top: var(--editor-scroll-clearance-top);
 }
 
 .editor :global(.cm-content) {
   caret-color: currentColor;
   line-height: 1.6;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  padding-left: var(--editor-content-inline-pad);
+  padding-right: var(--editor-content-inline-pad);
 }
 
 .editor :global(.cm-gutters) {
