@@ -2,6 +2,27 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.9.0] - 2026-04-05
+
+Recommended release: `v0.9.0`
+
+### Added
+- `date_published` support in the `items` schema and frontmatter contract.
+
+### Changed
+- Renamed the publish field from `published` to `publish` across the schema, runtime editor contract, and source docs.
+- `date_created`, `date_modified`, and `date_published` now sync between frontmatter and database columns.
+- Plain date input for authored timestamps now normalizes on save using the local browser timezone at midnight.
+- `date_modified` now auto-updates only when omitted, and `date_published` auto-fills when `publish: true` and the field is omitted.
+- Template folder settings are now truly user-defined. New templates inherit a folder only when one is explicitly configured.
+- The Home workbench row now shows its count in `#/12` format.
+
+### Fixed
+- Editor saves can now preserve imported authored publish/date metadata instead of forcing the old one-way timestamp behavior.
+
+### Notes
+- This milestone tightens the markdown-to-database contract so imported historical metadata can round-trip more predictably through the editor.
+
 ## [0.8.0] - 2026-04-05
 
 Recommended release: `v0.8.0`
