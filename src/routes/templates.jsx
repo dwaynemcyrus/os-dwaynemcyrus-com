@@ -1,5 +1,5 @@
 import { createElement, useEffect, useMemo, useState } from 'react';
-import { createRoute } from '@tanstack/react-router';
+import { Outlet, createRoute, useRouterState } from '@tanstack/react-router';
 import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
 import {
@@ -116,6 +116,16 @@ export const templatesRoute = createRoute({
   component: function TemplatesRoute() {
     const auth = useAuth();
     const navigate = templatesRoute.useNavigate();
+    const isEditorRouteOpen = useRouterState({
+      select: (state) => {
+        const { pathname } = state.location;
+
+        return (
+          pathname.startsWith('/settings/templates/') &&
+          pathname !== '/settings/templates'
+        );
+      },
+    });
     const [templateItems, setTemplateItems] = useState([]);
     const [createErrorMessage, setCreateErrorMessage] = useState('');
     const [deleteConfirmationValue, setDeleteConfirmationValue] = useState('');
@@ -368,7 +378,11 @@ export const templatesRoute = createRoute({
       : '';
 
     return (
-      <section className={`${sheetStyles.settingsScreen} ${styles.templatesRoute}`}>
+      <>
+        <section
+          aria-hidden={isEditorRouteOpen}
+          className={`${sheetStyles.settingsScreen} ${styles.templatesRoute}`}
+        >
         <header className={sheetStyles.settingsScreen__header}>
           <p className={sheetStyles.settingsScreen__eyebrow}>Settings</p>
           <h1 className={sheetStyles.settingsScreen__title}>Templates</h1>
@@ -655,77 +669,86 @@ export const templatesRoute = createRoute({
           </div>
         ) : null}
 
-        {pendingDeleteTemplate ? (
-          createElement(
-            AppDialog,
-            {
-              ariaLabel: 'Close delete template dialog',
-              onClose: closeDeleteDialog,
-              panelClassName: styles.templatesRoute__dialog,
-              role: 'alertdialog',
-            },
-            <>
-              <header className={sheetStyles.settingsScreen__header}>
-                <p className={sheetStyles.settingsScreen__eyebrow}>Templates</p>
-                <h2 className={sheetStyles.settingsScreen__sectionTitle}>
-                  Delete Template
-                </h2>
-                <p className={sheetStyles.settingsScreen__copy}>
-                  Type the exact text <strong>{deleteDialogTitle}</strong> to
-                  move this template to trash.
-                </p>
-              </header>
-
-              <form
-                className={sheetStyles.settingsScreen__form}
-                onSubmit={(event) => {
-                  void handleDeleteTemplate(event);
-                }}
-              >
-                <label className={sheetStyles.settingsScreen__label}>
-                  <span>Confirm text</span>
-                  <input
-                    autoFocus
-                    className={styles.templatesRoute__dialogInput}
-                    onChange={(event) => {
-                      setDeleteConfirmationValue(event.target.value);
-                      setDeleteErrorMessage('');
-                    }}
-                    type="text"
-                    value={deleteConfirmationValue}
-                  />
-                </label>
-
-                {deleteErrorMessage ? (
-                  <p className={getSheetMessageClassName('error')} role="alert">
-                    {deleteErrorMessage}
+          {pendingDeleteTemplate ? (
+            createElement(
+              AppDialog,
+              {
+                ariaLabel: 'Close delete template dialog',
+                onClose: closeDeleteDialog,
+                panelClassName: styles.templatesRoute__dialog,
+                role: 'alertdialog',
+              },
+              <>
+                <header className={sheetStyles.settingsScreen__header}>
+                  <p className={sheetStyles.settingsScreen__eyebrow}>Templates</p>
+                  <h2 className={sheetStyles.settingsScreen__sectionTitle}>
+                    Delete Template
+                  </h2>
+                  <p className={sheetStyles.settingsScreen__copy}>
+                    Type the exact text <strong>{deleteDialogTitle}</strong> to
+                    move this template to trash.
                   </p>
-                ) : null}
+                </header>
 
-                <div className={styles.templatesRoute__dialogActions}>
-                  <button
-                    className={sheetStyles.settingsScreen__secondaryButton}
-                    onClick={closeDeleteDialog}
-                    type="button"
-                  >
-                    Cancel
-                  </button>
+                <form
+                  className={sheetStyles.settingsScreen__form}
+                  onSubmit={(event) => {
+                    void handleDeleteTemplate(event);
+                  }}
+                >
+                  <label className={sheetStyles.settingsScreen__label}>
+                    <span>Confirm text</span>
+                    <input
+                      autoFocus
+                      className={styles.templatesRoute__dialogInput}
+                      onChange={(event) => {
+                        setDeleteConfirmationValue(event.target.value);
+                        setDeleteErrorMessage('');
+                      }}
+                      type="text"
+                      value={deleteConfirmationValue}
+                    />
+                  </label>
 
-                  <button
-                    className={`${sheetStyles.settingsScreen__actionButton} ${styles.templatesRoute__dangerButton}`}
-                    disabled={
-                      isDeleting || deleteConfirmationValue !== deleteDialogTitle
-                    }
-                    type="submit"
-                  >
-                    {isDeleting ? 'Deleting...' : 'Delete Template'}
-                  </button>
-                </div>
-              </form>
-            </>,
-          )
+                  {deleteErrorMessage ? (
+                    <p className={getSheetMessageClassName('error')} role="alert">
+                      {deleteErrorMessage}
+                    </p>
+                  ) : null}
+
+                  <div className={styles.templatesRoute__dialogActions}>
+                    <button
+                      className={sheetStyles.settingsScreen__secondaryButton}
+                      onClick={closeDeleteDialog}
+                      type="button"
+                    >
+                      Cancel
+                    </button>
+
+                    <button
+                      className={`${sheetStyles.settingsScreen__actionButton} ${styles.templatesRoute__dangerButton}`}
+                      disabled={
+                        isDeleting || deleteConfirmationValue !== deleteDialogTitle
+                      }
+                      type="submit"
+                    >
+                      {isDeleting ? 'Deleting...' : 'Delete Template'}
+                    </button>
+                  </div>
+                </form>
+              </>,
+            )
+          ) : null}
+        </section>
+
+        {isEditorRouteOpen ? (
+          <div className={styles.templatesRoute__editorLayer}>
+            <div className={styles.templatesRoute__editorSheet}>
+              {createElement(Outlet)}
+            </div>
+          </div>
         ) : null}
-      </section>
+      </>
     );
   },
 });

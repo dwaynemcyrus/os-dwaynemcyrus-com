@@ -2,6 +2,18 @@
   gap: 1.5rem;
 }
 
+.templatesRoute__editorLayer {
+  inset: 0;
+  position: absolute;
+  z-index: var(--z-index-overlay);
+}
+
+.templatesRoute__editorSheet {
+  background: var(--color-bg-app);
+  block-size: 100%;
+  min-block-size: 100%;
+}
+
 .templatesRoute__settingsPanel,
 .templatesRoute__createSection,
 .templatesRoute__emptyState,

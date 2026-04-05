@@ -959,3 +959,53 @@
 - [x] Sync `date_created`, `date_modified`, and `date_published` between frontmatter and columns.
 - [x] Normalize plain date input to local-browser midnight before persistence.
 - [x] Auto-fill `date_published` when `publish: true` and the field is omitted, while preserving existing publish dates when `publish: false`.
+
+## Feature: template editor route
+
+**Summary:** Make new-template creation open directly into the nested template editor and fix the Settings-owned template route stack so template editing is actually reachable.
+
+**Agents involved:** both
+
+**Sequence:**
+
+### Phase 1 — Route and create flow
+
+**Agent:** @planner
+
+**Goal:** Fix the route structure first, then tighten the template-create UX around the nested editor path.
+
+**Chunks:**
+
+1. **Template route shell**
+   - Status: completed
+   - Files touched: `src/routes/templates.jsx`, `src/routes/settings.templates.$id.jsx`
+   - Steps:
+     1. Make the parent `/settings/templates` route render an `Outlet` so the nested `$id` editor route has a mount point.
+     2. Keep the template list screen as the parent layer so the future sheet-stack interaction can show it beneath the editor.
+     3. Verify the existing open-template action now renders the editor screen at `/settings/templates/$id`.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; opening an existing template from the Templates list renders the editor.
+   - Risks: the parent route must not render duplicate chrome or break the Settings-owned back path.
+   - Commit message: `fix(templates): mount editor route`
+
+2. **Create-to-editor flow**
+   - Files touched: `src/routes/templates.jsx`, `src/lib/items.js`
+   - Steps:
+     1. Keep blank-template creation server-confirmed, but navigate straight into `/settings/templates/$id` after insert.
+     2. Keep the created template visible in local list state so returning to the list is immediate.
+     3. Verify a new blank template opens directly in the editor instead of only appearing as an untitled row.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; creating a template opens the editor route immediately.
+   - Risks: if local list state and nested route timing drift, the user can see duplicate or stale list entries on return.
+   - Commit message: `fix(templates): open editor on create`
+
+3. **Template editor polish**
+   - Files touched: `src/components/editor/ItemEditorScreen.jsx`, `src/lib/navigation.js`, `src/routes/TemplatesRoute.module.css`
+   - Steps:
+     1. Verify the template editor uses the correct back target of `/settings/templates`.
+     2. Check the editor chrome and empty-template state against the Settings-owned sheet pattern.
+     3. Remove any list-only UI assumptions that make a blank template feel broken on first open.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; back from template editing returns to the Templates list reliably.
+   - Risks: editor chrome changes can spill into the normal `/items/$id` editor if shared components are not isolated carefully.
+   - Commit message: `style(templates): polish editor sheet`
+
+**Open questions before execution:**
+- None. The current route structure and the approved Settings-owned sheet model are specific enough to implement directly.
