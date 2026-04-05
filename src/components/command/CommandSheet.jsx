@@ -133,6 +133,39 @@ export function CommandSheet({ children }) {
   const handleEscapeClose = useEffectEvent(() => {
     void requestClose();
   });
+  const focusInputWithoutMovingShell = useEffectEvent(() => {
+    const input = inputRef.current;
+
+    if (!input) {
+      return;
+    }
+
+    const shellScrollContainer = document.querySelector(
+      '[data-app-shell-scroll="true"]',
+    );
+    const previousScrollTop =
+      shellScrollContainer instanceof HTMLElement
+        ? shellScrollContainer.scrollTop
+        : 0;
+
+    try {
+      input.focus({
+        preventScroll: true,
+      });
+    } catch {
+      input.focus();
+    }
+
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if (!(shellScrollContainer instanceof HTMLElement)) {
+          return;
+        }
+
+        shellScrollContainer.scrollTop = previousScrollTop;
+      });
+    });
+  });
 
   function updateComposerValue(nextValue) {
     setQuery(nextValue);
@@ -211,7 +244,7 @@ export function CommandSheet({ children }) {
       } else {
         setQuery('');
         setSearchResults([]);
-        inputRef.current?.focus();
+        focusInputWithoutMovingShell();
       }
 
       return true;
@@ -245,8 +278,8 @@ export function CommandSheet({ children }) {
       return;
     }
 
-    inputRef.current?.focus();
-  }, [isCommandSheetOpen]);
+    focusInputWithoutMovingShell();
+  }, [isCommandSheetOpen, focusInputWithoutMovingShell]);
 
   useEffect(() => {
     if (!inputRef.current) {
@@ -279,19 +312,6 @@ export function CommandSheet({ children }) {
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [isCommandSheetOpen, isContextSheetOpen, handleEscapeClose]);
-
-  useEffect(() => {
-    if (!isCommandSheetOpen && !isContextSheetOpen) {
-      return;
-    }
-
-    const { overflow } = document.body.style;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = overflow;
-    };
-  }, [isCommandSheetOpen, isContextSheetOpen]);
 
   useEffect(() => {
     if (!isCommandSheetOpen || !auth.user?.id) {

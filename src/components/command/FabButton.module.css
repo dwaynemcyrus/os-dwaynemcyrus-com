@@ -9,8 +9,8 @@
   display: inline-flex;
   justify-content: center;
   left: 50%;
-  min-height: 3.5rem;
-  min-width: 3.5rem;
+  min-height: 2.5rem;
+  min-width: 2.5rem;
   padding: 0;
   position: fixed;
   transform: translateX(-50%) rotate(45deg);
@@ -29,7 +29,7 @@
 
 .fabButton__icon {
   display: inline-block;
-  font-size: 1.4rem;
+  font-size: 1.1rem;
   font-weight: 700;
   line-height: 1;
   transform: rotate(-45deg);

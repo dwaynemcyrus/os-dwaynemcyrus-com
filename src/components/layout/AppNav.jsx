@@ -17,7 +17,7 @@ export function AppNav({ children }) {
 
   return (
     <div className={styles.appShell}>
-      <main className={styles.appShell__main}>
+      <main className={styles.appShell__main} data-app-shell-scroll="true">
         <div className={screenClassName}>
           {backNavigation ? (
             <div className={styles.appShell__chrome}>
