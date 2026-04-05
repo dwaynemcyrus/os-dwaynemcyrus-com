@@ -4,7 +4,10 @@ import { BacklinksPanel } from './BacklinksPanel';
 import { ItemEditor } from './ItemEditor';
 import { useAuth } from '../../lib/auth';
 import { useCommandContext } from '../../lib/command-context';
-import { replaceEditorFrontmatterField } from '../../lib/frontmatter';
+import {
+  parseEditorMarkdownDocument,
+  replaceEditorFrontmatterField,
+} from '../../lib/frontmatter';
 import {
   fetchEditorItem,
   fetchItemBacklinkGroups,
@@ -47,8 +50,13 @@ export function ItemEditorScreen({ itemId }) {
   const [wikilinkTargets, setWikilinkTargets] = useState([]);
   const [editorSyncVersion, setEditorSyncVersion] = useState(0);
   const editorRef = useRef(null);
+  const draftValueRef = useRef('');
+  const itemRef = useRef(null);
   const isReadOnlyTemplate = item?.is_template === true && item?.user_id == null;
   const isDirty = draftValue !== lastSavedValue;
+
+  draftValueRef.current = draftValue;
+  itemRef.current = item;
 
   function buildWikilinkTargetRecord(editorItem) {
     return {
@@ -292,6 +300,21 @@ export function ItemEditorScreen({ itemId }) {
     }
 
     setInsertTemplateTarget({
+      getTemplateContext() {
+        const { frontmatter } = parseEditorMarkdownDocument(draftValueRef.current);
+        const currentItem = itemRef.current;
+        const title = String(
+          frontmatter.title ?? currentItem?.title ?? '',
+        ).trim();
+        const filename = String(
+          frontmatter.filename ?? currentItem?.filename ?? '',
+        ).trim();
+
+        return {
+          filename,
+          title: title || filename,
+        };
+      },
       itemId,
       onInsertTemplate(payload) {
         try {

@@ -25,6 +25,7 @@ const ITEMS_ROUTE_LIMIT = 200;
 const MAX_CUID_RETRIES = 20;
 const TEMPLATE_DATE_TOKEN_PATTERN = /\{\{date(?::([^}]*))?\}\}/g;
 const TEMPLATE_TIME_TOKEN_PATTERN = /\{\{time(?::([^}]*))?\}\}/g;
+const TEMPLATE_TITLE_TOKEN_PATTERN = /\{\{title\}\}/g;
 const TEMPLATE_FORMAT_TOKEN_PATTERN = /YYYY|YY|MM|DD|HH|mm|ss|M|D|H|m|s/g;
 const LEGACY_CUID_TEMPLATE_TOKEN = '{{date:YYYYMMDD}}{{time:HHmmss}}';
 const TEMPLATE_VARIABLE_PATTERN = /\{\{[^}]+\}\}/;
@@ -291,11 +292,16 @@ function formatTemplateVariableValue(date, format, fallbackValue) {
   );
 }
 
+function normalizeTemplateTitleValue(value) {
+  return String(value ?? '').trim();
+}
+
 function materializeTemplateRawMarkdown({
   createdAt,
   cuid,
   rawMarkdown,
   templateSettings,
+  titleValue,
 }) {
   const dateFormat = normalizeTemplateFormatValue(
     templateSettings?.dateFormat,
@@ -308,6 +314,7 @@ function materializeTemplateRawMarkdown({
 
   return String(rawMarkdown ?? '')
     .replaceAll(LEGACY_CUID_TEMPLATE_TOKEN, cuid)
+    .replaceAll(TEMPLATE_TITLE_TOKEN_PATTERN, normalizeTemplateTitleValue(titleValue))
     .replace(
       TEMPLATE_DATE_TOKEN_PATTERN,
       (_match, overrideFormat) =>
@@ -323,8 +330,10 @@ function materializeTemplateRawMarkdown({
 function buildMaterializedTemplateUpdatePayload({
   baseItem,
   createdAt,
+  fallbackTitle,
   templateItem,
   templateSettings,
+  titleValue,
 }) {
   const modifiedAt = createdAt.toISOString();
   const materializedRawMarkdown = materializeTemplateRawMarkdown({
@@ -332,17 +341,28 @@ function buildMaterializedTemplateUpdatePayload({
     cuid: baseItem.cuid,
     rawMarkdown: buildEditorMarkdownDocument(templateItem),
     templateSettings,
+    titleValue,
   });
   const { body, frontmatter } = parseEditorMarkdownDocument(materializedRawMarkdown);
+  const frontmatterPayload = buildItemUpdatePayloadFromFrontmatter({
+    existingItem: baseItem,
+    modifiedAt,
+    parsedFrontmatter: frontmatter,
+  });
+  const resolvedTitle =
+    normalizeTemplateTitleValue(frontmatterPayload.title) ||
+    normalizeTemplateTitleValue(fallbackTitle) ||
+    null;
 
   return {
-    ...buildItemUpdatePayloadFromFrontmatter({
-      existingItem: baseItem,
-      modifiedAt,
-      parsedFrontmatter: frontmatter,
-    }),
+    ...frontmatterPayload,
     content: body,
     date_modified: modifiedAt,
+    filename: resolveNextFilename({
+      parsedFrontmatter: frontmatter,
+      title: resolvedTitle,
+    }),
+    title: resolvedTitle,
   };
 }
 
@@ -409,16 +429,25 @@ async function createDailyNoteForDate({
     const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
       baseItem,
       createdAt: date,
+      fallbackTitle: dateField,
       templateItem,
       templateSettings,
+      titleValue: dateField,
     });
+
+    await ensureFilenameIsUnique({
+      filename: dateField,
+      userId,
+    });
+
     const { data, error } = await supabase
       .from('items')
       .insert({
         ...baseItem,
         ...materializedTemplatePayload,
         date_field: dateField,
-        title: materializedTemplatePayload.title?.trim() || dateField,
+        filename: dateField,
+        title: dateField,
       })
       .select(buildDailyNoteFieldsQuery())
       .single();
@@ -920,7 +949,11 @@ export async function createInboxItemFromCapture({ rawValue, userId }) {
   throw new Error('Unable to create a unique timestamp id right now.');
 }
 
-export async function createItemFromTemplate({ templateId, userId }) {
+export async function createItemFromTemplate({
+  templateId,
+  title = '',
+  userId,
+}) {
   const [
     { data: templateItem, error: templateError },
     templateSettings,
@@ -951,16 +984,31 @@ export async function createItemFromTemplate({ templateId, userId }) {
       timestamp,
       userId,
     });
+    const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
+      baseItem,
+      createdAt,
+      fallbackTitle: title,
+      templateItem,
+      templateSettings,
+      titleValue: title,
+    });
+
+    if (!materializedTemplatePayload.filename) {
+      throw new Error(
+        'Add a title or filename with letters or numbers before creating this item.',
+      );
+    }
+
+    await ensureFilenameIsUnique({
+      filename: materializedTemplatePayload.filename,
+      userId,
+    });
+
     const { data, error } = await supabase
       .from('items')
       .insert({
         ...baseItem,
-        ...buildMaterializedTemplateUpdatePayload({
-          baseItem,
-          createdAt,
-          templateItem,
-          templateSettings,
-        }),
+        ...materializedTemplatePayload,
       })
       .select(buildCommandItemFieldsQuery())
       .single();
@@ -979,6 +1027,7 @@ export async function createItemFromTemplate({ templateId, userId }) {
 
 export async function buildMaterializedTemplateMarkdown({
   templateItem,
+  titleValue = '',
   userId,
 }) {
   const createdAt = new Date();
@@ -989,6 +1038,7 @@ export async function buildMaterializedTemplateMarkdown({
     cuid: createCuid(createdAt),
     rawMarkdown: buildEditorMarkdownDocument(templateItem),
     templateSettings,
+    titleValue,
   });
 }
 
@@ -1077,9 +1127,24 @@ export async function processInboxItem({
   const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
     baseItem,
     createdAt,
+    fallbackTitle: normalizedTitle,
     templateItem,
     templateSettings,
+    titleValue: normalizedTitle,
   });
+
+  if (!materializedTemplatePayload.filename) {
+    throw new Error(
+      'Add a title or filename with letters or numbers before processing this item.',
+    );
+  }
+
+  await ensureFilenameIsUnique({
+    excludeItemId: itemId,
+    filename: materializedTemplatePayload.filename,
+    userId,
+  });
+
   const { data, error } = await supabase
     .from('items')
     .update({
@@ -1090,7 +1155,7 @@ export async function processInboxItem({
       date_trashed: null,
       is_template: false,
       status: 'backlog',
-      title: normalizedTitle || materializedTemplatePayload.title || null,
+      title: materializedTemplatePayload.title,
       user_id: userId,
     })
     .eq('id', itemId)
