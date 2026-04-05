@@ -2,7 +2,11 @@ import { createElement, useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
-import { fetchHomeSummary, openOrCreateDailyNote } from '../lib/items';
+import {
+  fetchHomeSummary,
+  HOME_WORKBENCH_LIMIT,
+  openOrCreateDailyNote,
+} from '../lib/items';
 import styles from './HomeRoute.module.css';
 import { authenticatedRoute } from './_authenticated';
 
@@ -83,7 +87,10 @@ export const indexRoute = createRoute({
       [homeSummary.inboxCount, isLoadingHome],
     );
     const workbenchCountValue = useMemo(
-      () => (isLoadingHome ? '...' : String(homeSummary.workbenchItems.length)),
+      () =>
+        isLoadingHome
+          ? '...'
+          : `${homeSummary.workbenchItems.length}/${HOME_WORKBENCH_LIMIT}`,
       [homeSummary.workbenchItems.length, isLoadingHome],
     );
     const dailyNoteLabel = homeSummary.hasTodayDailyNote
