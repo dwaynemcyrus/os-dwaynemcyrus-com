@@ -1,7 +1,14 @@
-import { createElement, useEffect, useMemo, useState } from 'react';
+import {
+  createElement,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useState,
+} from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
+import { useAppChrome } from '../lib/app-chrome';
 import {
   fetchHomeSummary,
   HOME_WORKBENCH_LIMIT,
@@ -78,10 +85,10 @@ export const indexRoute = createRoute({
     const [isDailyTemplateDialogOpen, setIsDailyTemplateDialogOpen] =
       useState(false);
     const [isLoadingHome, setIsLoadingHome] = useState(true);
-    const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
     const [isOpeningDailyNote, setIsOpeningDailyNote] = useState(false);
     const [isWorkbenchDialogOpen, setIsWorkbenchDialogOpen] = useState(false);
-    const today = new Date();
+    const today = useMemo(() => new Date(), []);
+    const homeDateLabel = useMemo(() => formatHomeDate(today), [today]);
     const inboxCountValue = useMemo(
       () => (isLoadingHome ? '...' : String(homeSummary.inboxCount)),
       [homeSummary.inboxCount, isLoadingHome],
@@ -96,6 +103,25 @@ export const indexRoute = createRoute({
     const dailyNoteLabel = homeSummary.hasTodayDailyNote
       ? 'Open Today’s Note'
       : 'Create Today’s Note';
+
+    const openSettings = useEffectEvent(async () => {
+      await navigate({
+        to: '/settings',
+      });
+    });
+
+    useAppChrome(useMemo(() => ({
+      metaText: homeDateLabel,
+      moreActions: [
+        {
+          id: 'settings',
+          label: 'Settings',
+          onSelect() {
+            void openSettings();
+          },
+        },
+      ],
+    }), [homeDateLabel, openSettings]));
 
     useEffect(() => {
       if (!auth.user?.id) {
@@ -138,17 +164,12 @@ export const indexRoute = createRoute({
     }, [auth.user?.id]);
 
     useEffect(() => {
-      if (
-        !isMoreMenuOpen &&
-        !isWorkbenchDialogOpen &&
-        !isDailyTemplateDialogOpen
-      ) {
+      if (!isWorkbenchDialogOpen && !isDailyTemplateDialogOpen) {
         return undefined;
       }
 
       function handleKeyDown(event) {
         if (event.key === 'Escape') {
-          setIsMoreMenuOpen(false);
           setIsDailyTemplateDialogOpen(false);
           setIsWorkbenchDialogOpen(false);
         }
@@ -159,7 +180,7 @@ export const indexRoute = createRoute({
       return () => {
         window.removeEventListener('keydown', handleKeyDown);
       };
-    }, [isDailyTemplateDialogOpen, isMoreMenuOpen, isWorkbenchDialogOpen]);
+    }, [isDailyTemplateDialogOpen, isWorkbenchDialogOpen]);
 
     async function handleOpenDailyNote() {
       if (!auth.user?.id) {
@@ -213,14 +234,6 @@ export const indexRoute = createRoute({
       });
     }
 
-    async function handleOpenSettings() {
-      setIsMoreMenuOpen(false);
-
-      await navigate({
-        to: '/settings',
-      });
-    }
-
     async function handleOpenDailyNoteSettings() {
       setIsDailyTemplateDialogOpen(false);
 
@@ -231,52 +244,8 @@ export const indexRoute = createRoute({
 
     return (
       <section className={styles.homeRoute}>
-        <div className={styles.homeRoute__chrome}>
-          <button
-            aria-expanded={isMoreMenuOpen}
-            aria-haspopup="menu"
-            aria-label="More"
-            className={styles.homeRoute__moreButton}
-            onClick={() => {
-              setIsMoreMenuOpen((currentValue) => !currentValue);
-            }}
-            type="button"
-          >
-            <span aria-hidden="true" className={styles.homeRoute__moreDots}>
-              <span className={styles.homeRoute__moreDot} />
-              <span className={styles.homeRoute__moreDot} />
-              <span className={styles.homeRoute__moreDot} />
-            </span>
-          </button>
-
-          {isMoreMenuOpen ? (
-            <>
-              <button
-                aria-label="Close more menu"
-                className={styles.homeRoute__overlayDismiss}
-                onClick={() => {
-                  setIsMoreMenuOpen(false);
-                }}
-                type="button"
-              />
-              <div className={styles.homeRoute__menu} role="menu">
-                <button
-                  className={styles.homeRoute__menuItem}
-                  onClick={() => {
-                    void handleOpenSettings();
-                  }}
-                  role="menuitem"
-                  type="button"
-                >
-                  Settings
-                </button>
-              </div>
-            </>
-          ) : null}
-        </div>
-
         <header className={styles.homeRoute__header}>
-          <p className={styles.homeRoute__date}>{formatHomeDate(today)}</p>
+          <p className={styles.homeRoute__date}>{homeDateLabel}</p>
           <h1 className={styles.homeRoute__title}>Now</h1>
         </header>
 

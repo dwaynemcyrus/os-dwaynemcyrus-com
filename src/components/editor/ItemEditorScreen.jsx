@@ -1,9 +1,19 @@
-import { createElement, useEffect, useEffectEvent, useRef, useState } from 'react';
+import {
+  createElement,
+  useEffect,
+  useEffectEvent,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useNavigate } from '@tanstack/react-router';
 import { BacklinksPanel } from './BacklinksPanel';
 import { ItemEditor } from './ItemEditor';
+import { AppDialog } from '../ui/AppDialog';
 import { useAuth } from '../../lib/auth';
+import { useAppChrome } from '../../lib/app-chrome';
 import { useCommandContext } from '../../lib/command-context';
+import { formatFilenameForDisplay } from '../../lib/filenames';
 import {
   parseEditorMarkdownDocument,
   replaceEditorFrontmatterField,
@@ -40,16 +50,19 @@ function getEditorHeading({ isTemplateEditor, item }) {
   return isTemplateEditor ? 'Untitled Template' : 'Item Editor';
 }
 
-function getEditorDescription({ isReadOnlyTemplate, isTemplateEditor, itemId }) {
-  if (isReadOnlyTemplate) {
-    return 'This system template opens in the shared editor surface for review, but it is read only.';
-  }
-
+function getEditorPlaceholderText({ isTemplateEditor }) {
   if (isTemplateEditor) {
     return 'Draft reusable markdown and optional YAML frontmatter for this template. Save when you are ready to use it elsewhere in the app.';
   }
 
-  return `Raw markdown editing is now active for item ${itemId}. Use the save button or Cmd/Ctrl+S, and use the FAB to merge template frontmatter while inserting template body content at the current cursor position.`;
+  return 'Write raw markdown with YAML frontmatter here.';
+}
+
+function getFilenameDialogValue({ currentFilename, currentTitle }) {
+  return formatFilenameForDisplay(
+    currentFilename || currentTitle,
+    currentTitle || '',
+  );
 }
 
 export function ItemEditorScreen({ editorKind = 'item', itemId }) {
@@ -64,6 +77,8 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isFilenameDialogOpen, setIsFilenameDialogOpen] = useState(false);
+  const [filenameDialogValue, setFilenameDialogValue] = useState('');
   const [linkErrorMessage, setLinkErrorMessage] = useState('');
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [saveErrorMessage, setSaveErrorMessage] = useState('');
@@ -77,18 +92,25 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const isTemplateEditor = editorKind === 'template';
   const isReadOnlyTemplate = item?.is_template === true && item?.user_id == null;
   const isDirty = draftValue !== lastSavedValue;
-  const editorHeading = getEditorHeading({
-    isTemplateEditor,
-    item,
-  });
-  const editorDescription = getEditorDescription({
-    isReadOnlyTemplate,
-    isTemplateEditor,
-    itemId,
-  });
-  const placeholderText = isTemplateEditor
-    ? 'Write template markdown with optional YAML frontmatter here.'
-    : 'Write raw markdown with YAML frontmatter here.';
+  const currentFrontmatter = useMemo(
+    () => parseEditorMarkdownDocument(draftValue).frontmatter,
+    [draftValue],
+  );
+  const currentTitle = String(
+    currentFrontmatter.title ?? item?.title ?? '',
+  ).trim();
+  const currentFilename = String(
+    currentFrontmatter.filename ?? item?.filename ?? '',
+  ).trim();
+  const editorHeading = getEditorHeading({ isTemplateEditor, item });
+  const placeholderText = getEditorPlaceholderText({ isTemplateEditor });
+  const editorMetaText = formatFilenameForDisplay(
+    currentFilename,
+    currentTitle || editorHeading,
+  );
+  const lastSavedText = item
+    ? `Last saved ${formatEditorDate(item.date_modified ?? item.date_created)}`
+    : 'Loading item...';
   const shouldShowWorkbenchToggle = !isTemplateEditor;
   const shouldShowBacklinksPanel = !isTemplateEditor;
 
@@ -153,6 +175,46 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     setDraftValue(nextValue);
     setSaveErrorMessage('');
     setSaveStatusMessage('');
+  }
+
+  const openFilenameDialog = useEffectEvent(() => {
+    if (isReadOnlyTemplate) {
+      return;
+    }
+
+    setFilenameDialogValue(getFilenameDialogValue({
+      currentFilename,
+      currentTitle,
+    }));
+    setIsFilenameDialogOpen(true);
+  });
+
+  function closeFilenameDialog() {
+    setIsFilenameDialogOpen(false);
+    setFilenameDialogValue('');
+  }
+
+  function handleFilenameDialogSave(event) {
+    event.preventDefault();
+
+    try {
+      const nextDraftValue = replaceEditorFrontmatterField({
+        key: 'filename',
+        rawMarkdown: draftValue,
+        value: filenameDialogValue,
+      });
+
+      updateDraftValue(nextDraftValue);
+      closeFilenameDialog();
+
+      window.requestAnimationFrame(() => {
+        editorRef.current?.focus();
+      });
+    } catch (error) {
+      setSaveErrorMessage(
+        error.message ?? 'Unable to update the filename right now.',
+      );
+    }
   }
 
   useEffect(() => {
@@ -271,7 +333,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     };
   }, [auth.user?.id, item?.id, item?.title, isReadOnlyTemplate]);
 
-  function handleWorkbenchToggle() {
+  const handleWorkbenchToggle = useEffectEvent(() => {
     if (isReadOnlyTemplate) {
       return;
     }
@@ -296,7 +358,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
         error.message ?? 'Unable to update the workbench toggle right now.',
       );
     }
-  }
+  });
 
   async function loadWikilinkOptions(query) {
     if (!auth.user?.id) {
@@ -371,6 +433,57 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     };
   }, [setInsertTemplateTarget, itemId, isReadOnlyTemplate]);
 
+  useAppChrome(useMemo(() => {
+    const moreActions = [];
+
+    if (!isReadOnlyTemplate) {
+      moreActions.push({
+        id: 'save',
+        label: isSaving ? 'Saving...' : 'Save',
+        disabled: isLoading || isSaving || !isDirty,
+        onSelect() {
+          handleSave();
+        },
+      });
+    }
+
+    if (shouldShowWorkbenchToggle) {
+      moreActions.push({
+        id: 'workbench',
+        label: isWorkbenchEnabled ? 'Workbench Off' : 'Workbench On',
+        disabled: isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate,
+        onSelect() {
+          handleWorkbenchToggle();
+        },
+      });
+    }
+
+    return {
+      infoText: lastSavedText,
+      metaAriaLabel: 'Edit filename',
+      metaText: editorMetaText,
+      moreActions,
+      onMetaActivate: isReadOnlyTemplate
+        ? undefined
+        : () => {
+            openFilenameDialog();
+          },
+    };
+  }, [
+    editorMetaText,
+    handleSave,
+    handleWorkbenchToggle,
+    isDirty,
+    isLoading,
+    isReadOnlyTemplate,
+    isSaving,
+    isWorkbenchEnabled,
+    lastSavedText,
+    loadErrorMessage,
+    openFilenameDialog,
+    shouldShowWorkbenchToggle,
+  ]));
+
   return (
     <section
       style={{
@@ -378,108 +491,10 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
         display: 'flex',
         flex: '1 1 auto',
         flexDirection: 'column',
-        gap: '1rem',
-        inlineSize: 'min(56rem, 100%)',
-        marginInline: 'auto',
         minBlockSize: 0,
         overflow: 'hidden',
       }}
     >
-      <header
-        style={{
-          alignItems: 'start',
-          display: 'flex',
-          flexWrap: 'wrap',
-          gap: '1rem',
-          justifyContent: 'space-between',
-        }}
-      >
-        <div
-          style={{
-            display: 'grid',
-            gap: '0.5rem',
-          }}
-        >
-          <h1 style={{ margin: 0 }}>{editorHeading}</h1>
-          <p style={{ margin: 0 }}>{editorDescription}</p>
-          <p
-            style={{
-              color: 'var(--color-text-secondary)',
-              fontSize: '0.95rem',
-              margin: 0,
-            }}
-          >
-            {item
-              ? `Last saved ${formatEditorDate(item.date_modified ?? item.date_created)}`
-              : 'Loading item...'}
-          </p>
-        </div>
-
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '0.75rem',
-          }}
-        >
-          {shouldShowWorkbenchToggle ? (
-            <button
-              aria-pressed={isWorkbenchEnabled}
-              disabled={isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate}
-              onClick={handleWorkbenchToggle}
-              style={{
-                background: isWorkbenchEnabled
-                  ? 'var(--color-bg-surface)'
-                  : 'transparent',
-                border: '1px solid var(--color-border-card)',
-                cursor:
-                  isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate
-                    ? 'not-allowed'
-                    : 'pointer',
-                font: 'inherit',
-                fontWeight: 700,
-                minHeight: '3rem',
-                minWidth: '10rem',
-                padding: '0 1.25rem',
-              }}
-              type="button"
-            >
-              {isWorkbenchEnabled ? 'Workbench On' : 'Workbench Off'}
-            </button>
-          ) : null}
-
-          <button
-            disabled={isLoading || isSaving || !isDirty || isReadOnlyTemplate}
-            onClick={() => {
-              handleSave();
-            }}
-            style={{
-              background:
-                isLoading || isSaving || !isDirty || isReadOnlyTemplate
-                  ? 'transparent'
-                  : 'var(--color-bg-surface)',
-              border: '1px solid var(--color-border-card)',
-              color:
-                isLoading || isSaving || !isDirty || isReadOnlyTemplate
-                  ? 'var(--color-text-secondary)'
-                  : 'var(--color-text-primary)',
-              cursor:
-                isLoading || isSaving || !isDirty || isReadOnlyTemplate
-                  ? 'not-allowed'
-                  : 'pointer',
-              font: 'inherit',
-              fontWeight: 700,
-              minHeight: '3rem',
-              minWidth: '9rem',
-              padding: '0 1.25rem',
-            }}
-            type="button"
-          >
-            {isSaving ? 'Saving...' : isReadOnlyTemplate ? 'Read Only' : 'Save'}
-          </button>
-        </div>
-      </header>
-
       {loadErrorMessage ? (
         <p role="alert" style={{ color: 'var(--color-danger)', margin: 0 }}>
           {loadErrorMessage}
@@ -562,6 +577,114 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
             savedTitle: item?.title ?? '',
           })
         : null}
+
+      {isFilenameDialogOpen ? createElement(
+        AppDialog,
+        {
+          ariaLabel: 'Close filename editor',
+          onClose: closeFilenameDialog,
+          role: 'dialog',
+        },
+        <>
+          <header
+            style={{
+              display: 'grid',
+              gap: '0.5rem',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '1.1rem',
+                margin: 0,
+              }}
+            >
+              Change Filename
+            </h2>
+            <p
+              style={{
+                color: 'var(--color-text-secondary)',
+                lineHeight: 1.5,
+                margin: 0,
+              }}
+            >
+              Enter a readable name. The app will normalize it to the stored filename format when you save.
+            </p>
+          </header>
+
+          <form
+            onSubmit={handleFilenameDialogSave}
+            style={{
+              display: 'grid',
+              gap: '1rem',
+            }}
+          >
+            <label
+              style={{
+                color: 'var(--color-text-secondary)',
+                display: 'grid',
+                gap: '0.5rem',
+                fontSize: '0.9rem',
+                fontWeight: 600,
+              }}
+            >
+              <span>Filename</span>
+              <input
+                autoFocus
+                onChange={(event) => {
+                  setFilenameDialogValue(event.target.value);
+                }}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--color-border-card)',
+                  color: 'var(--color-text-primary)',
+                  font: 'inherit',
+                  minHeight: '3.25rem',
+                  padding: '0 1rem',
+                  width: '100%',
+                }}
+                type="text"
+                value={filenameDialogValue}
+              />
+            </label>
+
+            <div
+              style={{
+                display: 'grid',
+                gap: '0.75rem',
+              }}
+            >
+              <button
+                onClick={closeFilenameDialog}
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--color-border-card)',
+                  color: 'var(--color-text-primary)',
+                  cursor: 'pointer',
+                  font: 'inherit',
+                  minHeight: '3rem',
+                }}
+                type="button"
+              >
+                Cancel
+              </button>
+
+              <button
+                style={{
+                  background: 'transparent',
+                  border: '1px solid var(--color-border-card)',
+                  color: 'var(--color-text-primary)',
+                  cursor: 'pointer',
+                  font: 'inherit',
+                  minHeight: '3rem',
+                }}
+                type="submit"
+              >
+                Change/Save
+              </button>
+            </div>
+          </form>
+        </>,
+      ) : null}
     </section>
   );
 }

@@ -11,26 +11,77 @@
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  position: relative;
+}
+
+.appShell__main--writing {
+  overflow: hidden;
 }
 
 .appShell__screen {
   min-block-size: 100%;
   padding:
-    max(1rem, env(safe-area-inset-top))
+    calc(max(1rem, env(safe-area-inset-top)) + var(--space-top-chrome-height) + var(--space-top-chrome-gap))
     var(--space-screen-pad)
     calc(var(--space-fab-offset) + env(safe-area-inset-bottom));
   position: relative;
 }
 
-.appShell__screen--withBack {
-  padding-top: calc(max(1rem, env(safe-area-inset-top)) + 3.5rem);
+.appShell__chrome {
+  inset-block-start: 0;
+  inset-inline: 0;
+  pointer-events: none;
+  position: sticky;
+  z-index: var(--z-index-chrome);
 }
 
-.appShell__chrome {
-  inset-block-start: max(1rem, env(safe-area-inset-top));
-  inset-inline-start: var(--space-screen-pad);
-  position: absolute;
-  z-index: 2;
+.appShell__chromeBar {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    var(--space-screen-pad)
+    0;
+  position: relative;
+}
+
+.appShell__chromePrimary,
+.appShell__chromeActions {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  min-inline-size: 0;
+  pointer-events: auto;
+}
+
+.appShell__chromePrimary {
+  flex: 1 1 auto;
+}
+
+.appShell__chromeActions {
+  flex: 0 0 auto;
+}
+
+.appShell__chromeAction {
+  position: relative;
+}
+
+.appShell__overlayDismiss {
+  background: transparent;
+  border: none;
+  inset: 0;
+  padding: 0;
+  pointer-events: auto;
+  position: fixed;
+  z-index: 0;
+}
+
+.appShell__overlayDismiss:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
 }
 
 .appShell__backButton {
@@ -40,13 +91,16 @@
   color: var(--color-text-primary);
   cursor: pointer;
   display: inline-flex;
-  gap: 0.2rem;
+  justify-content: center;
   min-block-size: 2.5rem;
   min-inline-size: 2.5rem;
-  padding: 0 0.8rem;
+  padding: 0;
 }
 
-.appShell__backButton:focus-visible {
+.appShell__backButton:focus-visible,
+.appShell__iconButton:focus-visible,
+.appShell__metaStripe--button:focus-visible,
+.appShell__menuButton:focus-visible {
   box-shadow: none;
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 0;
@@ -57,7 +111,103 @@
   line-height: 1;
 }
 
-.appShell__backLabel {
-  font-size: 0.95rem;
-  font-weight: 600;
+.appShell__metaStripe {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  font: inherit;
+  inline-size: min(100%, 16rem);
+  justify-content: flex-start;
+  min-block-size: 2.5rem;
+  min-inline-size: 0;
+  padding: 0;
+  text-align: left;
+}
+
+.appShell__metaStripe--button {
+  cursor: pointer;
+}
+
+.appShell__metaText {
+  font-size: 0.9rem;
+  line-height: 1.3;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.appShell__iconButton {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  justify-content: center;
+  min-block-size: 2.5rem;
+  min-inline-size: 2.5rem;
+  padding: 0;
+}
+
+.appShell__moreDots {
+  align-items: center;
+  display: inline-grid;
+  gap: 0.2rem;
+}
+
+.appShell__moreDot {
+  background: currentColor;
+  block-size: 0.22rem;
+  border-radius: 999px;
+  inline-size: 0.22rem;
+}
+
+.appShell__menu {
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border-card);
+  display: grid;
+  inset-block-start: calc(100% + 0.5rem);
+  inset-inline-end: 0;
+  min-inline-size: 10rem;
+  overflow: hidden;
+  pointer-events: auto;
+  position: absolute;
+  z-index: 1;
+}
+
+.appShell__menuButton,
+.appShell__menuInfo {
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  font: inherit;
+  min-block-size: 2.75rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+.appShell__menuButton {
+  cursor: pointer;
+}
+
+.appShell__menuButton:disabled {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.appShell__menuInfo {
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.appShell__screen--writing {
+  block-size: 100%;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 100%;
+  overflow: hidden;
 }

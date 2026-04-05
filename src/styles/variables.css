@@ -48,9 +48,13 @@
   --space-section-gap: 1rem;
   --space-card-radius: 1.15rem;
   --space-chip-radius: 999px;
+  --space-top-chrome-gap: 0.875rem;
+  --space-top-chrome-height: 2.5rem;
   --space-tab-bar-height: 4.5rem;
   --space-fab-offset: 5.5rem;
 
+  --z-index-chrome: 20;
+  --z-index-overlay: 30;
   --shadow-none: none;
 }
 

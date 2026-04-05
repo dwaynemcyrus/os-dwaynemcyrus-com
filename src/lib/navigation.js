@@ -37,6 +37,41 @@ const CONTEXT_SHEET_TABS = [
   },
 ];
 
+const SCREEN_CHROME_RULES = [
+  {
+    metaText: 'Inbox',
+    matches: (pathname) => pathname === '/inbox',
+  },
+  {
+    metaText: 'Library',
+    matches: (pathname) => pathname === '/items',
+  },
+  {
+    metaText: 'Settings',
+    matches: (pathname) => pathname === '/settings',
+  },
+  {
+    metaText: 'Daily Note',
+    matches: (pathname) => pathname === '/settings/daily-note',
+  },
+  {
+    metaText: 'Keyboard Shortcuts',
+    matches: (pathname) => pathname === '/settings/keyboard-shortcuts',
+  },
+  {
+    metaText: 'Slash Commands',
+    matches: (pathname) => pathname === '/settings/slash-commands',
+  },
+  {
+    metaText: 'Templates',
+    matches: (pathname) => pathname === '/settings/templates',
+  },
+  {
+    metaText: 'Trash',
+    matches: (pathname) => pathname === '/settings/trash',
+  },
+];
+
 const BACK_NAVIGATION_RULES = [
   {
     label: 'Now',
@@ -91,6 +126,29 @@ export function getBackNavigation(pathname) {
     label: matchingRule.label,
     to: matchingRule.to,
   };
+}
+
+export function getScreenChromeDefaults(pathname) {
+  const matchingRule = SCREEN_CHROME_RULES.find((rule) =>
+    rule.matches(pathname),
+  );
+
+  if (!matchingRule) {
+    return {
+      metaText: '',
+    };
+  }
+
+  return {
+    metaText: matchingRule.metaText,
+  };
+}
+
+export function isWritingEditorPath(pathname) {
+  return (
+    pathname.startsWith('/items/') ||
+    pathname.startsWith('/settings/templates/')
+  );
 }
 
 export function getContextSheetTabForPath(pathname) {

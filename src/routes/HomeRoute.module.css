@@ -3,32 +3,9 @@
   gap: 1.5rem;
   max-width: 32rem;
   min-block-size: 100%;
-  padding-top: 3.5rem;
   position: relative;
 }
 
-.homeRoute__chrome {
-  inset-block-start: 0;
-  inset-inline-end: 0;
-  position: absolute;
-  z-index: 3;
-}
-
-.homeRoute__moreButton {
-  align-items: center;
-  background: transparent;
-  border: 1px solid var(--color-border-card);
-  color: var(--color-text-primary);
-  cursor: pointer;
-  display: inline-flex;
-  block-size: 2.5rem;
-  inline-size: 2.5rem;
-  justify-content: center;
-  padding: 0;
-}
-
-.homeRoute__moreButton:focus-visible,
-.homeRoute__menuItem:focus-visible,
 .homeRoute__row:focus-visible,
 .homeRoute__dialogClose:focus-visible,
 .homeRoute__dialogItem:focus-visible,
@@ -36,51 +13,6 @@
   box-shadow: none;
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 0;
-}
-
-.homeRoute__moreDots {
-  align-items: center;
-  display: inline-grid;
-  gap: 0.2rem;
-}
-
-.homeRoute__moreDot {
-  background: currentColor;
-  block-size: 0.22rem;
-  border-radius: 999px;
-  inline-size: 0.22rem;
-}
-
-.homeRoute__overlayDismiss {
-  background: transparent;
-  border: none;
-  inset: 0;
-  padding: 0;
-  position: fixed;
-  z-index: 1;
-}
-
-.homeRoute__menu {
-  background: #1a1816;
-  border: 1px solid var(--color-border-card);
-  display: grid;
-  gap: 0;
-  inset-block-start: 3rem;
-  inset-inline-end: 0;
-  min-inline-size: 9rem;
-  position: absolute;
-  z-index: 4;
-}
-
-.homeRoute__menuItem {
-  background: transparent;
-  border: none;
-  color: var(--color-text-primary);
-  cursor: pointer;
-  font: inherit;
-  min-height: 2.75rem;
-  padding: 0.75rem 1rem;
-  text-align: left;
 }
 
 .homeRoute__header {
