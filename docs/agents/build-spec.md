@@ -134,7 +134,7 @@ All tables live in Supabase. Do not add tables without disclosure and approval.
 | item_history | Full markdown snapshot on every save | change_type: created, updated, trashed, restored |
 | habit_logs | Individual habit log entries | Companion table for log: habit items |
 | finance_entries | Individual revenue and expense entries | Companion table for log: finance items |
-| user_settings | Persisted user preferences | Stores the selected daily note template per user |
+| user_settings | Persisted user preferences | Stores daily-note and template preferences per user |
 
 ### items table columns
 ```sql
@@ -581,6 +581,7 @@ V1 is complete when:
 - [ ] Home screen shows Open Today's Note button
 - [ ] Button opens existing or creates new daily note
 - [ ] New daily note uses selected user template from settings
+- [ ] New daily note applies the saved daily note folder setting
 - [ ] No implicit fallback if no daily template is selected
 
 ### Navigation
@@ -600,6 +601,7 @@ V1 is complete when:
 
 ### Settings
 - [ ] Daily note template picker works and persists
+- [ ] Daily note folder setting works, persists, and can bulk-update existing daily notes after confirmation
 - [ ] Keyboard shortcuts reference complete and accurate
 - [ ] Slash commands reference complete and accurate
 - [ ] Sign out works

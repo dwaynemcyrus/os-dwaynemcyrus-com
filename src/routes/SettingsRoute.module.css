@@ -59,9 +59,12 @@
 
 .settingsScreen__rowButton:focus-visible,
 .settingsScreen__select:focus-visible,
+.settingsScreen__textInput:focus-visible,
 .settingsScreen__actionButton:focus-visible,
 .settingsScreen__secondaryButton:focus-visible,
-.settingsScreen__gridButton:focus-visible {
+.settingsScreen__gridButton:focus-visible,
+.settingsScreen__optionButton:focus-visible,
+.settingsScreen__dialogDismiss:focus-visible {
   box-shadow: none;
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 0;
@@ -122,6 +125,29 @@
   font-weight: 600;
 }
 
+.settingsScreen__panel {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.settingsScreen__settingLabel {
+  color: var(--color-text-secondary);
+  display: grid;
+  gap: 0.6rem;
+}
+
+.settingsScreen__settingTitle {
+  color: var(--color-text-primary);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.settingsScreen__settingCopy {
+  color: var(--color-text-secondary);
+  line-height: 1.45;
+}
+
 .settingsScreen__form {
   display: grid;
   gap: 1rem;
@@ -140,6 +166,45 @@
   font: inherit;
   min-height: 3.25rem;
   padding: 0 1rem;
+  width: 100%;
+}
+
+.settingsScreen__textInput {
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  font: inherit;
+  min-height: 3.25rem;
+  padding: 0 1rem;
+  width: 100%;
+}
+
+.settingsScreen__textInput:disabled {
+  color: var(--color-text-secondary);
+}
+
+.settingsScreen__combobox {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.settingsScreen__optionList {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.settingsScreen__optionButton {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  font: inherit;
+  justify-content: flex-start;
+  min-height: 3rem;
+  padding: 0 1rem;
+  text-align: left;
   width: 100%;
 }
 
@@ -175,6 +240,52 @@
 
 .settingsScreen__message--status {
   color: var(--color-text-secondary);
+}
+
+.settingsScreen__dialogOverlay {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-surface-base) 72%, transparent);
+  display: grid;
+  inset: 0;
+  padding: 1.5rem;
+  position: fixed;
+  z-index: 40;
+}
+
+.settingsScreen__dialogDismiss {
+  inset: 0;
+  position: absolute;
+}
+
+.settingsScreen__dialog {
+  background: var(--color-surface-panel);
+  border: 1px solid var(--color-border-card);
+  display: grid;
+  gap: 1rem;
+  margin: auto;
+  max-inline-size: 24rem;
+  padding: 1.25rem;
+  position: relative;
+  width: min(100%, 24rem);
+  z-index: 1;
+}
+
+.settingsScreen__dialogHeader {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.settingsScreen__dialogTitle {
+  color: var(--color-text-primary);
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.settingsScreen__dialogActions {
+  display: grid;
+  gap: 0.75rem;
 }
 
 .settingsScreen__cardList {
@@ -256,6 +367,10 @@
   .settingsScreen__formRow {
     align-items: end;
     grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .settingsScreen__dialogActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .settingsScreen__actionButton,

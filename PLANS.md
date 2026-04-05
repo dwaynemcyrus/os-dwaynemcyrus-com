@@ -949,3 +949,5 @@
 
 - [x] Materialize `{{date}}`, `{{time}}`, and one-off `{{date:...}}` / `{{time:...}}` overrides anywhere templates are applied.
 - [x] Use the saved template settings as the global defaults for template insertion, slash-command creation, daily-note creation, and inbox processing.
+- [x] Add a persisted daily-note folder setting with autocomplete from existing folders.
+- [x] Offer a post-save confirmation modal to bulk-update existing active daily notes after the daily-note folder changes.
