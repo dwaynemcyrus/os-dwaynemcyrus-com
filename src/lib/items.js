@@ -731,9 +731,11 @@ export async function fetchTrashedItems(userId) {
 }
 
 export async function fetchHomeSummary(userId) {
+  const { dateField } = formatLocalDateParts(new Date());
   const [
     inboxCount,
     { data: workbenchItems, error: workbenchError },
+    existingDailyNote,
   ] = await Promise.all([
     fetchInboxCount(userId),
     supabase
@@ -746,6 +748,10 @@ export async function fetchHomeSummary(userId) {
       .order('date_modified', { ascending: false, nullsFirst: false })
       .order('date_created', { ascending: false, nullsFirst: false })
       .limit(HOME_WORKBENCH_LIMIT),
+    fetchDailyNoteForDate({
+      dateField,
+      userId,
+    }),
   ]);
 
   if (workbenchError) {
@@ -753,6 +759,7 @@ export async function fetchHomeSummary(userId) {
   }
 
   return {
+    hasTodayDailyNote: Boolean(existingDailyNote?.id),
     inboxCount,
     workbenchItems: workbenchItems ?? [],
   };

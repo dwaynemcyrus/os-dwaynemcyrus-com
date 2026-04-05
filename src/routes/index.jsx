@@ -67,6 +67,7 @@ export const indexRoute = createRoute({
     const navigate = indexRoute.useNavigate();
     const [homeErrorMessage, setHomeErrorMessage] = useState('');
     const [homeSummary, setHomeSummary] = useState({
+      hasTodayDailyNote: false,
       inboxCount: 0,
       workbenchItems: [],
     });
@@ -85,6 +86,9 @@ export const indexRoute = createRoute({
       () => (isLoadingHome ? '...' : String(homeSummary.workbenchItems.length)),
       [homeSummary.workbenchItems.length, isLoadingHome],
     );
+    const dailyNoteLabel = homeSummary.hasTodayDailyNote
+      ? 'Open Today’s Note'
+      : 'Create Today’s Note';
 
     useEffect(() => {
       if (!auth.user?.id) {
@@ -165,6 +169,11 @@ export const indexRoute = createRoute({
           date: today,
           userId: auth.user.id,
         });
+
+        setHomeSummary((currentSummary) => ({
+          ...currentSummary,
+          hasTodayDailyNote: true,
+        }));
 
         await navigate({
           params: {
@@ -279,9 +288,9 @@ export const indexRoute = createRoute({
             }}
             type="button"
           >
-            <span className={styles.homeRoute__rowLabel}>Today&apos;s Note</span>
+            <span className={styles.homeRoute__rowLabel}>{dailyNoteLabel}</span>
             <span className={styles.homeRoute__rowValue}>
-              {isOpeningDailyNote ? 'Opening...' : 'Open'}
+              {isOpeningDailyNote ? 'Opening...' : ''}
             </span>
           </button>
 
