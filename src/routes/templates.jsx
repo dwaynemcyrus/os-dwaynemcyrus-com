@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { createElement, useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
 import {
   createBlankTemplate,
@@ -654,19 +655,15 @@ export const templatesRoute = createRoute({
         ) : null}
 
         {pendingDeleteTemplate ? (
-          <div className={styles.templatesRoute__dialogOverlay} role="presentation">
-            <button
-              aria-label="Close delete template dialog"
-              className={styles.templatesRoute__dialogDismiss}
-              onClick={closeDeleteDialog}
-              type="button"
-            />
-
-            <section
-              aria-modal="true"
-              className={styles.templatesRoute__dialog}
-              role="alertdialog"
-            >
+          createElement(
+            AppDialog,
+            {
+              ariaLabel: 'Close delete template dialog',
+              onClose: closeDeleteDialog,
+              panelClassName: styles.templatesRoute__dialog,
+              role: 'alertdialog',
+            },
+            <>
               <header className={sheetStyles.settingsScreen__header}>
                 <p className={sheetStyles.settingsScreen__eyebrow}>Templates</p>
                 <h2 className={sheetStyles.settingsScreen__sectionTitle}>
@@ -724,8 +721,8 @@ export const templatesRoute = createRoute({
                   </button>
                 </div>
               </form>
-            </section>
-          </div>
+            </>,
+          )
         ) : null}
       </section>
     );

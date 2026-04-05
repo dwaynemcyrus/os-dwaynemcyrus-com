@@ -242,32 +242,10 @@
   color: var(--color-text-secondary);
 }
 
-.settingsScreen__dialogOverlay {
-  align-items: center;
-  background: color-mix(in srgb, var(--color-surface-base) 72%, transparent);
-  display: grid;
-  inset: 0;
-  padding: 1.5rem;
-  position: fixed;
-  z-index: 40;
-}
-
-.settingsScreen__dialogDismiss {
-  inset: 0;
-  position: absolute;
-}
-
 .settingsScreen__dialog {
-  background: var(--color-surface-panel);
-  border: 1px solid var(--color-border-card);
   display: grid;
   gap: 1rem;
-  margin: auto;
   max-inline-size: 24rem;
-  padding: 1.25rem;
-  position: relative;
-  width: min(100%, 24rem);
-  z-index: 1;
 }
 
 .settingsScreen__dialogHeader {

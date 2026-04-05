@@ -122,7 +122,6 @@
 
 .templatesRoute__itemButton:focus-visible,
 .templatesRoute__deleteButton:focus-visible,
-.templatesRoute__dialogDismiss:focus-visible,
 .templatesRoute__dialogInput:focus-visible,
 .templatesRoute__settingInput:focus-visible,
 .templatesRoute__dangerButton:focus-visible {
@@ -174,33 +173,10 @@
   block-size: 4rem;
 }
 
-.templatesRoute__dialogOverlay {
-  align-items: center;
-  background: rgba(0, 0, 0, 0.42);
-  display: grid;
-  inset: 0;
-  padding: 1rem;
-  position: fixed;
-  z-index: 40;
-}
-
-.templatesRoute__dialogDismiss {
-  background: transparent;
-  border: none;
-  inset: 0;
-  padding: 0;
-  position: absolute;
-}
-
 .templatesRoute__dialog {
-  background: var(--color-bg-app);
-  border: 1px solid var(--color-border-card);
   display: grid;
   gap: 1rem;
   inline-size: min(100%, 32rem);
-  padding: 1.25rem;
-  position: relative;
-  z-index: 1;
 }
 
 .templatesRoute__dialogInput {

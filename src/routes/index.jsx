@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { createElement, useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
 import { fetchHomeSummary, openOrCreateDailyNote } from '../lib/items';
 import styles from './HomeRoute.module.css';
@@ -69,11 +70,12 @@ export const indexRoute = createRoute({
       inboxCount: 0,
       workbenchItems: [],
     });
+    const [isDailyTemplateDialogOpen, setIsDailyTemplateDialogOpen] =
+      useState(false);
     const [isLoadingHome, setIsLoadingHome] = useState(true);
     const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
     const [isOpeningDailyNote, setIsOpeningDailyNote] = useState(false);
     const [isWorkbenchDialogOpen, setIsWorkbenchDialogOpen] = useState(false);
-    const [toastState, setToastState] = useState(null);
     const today = new Date();
     const inboxCountValue = useMemo(
       () => (isLoadingHome ? '...' : String(homeSummary.inboxCount)),
@@ -125,13 +127,18 @@ export const indexRoute = createRoute({
     }, [auth.user?.id]);
 
     useEffect(() => {
-      if (!isMoreMenuOpen && !isWorkbenchDialogOpen) {
+      if (
+        !isMoreMenuOpen &&
+        !isWorkbenchDialogOpen &&
+        !isDailyTemplateDialogOpen
+      ) {
         return undefined;
       }
 
       function handleKeyDown(event) {
         if (event.key === 'Escape') {
           setIsMoreMenuOpen(false);
+          setIsDailyTemplateDialogOpen(false);
           setIsWorkbenchDialogOpen(false);
         }
       }
@@ -141,20 +148,17 @@ export const indexRoute = createRoute({
       return () => {
         window.removeEventListener('keydown', handleKeyDown);
       };
-    }, [isMoreMenuOpen, isWorkbenchDialogOpen]);
+    }, [isDailyTemplateDialogOpen, isMoreMenuOpen, isWorkbenchDialogOpen]);
 
     async function handleOpenDailyNote() {
       if (!auth.user?.id) {
-        setToastState({
-          actionLabel: null,
-          kind: 'error',
-          message: 'Your session is missing a user id.',
-        });
+        setHomeErrorMessage('Your session is missing a user id.');
         return;
       }
 
       setIsOpeningDailyNote(true);
-      setToastState(null);
+      setHomeErrorMessage('');
+      setIsDailyTemplateDialogOpen(false);
 
       try {
         const dailyNoteResult = await openOrCreateDailyNote({
@@ -170,20 +174,13 @@ export const indexRoute = createRoute({
         });
       } catch (error) {
         if (isMissingDailyTemplateError(error)) {
-          setToastState({
-            actionLabel: 'Settings',
-            kind: 'warning',
-            message:
-              'No daily template is selected yet. Choose one in settings before opening today’s note.',
-          });
+          setIsDailyTemplateDialogOpen(true);
           return;
         }
 
-        setToastState({
-          actionLabel: null,
-          kind: 'error',
-          message: error.message ?? 'Unable to open today’s note right now.',
-        });
+        setHomeErrorMessage(
+          error.message ?? 'Unable to open today’s note right now.',
+        );
       } finally {
         setIsOpeningDailyNote(false);
       }
@@ -205,6 +202,14 @@ export const indexRoute = createRoute({
 
       await navigate({
         to: '/settings',
+      });
+    }
+
+    async function handleOpenDailyNoteSettings() {
+      setIsDailyTemplateDialogOpen(false);
+
+      await navigate({
+        to: '/settings/daily-note',
       });
     }
 
@@ -315,21 +320,16 @@ export const indexRoute = createRoute({
         </div>
 
         {isWorkbenchDialogOpen ? (
-          <>
-            <button
-              aria-label="Close workbench"
-              className={styles.homeRoute__dialogBackdrop}
-              onClick={() => {
+          createElement(
+            AppDialog,
+            {
+              ariaLabel: 'Close workbench',
+              onClose: () => {
                 setIsWorkbenchDialogOpen(false);
-              }}
-              type="button"
-            />
-
-            <section
-              aria-modal="true"
-              className={styles.homeRoute__dialog}
-              role="dialog"
-            >
+              },
+              panelClassName: styles.homeRoute__dialog,
+            },
+            <>
               <header className={styles.homeRoute__dialogHeader}>
                 <h2 className={styles.homeRoute__dialogTitle}>Workbench</h2>
                 <button
@@ -369,42 +369,49 @@ export const indexRoute = createRoute({
                   No items are on the workbench yet.
                 </p>
               )}
-            </section>
-          </>
+            </>,
+          )
         ) : null}
 
-        {toastState ? (
-          <div
-            className={styles.homeRoute__toast}
-            role={toastState.kind === 'error' ? 'alert' : 'status'}
-          >
-            <p className={styles.homeRoute__toastMessage}>{toastState.message}</p>
+        {isDailyTemplateDialogOpen ? (
+          createElement(
+            AppDialog,
+            {
+              ariaLabel: 'Close daily note template dialog',
+              onClose: () => {
+                setIsDailyTemplateDialogOpen(false);
+              },
+              panelClassName: styles.homeRoute__dialog,
+              role: 'alertdialog',
+            },
+            <>
+              <p className={styles.homeRoute__dialogMessage}>
+                No daily template is selected yet. Choose one in settings before
+                opening today&apos;s note.
+              </p>
 
-            <div className={styles.homeRoute__toastActions}>
-              {toastState.actionLabel ? (
+              <div className={styles.homeRoute__dialogActions}>
                 <button
-                  className={styles.homeRoute__toastButton}
+                  className={styles.homeRoute__dialogButton}
                   onClick={() => {
-                    setToastState(null);
-                    void handleOpenSettings();
+                    setIsDailyTemplateDialogOpen(false);
                   }}
                   type="button"
                 >
-                  {toastState.actionLabel}
+                  Dismiss
                 </button>
-              ) : null}
-
-              <button
-                className={styles.homeRoute__toastButton}
-                onClick={() => {
-                  setToastState(null);
-                }}
-                type="button"
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
+                <button
+                  className={styles.homeRoute__dialogButton}
+                  onClick={() => {
+                    void handleOpenDailyNoteSettings();
+                  }}
+                  type="button"
+                >
+                  Settings
+                </button>
+              </div>
+            </>,
+          )
         ) : null}
       </section>
     );

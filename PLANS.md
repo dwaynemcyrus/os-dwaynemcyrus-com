@@ -307,6 +307,7 @@
 ### Overlay system
 - [x] Rebuild the command sheet as the canonical create/search/slash surface.
 - [x] Build the context sheet as the canonical global jump surface.
+- [x] Add a shared centered dialog primitive for app-level modals and confirmations.
 - [x] Add the 3 context tabs:
   - [x] execution
   - [x] strategy

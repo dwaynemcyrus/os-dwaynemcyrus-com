@@ -1,0 +1,40 @@
+.appDialog {
+  align-items: center;
+  background: color-mix(in srgb, var(--color-bg-app) 72%, transparent);
+  display: grid;
+  inset: 0;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    var(--space-screen-pad)
+    max(1rem, env(safe-area-inset-bottom));
+  position: fixed;
+  z-index: 40;
+}
+
+.appDialog__backdrop {
+  background: transparent;
+  border: none;
+  inset: 0;
+  padding: 0;
+  position: absolute;
+}
+
+.appDialog__backdrop:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.appDialog__panel {
+  background: var(--color-bg-app);
+  border: 1px solid var(--color-border-card);
+  display: grid;
+  gap: 1rem;
+  inline-size: min(100%, 24rem);
+  margin: auto;
+  max-block-size: min(80vh, calc(100dvh - 2rem));
+  overflow: hidden;
+  padding: 1.25rem;
+  position: relative;
+  z-index: 1;
+}

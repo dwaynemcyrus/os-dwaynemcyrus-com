@@ -1,5 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { createElement, useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
 import {
   bulkUpdateDailyNoteFolders,
@@ -479,32 +480,26 @@ export const settingsDailyNoteRoute = createRoute({
         ) : null}
 
         {pendingBulkFolderValue !== null ? (
-          <div
-            className={styles.settingsScreen__dialogOverlay}
-            role="presentation"
-          >
-            <button
-              aria-label="Close daily note folder update dialog"
-              className={styles.settingsScreen__dialogDismiss}
-              onClick={closeBulkFolderModal}
-              type="button"
-            />
-            <div
-              aria-modal="true"
-              className={styles.settingsScreen__dialog}
-              role="alertdialog"
-            >
+          createElement(
+            AppDialog,
+            {
+              ariaLabel: 'Close daily note folder update dialog',
+              onClose: closeBulkFolderModal,
+              panelClassName: styles.settingsScreen__dialog,
+              role: 'alertdialog',
+            },
+            <>
               <header className={styles.settingsScreen__dialogHeader}>
                 <h2 className={styles.settingsScreen__dialogTitle}>
                   Update existing daily notes?
                 </h2>
               </header>
 
-                <p className={styles.settingsScreen__copy}>
-                  {pendingBulkFolderValue
+              <p className={styles.settingsScreen__copy}>
+                {pendingBulkFolderValue
                   ? `Apply "${pendingBulkFolderValue}" to your existing active daily notes too?`
                   : 'Remove the folder from your existing active daily notes too?'}
-                </p>
+              </p>
 
               <div className={styles.settingsScreen__dialogActions}>
                 <button
@@ -526,8 +521,8 @@ export const settingsDailyNoteRoute = createRoute({
                   {isApplyingBulkFolderUpdate ? 'Updating...' : 'Update existing'}
                 </button>
               </div>
-            </div>
-          </div>
+            </>,
+          )
         ) : null}
       </section>
     );
