@@ -4,6 +4,8 @@ export const DEFAULT_DAILY_NOTE_FOLDER = '';
 export const DEFAULT_TEMPLATE_FOLDER = 'template';
 export const DEFAULT_TEMPLATE_DATE_FORMAT = 'YYYY-MM-DD';
 export const DEFAULT_TEMPLATE_TIME_FORMAT = 'HH:mm:ss';
+const MISSING_DAILY_TEMPLATE_ERROR_MESSAGE =
+  'No daily template has been selected yet.';
 
 function buildUserSettingsFieldsQuery() {
   return 'daily_template_id,daily_note_folder,template_folder,template_date_format,template_time_format';
@@ -57,6 +59,43 @@ async function fetchUserSettingsRow(userId) {
   }
 
   return data ?? null;
+}
+
+function buildDailyTemplateLookupQuery(userId) {
+  return supabase
+    .from('items')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('is_template', true)
+    .eq('subtype', 'daily')
+    .is('date_trashed', null);
+}
+
+async function resolvePersistedDailyTemplateId({ userId }) {
+  const settingsRow = await fetchUserSettingsRow(userId);
+  const selectedTemplateId = normalizeOptionalText(settingsRow?.daily_template_id);
+
+  if (!selectedTemplateId) {
+    throw new Error(MISSING_DAILY_TEMPLATE_ERROR_MESSAGE);
+  }
+
+  const { data: templateItem, error: templateError } =
+    await buildDailyTemplateLookupQuery(userId)
+      .eq('id', selectedTemplateId)
+      .maybeSingle();
+
+  if (templateError) {
+    throw templateError;
+  }
+
+  if (!templateItem?.id) {
+    throw new Error(MISSING_DAILY_TEMPLATE_ERROR_MESSAGE);
+  }
+
+  return {
+    dailyNoteFolder: normalizeDailyNoteFolder(settingsRow?.daily_note_folder),
+    dailyTemplateId: templateItem.id,
+  };
 }
 
 function sortDailyTemplateItems(leftItem, rightItem) {
@@ -315,26 +354,11 @@ export async function saveTemplateSettings({
 }
 
 export async function fetchResolvedDailyTemplateId({ userId }) {
-  const settingsRow = await fetchUserSettingsRow(userId);
-  const selectedTemplateId = settingsRow?.daily_template_id ?? '';
+  const { dailyTemplateId } = await resolvePersistedDailyTemplateId({ userId });
 
-  if (!selectedTemplateId) {
-    throw new Error('No daily template has been selected yet.');
-  }
-
-  return selectedTemplateId;
+  return dailyTemplateId;
 }
 
 export async function fetchResolvedDailyNotePreferences({ userId }) {
-  const settingsRow = await fetchUserSettingsRow(userId);
-  const selectedTemplateId = settingsRow?.daily_template_id ?? '';
-
-  if (!selectedTemplateId) {
-    throw new Error('No daily template has been selected yet.');
-  }
-
-  return {
-    dailyNoteFolder: normalizeDailyNoteFolder(settingsRow?.daily_note_folder),
-    dailyTemplateId: selectedTemplateId,
-  };
+  return resolvePersistedDailyTemplateId({ userId });
 }

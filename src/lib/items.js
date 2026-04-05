@@ -29,6 +29,8 @@ const TEMPLATE_TITLE_TOKEN_PATTERN = /\{\{title\}\}/g;
 const TEMPLATE_FORMAT_TOKEN_PATTERN = /YYYY|YY|MM|DD|HH|mm|ss|M|D|H|m|s/g;
 const LEGACY_CUID_TEMPLATE_TOKEN = '{{date:YYYYMMDD}}{{time:HHmmss}}';
 const TEMPLATE_VARIABLE_PATTERN = /\{\{[^}]+\}\}/;
+const MISSING_DAILY_TEMPLATE_ERROR_MESSAGE =
+  'No daily template has been selected yet.';
 const pendingDailyNoteRequests = new Map();
 
 function escapeIlikePattern(value) {
@@ -101,6 +103,10 @@ function buildItemsIndexFieldsQuery() {
 
 function isCuidConflictError(error) {
   return error?.code === '23505' && error?.message?.includes('cuid');
+}
+
+function isMissingSingleRowError(error) {
+  return error?.code === 'PGRST116' || error?.status === 406;
 }
 
 function formatDatePart(value) {
@@ -410,6 +416,10 @@ async function createDailyNoteForDate({
   ]);
 
   if (templateError) {
+    if (isMissingSingleRowError(templateError)) {
+      throw new Error(MISSING_DAILY_TEMPLATE_ERROR_MESSAGE);
+    }
+
     throw templateError;
   }
 
