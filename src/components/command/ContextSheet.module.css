@@ -1,0 +1,124 @@
+.contextSheet {
+  align-items: flex-end;
+  background: rgba(0, 0, 0, 0.72);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding:
+    max(1rem, env(safe-area-inset-top))
+    1rem
+    calc(6rem + env(safe-area-inset-bottom));
+  position: fixed;
+  z-index: 16;
+}
+
+.contextSheet__panel {
+  background: #1a1816;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  display: grid;
+  gap: 1rem;
+  max-inline-size: 32rem;
+  padding: 1rem;
+  width: 100%;
+}
+
+.contextSheet__header {
+  align-items: start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.contextSheet__headerCopy {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.contextSheet__eyebrow {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-section-label);
+  letter-spacing: 0.12em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.contextSheet__title {
+  font-size: 1.15rem;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.contextSheet__close,
+.contextSheet__tabButton,
+.contextSheet__shortcutButton {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+}
+
+.contextSheet__close {
+  min-block-size: 2.5rem;
+  padding: 0 0.85rem;
+}
+
+.contextSheet__tabs {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.contextSheet__tabButton {
+  min-block-size: 2.75rem;
+  padding: 0 0.75rem;
+}
+
+.contextSheet__tabButton--active,
+.contextSheet__shortcutButton--active {
+  border-color: var(--color-border-card);
+}
+
+.contextSheet__body {
+  min-block-size: 0;
+}
+
+.contextSheet__shortcutList {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.contextSheet__shortcutItem {
+  min-inline-size: 0;
+}
+
+.contextSheet__shortcutButton {
+  display: grid;
+  gap: 0.3rem;
+  min-block-size: 4.25rem;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+.contextSheet__shortcutLabel {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.contextSheet__shortcutMeta {
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+}
+
+.contextSheet__close:focus-visible,
+.contextSheet__tabButton:focus-visible,
+.contextSheet__shortcutButton:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}

@@ -20,18 +20,18 @@ import {
   searchCommandItemsByTitle,
 } from '../../lib/items';
 import { getSlashCommands } from '../../lib/templates';
+import { ContextSheet } from './ContextSheet';
 import { FabButton } from './FabButton';
 import styles from './CommandSheet.module.css';
 
 const INBOX_COUNT_REFRESH_EVENT = 'personal-os:inbox-count-refresh';
-const DIRECT_CREATE_HINTS = [
-  'Direct item creation will land here next.',
-  'Touch hold opens this mode on mobile.',
-  'Secondary click opens this mode on desktop.',
-];
-
 const RECENT_SKELETON_ROWS = ['recent-1', 'recent-2', 'recent-3'];
 const TEMPLATE_SKELETON_ROWS = ['template-1', 'template-2', 'template-3'];
+const SHEET_COPY = {
+  description: 'Search, capture, or run a slash command.',
+  placeholder: 'Search or create…',
+  title: 'Command',
+};
 
 function formatItemLabel(item) {
   if (item.title) {
@@ -106,30 +106,12 @@ function formatSlashCommandMeta(slashCommand) {
   return metaParts.join(' · ');
 }
 
-function getSheetCopy(mode) {
-  if (mode === 'direct-create') {
-    return {
-      description:
-        'Direct creation shortcuts.',
-      placeholder: 'Type a subtype or slash command',
-      title: 'Direct Create',
-    };
-  }
-
-  return {
-    description:
-      'Search, capture, or run a slash command.',
-    placeholder: 'Search or create…',
-    title: 'Command',
-  };
-}
-
 export function CommandSheet({ children }) {
   const auth = useAuth();
   const navigate = useNavigate();
-  const [isOpen, setIsOpen] = useState(false);
+  const [isCommandSheetOpen, setIsCommandSheetOpen] = useState(false);
+  const [isContextSheetOpen, setIsContextSheetOpen] = useState(false);
   const [isRapidLogEnabled, setIsRapidLogEnabled] = useState(false);
-  const [mode, setMode] = useState('search');
   const [query, setQuery] = useState('');
   const [recentItems, setRecentItems] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
@@ -159,9 +141,8 @@ export function CommandSheet({ children }) {
   }
 
   function closeSheet() {
-    setIsOpen(false);
+    setIsCommandSheetOpen(false);
     setIsRapidLogEnabled(false);
-    setMode('search');
     setQuery('');
     setSearchResults([]);
     setSheetError('');
@@ -169,13 +150,28 @@ export function CommandSheet({ children }) {
   }
 
   function openSearchMode() {
-    setMode('search');
-    setIsOpen(true);
+    setIsContextSheetOpen(false);
+    setIsCommandSheetOpen(true);
   }
 
-  function openDirectCreateMode() {
-    setMode('direct-create');
-    setIsOpen(true);
+  function openContextMode() {
+    closeSheet();
+    setIsContextSheetOpen(true);
+  }
+
+  function closeContextSheet() {
+    setIsContextSheetOpen(false);
+  }
+
+  function handleCloseActiveSheet() {
+    if (isCommandSheetOpen) {
+      void requestClose();
+      return;
+    }
+
+    if (isContextSheetOpen) {
+      closeContextSheet();
+    }
   }
 
   async function handleCapture(closeAfterCapture) {
@@ -186,7 +182,7 @@ export function CommandSheet({ children }) {
       return true;
     }
 
-    if (mode !== 'search' || normalizedQuery.startsWith('/')) {
+    if (normalizedQuery.startsWith('/')) {
       closeSheet();
       return true;
     }
@@ -245,12 +241,12 @@ export function CommandSheet({ children }) {
   }
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isCommandSheetOpen) {
       return;
     }
 
     inputRef.current?.focus();
-  }, [isOpen, mode]);
+  }, [isCommandSheetOpen]);
 
   useEffect(() => {
     if (!inputRef.current) {
@@ -259,16 +255,21 @@ export function CommandSheet({ children }) {
 
     inputRef.current.style.height = '0px';
     inputRef.current.style.height = `${inputRef.current.scrollHeight}px`;
-  }, [query, isOpen]);
+  }, [query, isCommandSheetOpen]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isCommandSheetOpen && !isContextSheetOpen) {
       return;
     }
 
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
-        handleEscapeClose();
+        if (isCommandSheetOpen) {
+          handleEscapeClose();
+          return;
+        }
+
+        closeContextSheet();
       }
     }
 
@@ -277,10 +278,10 @@ export function CommandSheet({ children }) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isOpen, handleEscapeClose]);
+  }, [isCommandSheetOpen, isContextSheetOpen, handleEscapeClose]);
 
   useEffect(() => {
-    if (!isOpen) {
+    if (!isCommandSheetOpen && !isContextSheetOpen) {
       return;
     }
 
@@ -290,10 +291,10 @@ export function CommandSheet({ children }) {
     return () => {
       document.body.style.overflow = overflow;
     };
-  }, [isOpen]);
+  }, [isCommandSheetOpen, isContextSheetOpen]);
 
   useEffect(() => {
-    if (!isOpen || mode !== 'search' || !auth.user?.id) {
+    if (!isCommandSheetOpen || !auth.user?.id) {
       return;
     }
 
@@ -338,10 +339,10 @@ export function CommandSheet({ children }) {
     return () => {
       cancelled = true;
     };
-  }, [isOpen, mode, trimmedQuery, auth.user?.id]);
+  }, [isCommandSheetOpen, trimmedQuery, auth.user?.id]);
 
   useEffect(() => {
-    if (!isOpen || mode !== 'search' || !auth.user?.id) {
+    if (!isCommandSheetOpen || !auth.user?.id) {
       return;
     }
 
@@ -385,13 +386,11 @@ export function CommandSheet({ children }) {
       cancelled = true;
       window.clearTimeout(timeoutId);
     };
-  }, [isOpen, mode, trimmedQuery, auth.user?.id]);
+  }, [isCommandSheetOpen, trimmedQuery, auth.user?.id]);
 
-  const sheetCopy = getSheetCopy(mode);
   const isSlashQuery = Boolean(trimmedQuery) && trimmedQuery.startsWith('/');
-  const isSearchMode = mode === 'search';
-  const shouldShowDefaultState = isSearchMode && !trimmedQuery;
-  const shouldShowSearchState = isSearchMode && Boolean(trimmedQuery) && !isSlashQuery;
+  const shouldShowDefaultState = !trimmedQuery;
+  const shouldShowSearchState = Boolean(trimmedQuery) && !isSlashQuery;
   const shouldShowCaptureState = shouldShowSearchState && Boolean(capturePreview);
   const shouldShowInsertTemplateState =
     shouldShowDefaultState && Boolean(insertTemplateTarget?.onInsertTemplate);
@@ -465,416 +464,387 @@ export function CommandSheet({ children }) {
     closeSheet();
   }
 
+  const isAnySheetOpen = isCommandSheetOpen || isContextSheetOpen;
   const sheetTree = (
-      <div className={styles.commandSheetShell}>
-        <div className={styles.commandSheetShell__content}>{children}</div>
+    <div className={styles.commandSheetShell}>
+      <div className={styles.commandSheetShell__content}>{children}</div>
 
-        {createElement(FabButton, {
-          isSheetOpen: isOpen,
-          onOpen: openSearchMode,
-          onOpenDirectCreate: openDirectCreateMode,
-        })}
+      {createElement(FabButton, {
+        isSheetOpen: isAnySheetOpen,
+        onClose: handleCloseActiveSheet,
+        onOpen: openSearchMode,
+        onOpenContext: openContextMode,
+      })}
 
-        {isOpen ? (
-          <div
-            className={styles.commandSheet}
-            onClick={handleBackdropClick}
-            role="presentation"
+      {isCommandSheetOpen ? (
+        <div
+          className={styles.commandSheet}
+          onClick={handleBackdropClick}
+          role="presentation"
+        >
+          <section
+            aria-describedby={descriptionId}
+            aria-labelledby={titleId}
+            aria-modal="true"
+            className={styles.commandSheet__panel}
+            role="dialog"
           >
-            <section
-              aria-describedby={descriptionId}
-              aria-labelledby={titleId}
-              aria-modal="true"
-              className={styles.commandSheet__panel}
-              role="dialog"
-            >
-              <header className={styles.commandSheet__header}>
-                <div>
-                  <p className={styles.commandSheet__eyebrow}>Personal OS</p>
-                  <h2 className={styles.commandSheet__title} id={titleId}>
-                    {sheetCopy.title}
-                  </h2>
-                </div>
+            <header className={styles.commandSheet__header}>
+              <div>
+                <p className={styles.commandSheet__eyebrow}>Personal OS</p>
+                <h2 className={styles.commandSheet__title} id={titleId}>
+                  {SHEET_COPY.title}
+                </h2>
+              </div>
 
-                <button
-                  aria-label="Close command sheet"
-                  className={styles.commandSheet__close}
-                  onClick={() => {
-                    void requestClose();
-                  }}
-                  type="button"
-                >
-                  Close
-                </button>
-              </header>
+              <button
+                aria-label="Close command sheet"
+                className={styles.commandSheet__close}
+                onClick={() => {
+                  void requestClose();
+                }}
+                type="button"
+              >
+                Close
+              </button>
+            </header>
 
-              <p className={styles.commandSheet__description} id={descriptionId}>
-                {sheetCopy.description}
-              </p>
+            <p className={styles.commandSheet__description} id={descriptionId}>
+              {SHEET_COPY.description}
+            </p>
 
-              <label className={styles.commandSheet__field} htmlFor={inputId}>
-                <span className={styles.commandSheet__label}>Input</span>
-                <textarea
-                  className={styles.commandSheet__input}
-                  id={inputId}
-                  onChange={(event) => {
-                    updateComposerValue(event.target.value);
-                  }}
-                  onKeyDown={(event) => {
-                    if (
-                      event.key === 'Enter' &&
-                      !event.shiftKey &&
-                      isSearchMode &&
-                      !isSlashQuery
-                    ) {
-                      event.preventDefault();
-                      void handleCapture(!isRapidLogEnabled);
+            <label className={styles.commandSheet__field} htmlFor={inputId}>
+              <span className={styles.commandSheet__label}>Input</span>
+              <textarea
+                className={styles.commandSheet__input}
+                id={inputId}
+                onChange={(event) => {
+                  updateComposerValue(event.target.value);
+                }}
+                onKeyDown={(event) => {
+                  if (
+                    event.key === 'Enter' &&
+                    !event.shiftKey &&
+                    !isSlashQuery
+                  ) {
+                    event.preventDefault();
+                    void handleCapture(!isRapidLogEnabled);
+                    return;
+                  }
+
+                  if (
+                    event.key === 'Enter' &&
+                    !event.shiftKey &&
+                    isSlashQuery
+                  ) {
+                    event.preventDefault();
+
+                    if (!firstAvailableSlashCommand?.template?.id) {
+                      setSheetError(
+                        'Create a user template with this subtype before using that slash command.',
+                      );
                       return;
                     }
 
-                    if (
-                      event.key === 'Enter' &&
-                      !event.shiftKey &&
-                      isSearchMode &&
-                      isSlashQuery
-                    ) {
-                      event.preventDefault();
+                    void handleCreateFromSlashCommand(
+                      firstAvailableSlashCommand.template.id,
+                    );
+                  }
+                }}
+                placeholder={SHEET_COPY.placeholder}
+                ref={inputRef}
+                rows={1}
+                spellCheck={false}
+                value={query}
+              />
+            </label>
 
-                      if (!firstAvailableSlashCommand?.template?.id) {
-                        setSheetError(
-                          'Create a user template with this subtype before using that slash command.',
-                        );
-                        return;
-                      }
-
-                      void handleCreateFromSlashCommand(
-                        firstAvailableSlashCommand.template.id,
-                      );
-                    }
+            <div className={styles.commandSheet__body}>
+              <section className={styles.commandSheet__controls}>
+                <button
+                  aria-pressed={isRapidLogEnabled}
+                  className={`${styles.commandSheet__modeToggle} ${
+                    isRapidLogEnabled
+                      ? styles['commandSheet__modeToggle--active']
+                      : ''
+                  }`}
+                  onClick={() => {
+                    setIsRapidLogEnabled((currentValue) => !currentValue);
                   }}
-                  placeholder={sheetCopy.placeholder}
-                  ref={inputRef}
-                  rows={1}
-                  spellCheck={false}
-                  value={query}
-                />
-              </label>
+                  type="button"
+                >
+                  Rapid log {isRapidLogEnabled ? 'On' : 'Off'}
+                </button>
 
-              <div className={styles.commandSheet__body}>
-                {mode === 'direct-create' ? (
-                  <section className={styles.commandSheet__section}>
-                    <h3 className={styles.commandSheet__sectionTitle}>
-                      Direct Create
-                    </h3>
-                    <ul className={styles.commandSheet__hintList}>
-                      {DIRECT_CREATE_HINTS.map((hint) => (
-                        <li className={styles.commandSheet__hintItem} key={hint}>
-                          {hint}
+                <button
+                  className={styles.commandSheet__captureButton}
+                  disabled={!capturePreview || isSavingCapture || isSlashQuery}
+                  onClick={() => {
+                    void handleCapture(!isRapidLogEnabled);
+                  }}
+                  type="button"
+                >
+                  {isSavingCapture
+                    ? 'Saving...'
+                    : isRapidLogEnabled
+                      ? 'Capture and Keep Open'
+                      : 'Capture to Inbox'}
+                </button>
+              </section>
+
+              {sheetError ? (
+                <p
+                  className={`${styles.commandSheet__message} ${styles['commandSheet__message--error']}`}
+                  role="alert"
+                >
+                  {sheetError}
+                </p>
+              ) : null}
+
+              {sheetStatus ? (
+                <p
+                  className={`${styles.commandSheet__message} ${styles['commandSheet__message--success']}`}
+                  role="status"
+                >
+                  {sheetStatus}
+                </p>
+              ) : null}
+
+              {isSlashQuery ? (
+                <section className={styles.commandSheet__section}>
+                  <h3 className={styles.commandSheet__sectionTitle}>
+                    Slash Commands
+                  </h3>
+
+                  {isLoadingDefaultState && templateItems.length === 0 ? (
+                    <div className={styles.commandSheet__skeletonList}>
+                      {TEMPLATE_SKELETON_ROWS.map((rowId) => (
+                        <div className={styles.commandSheet__skeletonRow} key={rowId} />
+                      ))}
+                    </div>
+                  ) : slashCommands.length > 0 ? (
+                    <ul className={styles.commandSheet__list}>
+                      {slashCommands.map((slashCommand) => (
+                        <li
+                          className={styles.commandSheet__listItem}
+                          key={slashCommand.command}
+                        >
+                          <button
+                            className={styles.commandSheet__itemButton}
+                            disabled={
+                              isCreatingFromTemplate || !slashCommand.template
+                            }
+                            onClick={() => {
+                              if (!slashCommand.template?.id) {
+                                return;
+                              }
+
+                              void handleCreateFromSlashCommand(
+                                slashCommand.template.id,
+                              );
+                            }}
+                            type="button"
+                          >
+                            <span className={styles.commandSheet__itemTitle}>
+                              {slashCommand.command}
+                            </span>
+                            <span className={styles.commandSheet__itemMeta}>
+                              {formatSlashCommandMeta(slashCommand)}
+                            </span>
+                          </button>
                         </li>
                       ))}
                     </ul>
-                  </section>
-                ) : (
-                  <>
-                    <section className={styles.commandSheet__controls}>
-                      <button
-                        aria-pressed={isRapidLogEnabled}
-                        className={`${styles.commandSheet__modeToggle} ${
-                          isRapidLogEnabled
-                            ? styles['commandSheet__modeToggle--active']
-                            : ''
-                        }`}
-                        onClick={() => {
-                          setIsRapidLogEnabled((currentValue) => !currentValue);
-                        }}
-                        type="button"
-                      >
-                        Rapid log {isRapidLogEnabled ? 'On' : 'Off'}
-                      </button>
+                  ) : (
+                    <p className={styles.commandSheet__emptyState}>
+                      No slash commands match that input yet.
+                    </p>
+                  )}
+                </section>
+              ) : null}
 
-                      <button
-                        className={styles.commandSheet__captureButton}
-                        disabled={!capturePreview || isSavingCapture || isSlashQuery}
-                        onClick={() => {
-                          void handleCapture(!isRapidLogEnabled);
-                        }}
-                        type="button"
-                      >
-                        {isSavingCapture
-                          ? 'Saving...'
-                          : isRapidLogEnabled
-                            ? 'Capture and Keep Open'
-                            : 'Capture to Inbox'}
-                      </button>
-                    </section>
+              {shouldShowCaptureState ? (
+                <section className={styles.commandSheet__section}>
+                  <h3 className={styles.commandSheet__sectionTitle}>
+                    Quick Capture
+                  </h3>
+                  <p className={styles.commandSheet__previewTitle}>
+                    {capturePreview.title}
+                  </p>
+                  <p className={styles.commandSheet__previewCopy}>
+                    {capturePreview.content || 'No overflow content.'}
+                  </p>
+                </section>
+              ) : null}
 
-                    {sheetError ? (
-                      <p
-                        className={`${styles.commandSheet__message} ${styles['commandSheet__message--error']}`}
-                        role="alert"
-                      >
-                        {sheetError}
-                      </p>
-                    ) : null}
+              {shouldShowSearchState ? (
+                <section className={styles.commandSheet__section}>
+                  <h3 className={styles.commandSheet__sectionTitle}>
+                    Search Results
+                  </h3>
 
-                    {sheetStatus ? (
-                      <p
-                        className={`${styles.commandSheet__message} ${styles['commandSheet__message--success']}`}
-                        role="status"
-                      >
-                        {sheetStatus}
-                      </p>
-                    ) : null}
+                  {isLoadingSearchResults ? (
+                    <div className={styles.commandSheet__skeletonList}>
+                      {RECENT_SKELETON_ROWS.map((rowId) => (
+                        <div className={styles.commandSheet__skeletonRow} key={rowId} />
+                      ))}
+                    </div>
+                  ) : searchResults.length > 0 ? (
+                    <ul className={styles.commandSheet__list}>
+                      {searchResults.map((item) => (
+                        <li className={styles.commandSheet__listItem} key={item.id}>
+                          <button
+                            className={styles.commandSheet__itemButton}
+                            onClick={() => {
+                              void handleOpenItem(item.id);
+                            }}
+                            type="button"
+                          >
+                            <span className={styles.commandSheet__itemTitle}>
+                              {formatItemLabel(item)}
+                            </span>
+                            <span className={styles.commandSheet__itemMeta}>
+                              {formatItemMeta(item)}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className={styles.commandSheet__emptyState}>
+                      No item titles match yet. Capture this text into inbox or keep
+                      typing.
+                    </p>
+                  )}
+                </section>
+              ) : null}
 
-                  {isSlashQuery ? (
-                    <section className={styles.commandSheet__section}>
-                      <h3 className={styles.commandSheet__sectionTitle}>
-                        Slash Commands
-                      </h3>
+              {shouldShowInsertTemplateState ? (
+                <section className={styles.commandSheet__section}>
+                  <h3 className={styles.commandSheet__sectionTitle}>
+                    Insert Template
+                  </h3>
 
-                      {isLoadingDefaultState && templateItems.length === 0 ? (
-                        <div className={styles.commandSheet__skeletonList}>
-                          {TEMPLATE_SKELETON_ROWS.map((rowId) => (
-                            <div
-                              className={styles.commandSheet__skeletonRow}
-                              key={rowId}
-                            />
-                          ))}
-                        </div>
-                      ) : slashCommands.length > 0 ? (
-                        <ul className={styles.commandSheet__list}>
-                          {slashCommands.map((slashCommand) => (
-                            <li
-                              className={styles.commandSheet__listItem}
-                              key={slashCommand.command}
+                  {isLoadingDefaultState ? (
+                    <div className={styles.commandSheet__skeletonList}>
+                      {TEMPLATE_SKELETON_ROWS.map((rowId) => (
+                        <div className={styles.commandSheet__skeletonRow} key={rowId} />
+                      ))}
+                    </div>
+                  ) : templateItems.length > 0 ? (
+                    <ul className={styles.commandSheet__list}>
+                      {templateItems.map((templateItem) => (
+                        <li
+                          className={styles.commandSheet__listItem}
+                          key={`insert-${templateItem.id}`}
+                        >
+                          <button
+                            className={styles.commandSheet__itemButton}
+                            onClick={() => {
+                              handleInsertTemplate(templateItem);
+                            }}
+                            type="button"
+                          >
+                            <span className={styles.commandSheet__itemTitle}>
+                              {formatTemplateLabel(templateItem)}
+                            </span>
+                            <span className={styles.commandSheet__itemMeta}>
+                              {formatItemMeta(templateItem)}
+                            </span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className={styles.commandSheet__emptyState}>
+                      No user templates are available to insert yet.
+                    </p>
+                  )}
+                </section>
+              ) : null}
+
+              {shouldShowDefaultState ? (
+                <>
+                  <section className={styles.commandSheet__section}>
+                    <h3 className={styles.commandSheet__sectionTitle}>Recent</h3>
+
+                    {isLoadingDefaultState ? (
+                      <div className={styles.commandSheet__skeletonList}>
+                        {RECENT_SKELETON_ROWS.map((rowId) => (
+                          <div className={styles.commandSheet__skeletonRow} key={rowId} />
+                        ))}
+                      </div>
+                    ) : recentItems.length > 0 ? (
+                      <ul className={styles.commandSheet__list}>
+                        {recentItems.map((item) => (
+                          <li className={styles.commandSheet__listItem} key={item.id}>
+                            <button
+                              className={styles.commandSheet__itemButton}
+                              onClick={() => {
+                                void handleOpenItem(item.id);
+                              }}
+                              type="button"
                             >
-                              <button
-                                className={styles.commandSheet__itemButton}
-                                disabled={
-                                  isCreatingFromTemplate || !slashCommand.template
-                                }
-                                onClick={() => {
-                                  if (!slashCommand.template?.id) {
-                                    return;
-                                  }
-
-                                  void handleCreateFromSlashCommand(
-                                    slashCommand.template.id,
-                                  );
-                                }}
-                                type="button"
-                              >
-                                <span className={styles.commandSheet__itemTitle}>
-                                  {slashCommand.command}
-                                </span>
-                                <span className={styles.commandSheet__itemMeta}>
-                                  {formatSlashCommandMeta(slashCommand)}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className={styles.commandSheet__emptyState}>
-                          No slash commands match that input yet.
-                        </p>
-                      )}
-                    </section>
-                  ) : null}
-
-                  {shouldShowCaptureState ? (
-                    <section className={styles.commandSheet__section}>
-                      <h3 className={styles.commandSheet__sectionTitle}>
-                        Quick Capture
-                      </h3>
-                      <p className={styles.commandSheet__previewTitle}>
-                        {capturePreview.title}
+                              <span className={styles.commandSheet__itemTitle}>
+                                {formatItemLabel(item)}
+                              </span>
+                              <span className={styles.commandSheet__itemMeta}>
+                                {formatItemMeta(item)}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={styles.commandSheet__emptyState}>
+                        No recent items yet. Your next capture will land here.
                       </p>
-                      <p className={styles.commandSheet__previewCopy}>
-                        {capturePreview.content || 'No overflow content.'}
+                    )}
+                  </section>
+
+                  <section className={styles.commandSheet__section}>
+                    <h3 className={styles.commandSheet__sectionTitle}>Templates</h3>
+
+                    {isLoadingDefaultState ? (
+                      <div className={styles.commandSheet__skeletonList}>
+                        {TEMPLATE_SKELETON_ROWS.map((rowId) => (
+                          <div className={styles.commandSheet__skeletonRow} key={rowId} />
+                        ))}
+                      </div>
+                    ) : templateItems.length > 0 ? (
+                      <ul className={styles.commandSheet__templateList}>
+                        {templateItems.map((templateItem) => (
+                          <li
+                            className={styles.commandSheet__templateItem}
+                            key={templateItem.id}
+                          >
+                            <span className={styles.commandSheet__templateTitle}>
+                              {formatTemplateLabel(templateItem)}
+                            </span>
+                            <span className={styles.commandSheet__templateMeta}>
+                              {formatItemMeta(templateItem)}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={styles.commandSheet__emptyState}>
+                        No user templates are available yet.
                       </p>
-                    </section>
-                  ) : null}
+                    )}
+                  </section>
+                </>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
 
-                  {shouldShowSearchState ? (
-                    <section className={styles.commandSheet__section}>
-                      <h3 className={styles.commandSheet__sectionTitle}>
-                        Search Results
-                      </h3>
-
-                      {isLoadingSearchResults ? (
-                        <div className={styles.commandSheet__skeletonList}>
-                          {RECENT_SKELETON_ROWS.map((rowId) => (
-                            <div
-                              className={styles.commandSheet__skeletonRow}
-                              key={rowId}
-                            />
-                          ))}
-                        </div>
-                      ) : searchResults.length > 0 ? (
-                        <ul className={styles.commandSheet__list}>
-                          {searchResults.map((item) => (
-                            <li className={styles.commandSheet__listItem} key={item.id}>
-                              <button
-                                className={styles.commandSheet__itemButton}
-                                onClick={() => {
-                                  void handleOpenItem(item.id);
-                                }}
-                                type="button"
-                              >
-                                <span className={styles.commandSheet__itemTitle}>
-                                  {formatItemLabel(item)}
-                                </span>
-                                <span className={styles.commandSheet__itemMeta}>
-                                  {formatItemMeta(item)}
-                                </span>
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p className={styles.commandSheet__emptyState}>
-                          No item titles match yet. Capture this text into inbox or
-                          keep typing.
-                        </p>
-                      )}
-                    </section>
-                  ) : null}
-
-                    {shouldShowInsertTemplateState ? (
-                      <section className={styles.commandSheet__section}>
-                        <h3 className={styles.commandSheet__sectionTitle}>
-                          Insert Template
-                        </h3>
-
-                        {isLoadingDefaultState ? (
-                          <div className={styles.commandSheet__skeletonList}>
-                            {TEMPLATE_SKELETON_ROWS.map((rowId) => (
-                              <div
-                                className={styles.commandSheet__skeletonRow}
-                                key={rowId}
-                              />
-                            ))}
-                          </div>
-                        ) : templateItems.length > 0 ? (
-                          <ul className={styles.commandSheet__list}>
-                            {templateItems.map((templateItem) => (
-                              <li
-                                className={styles.commandSheet__listItem}
-                                key={`insert-${templateItem.id}`}
-                              >
-                                <button
-                                  className={styles.commandSheet__itemButton}
-                                  onClick={() => {
-                                    handleInsertTemplate(templateItem);
-                                  }}
-                                  type="button"
-                                >
-                                  <span className={styles.commandSheet__itemTitle}>
-                                    {formatTemplateLabel(templateItem)}
-                                  </span>
-                                  <span className={styles.commandSheet__itemMeta}>
-                                    {formatItemMeta(templateItem)}
-                                  </span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className={styles.commandSheet__emptyState}>
-                            No user templates are available to insert yet.
-                          </p>
-                        )}
-                      </section>
-                    ) : null}
-
-                    {shouldShowDefaultState ? (
-                  <>
-                    <section className={styles.commandSheet__section}>
-                      <h3 className={styles.commandSheet__sectionTitle}>Recent</h3>
-
-                        {isLoadingDefaultState ? (
-                          <div className={styles.commandSheet__skeletonList}>
-                            {RECENT_SKELETON_ROWS.map((rowId) => (
-                              <div
-                                className={styles.commandSheet__skeletonRow}
-                                key={rowId}
-                              />
-                            ))}
-                          </div>
-                        ) : recentItems.length > 0 ? (
-                          <ul className={styles.commandSheet__list}>
-                            {recentItems.map((item) => (
-                              <li className={styles.commandSheet__listItem} key={item.id}>
-                                <button
-                                  className={styles.commandSheet__itemButton}
-                                  onClick={() => {
-                                    void handleOpenItem(item.id);
-                                  }}
-                                  type="button"
-                                >
-                                  <span className={styles.commandSheet__itemTitle}>
-                                    {formatItemLabel(item)}
-                                  </span>
-                                  <span className={styles.commandSheet__itemMeta}>
-                                    {formatItemMeta(item)}
-                                  </span>
-                                </button>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className={styles.commandSheet__emptyState}>
-                            No recent items yet. Your next capture will land here.
-                          </p>
-                        )}
-                      </section>
-
-                      <section className={styles.commandSheet__section}>
-                        <h3 className={styles.commandSheet__sectionTitle}>
-                          Templates
-                        </h3>
-
-                        {isLoadingDefaultState ? (
-                          <div className={styles.commandSheet__skeletonList}>
-                            {TEMPLATE_SKELETON_ROWS.map((rowId) => (
-                              <div
-                                className={styles.commandSheet__skeletonRow}
-                                key={rowId}
-                              />
-                            ))}
-                          </div>
-                        ) : templateItems.length > 0 ? (
-                          <ul className={styles.commandSheet__templateList}>
-                            {templateItems.map((templateItem) => (
-                              <li
-                                className={styles.commandSheet__templateItem}
-                                key={templateItem.id}
-                              >
-                                <span className={styles.commandSheet__templateTitle}>
-                                  {formatTemplateLabel(templateItem)}
-                                </span>
-                                <span className={styles.commandSheet__templateMeta}>
-                                  {formatItemMeta(templateItem)}
-                                </span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : (
-                          <p className={styles.commandSheet__emptyState}>
-                            No user templates are available yet.
-                          </p>
-                        )}
-                      </section>
-                    </>
-                    ) : null}
-                  </>
-                )}
-              </div>
-            </section>
-          </div>
-        ) : null}
-      </div>
+      {createElement(ContextSheet, {
+        isOpen: isContextSheetOpen,
+        onClose: closeContextSheet,
+      })}
+    </div>
   );
 
   return createElement(CommandContext.Provider, {

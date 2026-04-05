@@ -279,14 +279,14 @@
 - [x] Lock the rebuild direction to mobile-first iPhone 16 only.
 
 ### Structural reset
-- [ ] Remove the old framed shell/card model from the authenticated app.
-- [ ] Remove the persistent bottom tab bar model.
-- [ ] Rebuild the authenticated app as a full-bleed mobile SPA on `#1A1816`.
-- [ ] Make the FAB the only persistent global control.
-- [ ] Keep tap FAB -> command sheet.
-- [ ] Add hold FAB -> context sheet.
-- [ ] Keep command sheet limited to creation/search/slash commands only.
-- [ ] Make the context sheet the primary grouped navigation surface.
+- [x] Remove the old framed shell/card model from the authenticated app.
+- [x] Remove the persistent bottom tab bar model.
+- [x] Rebuild the authenticated app as a full-bleed mobile SPA on `#1A1816`.
+- [x] Make the FAB the only persistent global control.
+- [x] Keep tap FAB -> command sheet.
+- [x] Add hold FAB -> context sheet.
+- [x] Keep command sheet limited to creation/search/slash commands only.
+- [x] Make the context sheet the primary grouped navigation surface.
 - [x] Move inbox onto the Home/Now screen.
 - [ ] Move templates under settings.
 - [ ] Replace the current transitional route map with the grouped model.
@@ -295,22 +295,22 @@
   - [ ] strategy / plans
   - [ ] knowledge / notes
 - [ ] Define the fixed back-map for every non-home screen.
-- [ ] Make browser/body scroll impossible.
-- [ ] Make scroll behavior global to the app shell/container model.
+- [x] Make browser/body scroll impossible.
+- [x] Make scroll behavior global to the app shell/container model.
 
 ### Shell rebuild
-- [ ] Rebuild the root authenticated shell for the new mobile SPA structure.
+- [x] Rebuild the root authenticated shell for the new mobile SPA structure.
 - [ ] Rebuild route composition so screens behave like app views, not webpages.
 - [ ] Set the final safe-area, FAB clearance, and shared screen padding model.
-- [ ] Remove any remaining desktop-first or website-like assumptions from the shell files.
+- [x] Remove any remaining desktop-first or website-like assumptions from the shell files.
 
 ### Overlay system
-- [ ] Rebuild the command sheet as the canonical create/search/slash surface.
-- [ ] Build the context sheet as the canonical global jump surface.
-- [ ] Add the 3 context tabs:
-  - [ ] execution
-  - [ ] strategy
-  - [ ] knowledge
+- [x] Rebuild the command sheet as the canonical create/search/slash surface.
+- [x] Build the context sheet as the canonical global jump surface.
+- [x] Add the 3 context tabs:
+  - [x] execution
+  - [x] strategy
+  - [x] knowledge
 - [ ] Define shortcut rows and counts inside the context sheet tabs.
 
 ### Screen rebuild

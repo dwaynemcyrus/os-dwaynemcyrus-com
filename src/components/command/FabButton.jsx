@@ -3,7 +3,12 @@ import styles from './FabButton.module.css';
 
 const LONG_PRESS_DURATION_MS = 450;
 
-export function FabButton({ isSheetOpen, onOpen, onOpenDirectCreate }) {
+export function FabButton({
+  isSheetOpen,
+  onClose,
+  onOpen,
+  onOpenContext,
+}) {
   const longPressTimeoutRef = useRef(null);
   const triggeredAlternateActionRef = useRef(false);
 
@@ -23,8 +28,13 @@ export function FabButton({ isSheetOpen, onOpen, onOpenDirectCreate }) {
     clearLongPressTimeout();
 
     longPressTimeoutRef.current = window.setTimeout(() => {
+      if (isSheetOpen) {
+        onClose();
+        return;
+      }
+
       triggeredAlternateActionRef.current = true;
-      onOpenDirectCreate();
+      onOpenContext();
     }, LONG_PRESS_DURATION_MS);
   }
 
@@ -42,14 +52,25 @@ export function FabButton({ isSheetOpen, onOpen, onOpenDirectCreate }) {
       return;
     }
 
+    if (isSheetOpen) {
+      onClose();
+      return;
+    }
+
     onOpen();
   }
 
   function handleContextMenu(event) {
     event.preventDefault();
     clearLongPressTimeout();
+
+    if (isSheetOpen) {
+      onClose();
+      return;
+    }
+
     triggeredAlternateActionRef.current = true;
-    onOpenDirectCreate();
+    onOpenContext();
   }
 
   useEffect(() => {
@@ -62,7 +83,7 @@ export function FabButton({ isSheetOpen, onOpen, onOpenDirectCreate }) {
     <button
       aria-expanded={isSheetOpen}
       aria-haspopup="dialog"
-      aria-label="Open command sheet"
+      aria-label={isSheetOpen ? 'Close active sheet' : 'Open command sheet'}
       className={styles.fabButton}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
