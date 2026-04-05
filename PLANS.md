@@ -944,3 +944,8 @@
    - Exit conditions: docs are aligned; any chosen migration path is explicitly documented.
    - Risks: the build spec currently still requires system seeding, so this is a product-level contract change.
    - Commit message: `docs(spec): decouple seeded templates`
+
+## Fix: apply template runtime formats
+
+- [x] Materialize `{{date}}`, `{{time}}`, and one-off `{{date:...}}` / `{{time:...}}` overrides anywhere templates are applied.
+- [x] Use the saved template settings as the global defaults for template insertion, slash-command creation, daily-note creation, and inbox processing.

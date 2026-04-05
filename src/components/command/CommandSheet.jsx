@@ -10,8 +10,8 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '../../lib/auth';
 import { CommandContext } from '../../lib/command-context';
-import { buildEditorMarkdownDocument } from '../../lib/frontmatter';
 import {
+  buildMaterializedTemplateMarkdown,
   createItemFromTemplate,
   createInboxItemFromCapture,
   fetchCommandTemplates,
@@ -464,24 +464,38 @@ export function CommandSheet({ children }) {
     }
   }
 
-  function handleInsertTemplate(templateItem) {
+  async function handleInsertTemplate(templateItem) {
     if (!insertTemplateTarget?.onInsertTemplate) {
       setSheetError('Open an item before inserting a template.');
       return;
     }
 
-    const templateRawMarkdown = buildEditorMarkdownDocument(templateItem);
-
-    if (!templateRawMarkdown.trim()) {
-      setSheetError('That template has no content to insert.');
+    if (!auth.user?.id) {
+      setSheetError('Your session is missing a user id.');
       return;
     }
 
-    insertTemplateTarget.onInsertTemplate({
-      rawMarkdown: templateRawMarkdown,
-      template: templateItem,
-    });
-    closeSheet();
+    try {
+      const templateRawMarkdown = await buildMaterializedTemplateMarkdown({
+        templateItem,
+        userId: auth.user.id,
+      });
+
+      if (!templateRawMarkdown.trim()) {
+        setSheetError('That template has no content to insert.');
+        return;
+      }
+
+      insertTemplateTarget.onInsertTemplate({
+        rawMarkdown: templateRawMarkdown,
+        template: templateItem,
+      });
+      closeSheet();
+    } catch (error) {
+      setSheetError(
+        error.message ?? 'Unable to insert that template right now.',
+      );
+    }
   }
 
   const isAnySheetOpen = isCommandSheetOpen || isContextSheetOpen;

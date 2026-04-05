@@ -6,7 +6,12 @@ import {
   parseEditorMarkdownDocument,
   replaceEditorFrontmatterField,
 } from './frontmatter';
-import { fetchResolvedDailyTemplateId, fetchTemplateSettings } from './settings';
+import {
+  DEFAULT_TEMPLATE_DATE_FORMAT,
+  DEFAULT_TEMPLATE_TIME_FORMAT,
+  fetchResolvedDailyTemplateId,
+  fetchTemplateSettings,
+} from './settings';
 import { supabase } from './supabase';
 import { buildBacklinkGroups, resolveDocumentWikilinks } from './wikilinks';
 
@@ -17,6 +22,10 @@ const TAG_SUGGESTIONS_LIMIT = 10;
 const HOME_WORKBENCH_LIMIT = 12;
 const ITEMS_ROUTE_LIMIT = 200;
 const MAX_CUID_RETRIES = 20;
+const TEMPLATE_DATE_TOKEN_PATTERN = /\{\{date(?::([^}]*))?\}\}/g;
+const TEMPLATE_TIME_TOKEN_PATTERN = /\{\{time(?::([^}]*))?\}\}/g;
+const TEMPLATE_FORMAT_TOKEN_PATTERN = /YYYY|YY|MM|DD|HH|mm|ss|M|D|H|m|s/g;
+const LEGACY_CUID_TEMPLATE_TOKEN = '{{date:YYYYMMDD}}{{time:HHmmss}}';
 const pendingDailyNoteRequests = new Map();
 
 function escapeIlikePattern(value) {
@@ -188,16 +197,92 @@ function buildRestoredItemHistorySnapshot(item, restoredAt) {
   return buildEditorMarkdownDocument(restoredItem);
 }
 
-function materializeDailyTemplateContent({
-  content,
+function buildTemplateFormatTokenValues(date) {
+  return {
+    D: String(date.getDate()),
+    DD: formatDatePart(date.getDate()),
+    H: String(date.getHours()),
+    HH: formatDatePart(date.getHours()),
+    M: String(date.getMonth() + 1),
+    MM: formatDatePart(date.getMonth() + 1),
+    YY: String(date.getFullYear()).slice(-2),
+    YYYY: String(date.getFullYear()),
+    m: String(date.getMinutes()),
+    mm: formatDatePart(date.getMinutes()),
+    s: String(date.getSeconds()),
+    ss: formatDatePart(date.getSeconds()),
+  };
+}
+
+function normalizeTemplateFormatValue(value, fallbackValue) {
+  const normalizedValue = String(value ?? '').trim();
+
+  return normalizedValue || fallbackValue;
+}
+
+function formatTemplateVariableValue(date, format, fallbackValue) {
+  const normalizedFormat = normalizeTemplateFormatValue(format, fallbackValue);
+  const tokenValues = buildTemplateFormatTokenValues(date);
+
+  return normalizedFormat.replace(
+    TEMPLATE_FORMAT_TOKEN_PATTERN,
+    (token) => tokenValues[token] ?? token,
+  );
+}
+
+function materializeTemplateRawMarkdown({
+  createdAt,
   cuid,
-  localDateField,
-  localDateTime,
+  rawMarkdown,
+  templateSettings,
 }) {
-  return String(content ?? '')
-    .replaceAll('{{date:YYYYMMDD}}{{time:HHmmss}}', cuid)
-    .replaceAll('{{date:YYYY-MM-DD}}T{{time:HH:mm:ss}}', localDateTime)
-    .replaceAll('{{date:YYYY-MM-DD}}', localDateField);
+  const dateFormat = normalizeTemplateFormatValue(
+    templateSettings?.dateFormat,
+    DEFAULT_TEMPLATE_DATE_FORMAT,
+  );
+  const timeFormat = normalizeTemplateFormatValue(
+    templateSettings?.timeFormat,
+    DEFAULT_TEMPLATE_TIME_FORMAT,
+  );
+
+  return String(rawMarkdown ?? '')
+    .replaceAll(LEGACY_CUID_TEMPLATE_TOKEN, cuid)
+    .replace(
+      TEMPLATE_DATE_TOKEN_PATTERN,
+      (_match, overrideFormat) =>
+        formatTemplateVariableValue(createdAt, overrideFormat, dateFormat),
+    )
+    .replace(
+      TEMPLATE_TIME_TOKEN_PATTERN,
+      (_match, overrideFormat) =>
+        formatTemplateVariableValue(createdAt, overrideFormat, timeFormat),
+    );
+}
+
+function buildMaterializedTemplateUpdatePayload({
+  baseItem,
+  createdAt,
+  templateItem,
+  templateSettings,
+}) {
+  const modifiedAt = createdAt.toISOString();
+  const materializedRawMarkdown = materializeTemplateRawMarkdown({
+    createdAt,
+    cuid: baseItem.cuid,
+    rawMarkdown: buildEditorMarkdownDocument(templateItem),
+    templateSettings,
+  });
+  const { body, frontmatter } = parseEditorMarkdownDocument(materializedRawMarkdown);
+
+  return {
+    ...buildItemUpdatePayloadFromFrontmatter({
+      existingItem: baseItem,
+      modifiedAt,
+      parsedFrontmatter: frontmatter,
+    }),
+    content: body,
+    date_modified: modifiedAt,
+  };
 }
 
 async function fetchDailyNoteForDate({ dateField, userId }) {
@@ -226,44 +311,53 @@ async function createDailyNoteForDate({
   templateId,
   userId,
 }) {
-  const { data: templateItem, error: templateError } = await supabase
-    .from('items')
-    .select('*')
-    .eq('id', templateId)
-    .eq('is_template', true)
-    .eq('subtype', 'daily')
-    .eq('user_id', userId)
-    .is('date_trashed', null)
-    .single();
+  const [
+    { data: templateItem, error: templateError },
+    templateSettings,
+  ] = await Promise.all([
+    supabase
+      .from('items')
+      .select('*')
+      .eq('id', templateId)
+      .eq('is_template', true)
+      .eq('subtype', 'daily')
+      .eq('user_id', userId)
+      .is('date_trashed', null)
+      .single(),
+    fetchTemplateSettings({ userId }),
+  ]);
 
   if (templateError) {
     throw templateError;
   }
 
   const timestamp = date.toISOString();
-  const { dateField, localDateTime } = formatLocalDateParts(date);
+  const { dateField } = formatLocalDateParts(date);
 
   for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
-    const cuid = createCuid(date, collisionIndex);
-    const templateFields = sanitizeTemplateFields(templateItem);
+    const baseItem = {
+      ...buildClonedTemplatePayload({
+        collisionIndex,
+        isTemplate: false,
+        templateItem,
+        timestamp,
+        userId,
+      }),
+      date_field: dateField,
+    };
+    const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
+      baseItem,
+      createdAt: date,
+      templateItem,
+      templateSettings,
+    });
     const { data, error } = await supabase
       .from('items')
       .insert({
-        ...templateFields,
-        cuid,
-        date_created: timestamp,
+        ...baseItem,
+        ...materializedTemplatePayload,
         date_field: dateField,
-        date_modified: timestamp,
-        date_trashed: null,
-        is_template: false,
-        title: dateField,
-        user_id: userId,
-        content: materializeDailyTemplateContent({
-          content: templateItem.content,
-          cuid,
-          localDateField: dateField,
-          localDateTime,
-        }),
+        title: materializedTemplatePayload.title?.trim() || dateField,
       })
       .select(buildDailyNoteFieldsQuery())
       .single();
@@ -766,33 +860,47 @@ export async function createInboxItemFromCapture({ rawValue, userId }) {
 }
 
 export async function createItemFromTemplate({ templateId, userId }) {
-  const { data: templateItem, error: templateError } = await supabase
-    .from('items')
-    .select('*')
-    .eq('id', templateId)
-    .eq('is_template', true)
-    .eq('user_id', userId)
-    .is('date_trashed', null)
-    .single();
+  const [
+    { data: templateItem, error: templateError },
+    templateSettings,
+  ] = await Promise.all([
+    supabase
+      .from('items')
+      .select('*')
+      .eq('id', templateId)
+      .eq('is_template', true)
+      .eq('user_id', userId)
+      .is('date_trashed', null)
+      .single(),
+    fetchTemplateSettings({ userId }),
+  ]);
 
   if (templateError) {
     throw templateError;
   }
 
-  const timestamp = new Date().toISOString();
+  const createdAt = new Date();
+  const timestamp = createdAt.toISOString();
 
   for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
+    const baseItem = buildClonedTemplatePayload({
+      collisionIndex,
+      isTemplate: false,
+      templateItem,
+      timestamp,
+      userId,
+    });
     const { data, error } = await supabase
       .from('items')
-      .insert(
-        buildClonedTemplatePayload({
-          collisionIndex,
-          isTemplate: false,
+      .insert({
+        ...baseItem,
+        ...buildMaterializedTemplateUpdatePayload({
+          baseItem,
+          createdAt,
           templateItem,
-          timestamp,
-          userId,
+          templateSettings,
         }),
-      )
+      })
       .select(buildCommandItemFieldsQuery())
       .single();
 
@@ -806,6 +914,21 @@ export async function createItemFromTemplate({ templateId, userId }) {
   }
 
   throw new Error('Unable to create a unique timestamp id right now.');
+}
+
+export async function buildMaterializedTemplateMarkdown({
+  templateItem,
+  userId,
+}) {
+  const createdAt = new Date();
+  const templateSettings = await fetchTemplateSettings({ userId });
+
+  return materializeTemplateRawMarkdown({
+    createdAt,
+    cuid: createCuid(createdAt),
+    rawMarkdown: buildEditorMarkdownDocument(templateItem),
+    templateSettings,
+  });
 }
 
 export async function createBlankTemplate({ userId }) {
@@ -842,8 +965,11 @@ export async function processInboxItem({
   title,
   userId,
 }) {
-  const [{ data: inboxItem, error: inboxError }, { data: templateItem, error: templateError }] =
-    await Promise.all([
+  const [
+    { data: inboxItem, error: inboxError },
+    { data: templateItem, error: templateError },
+    templateSettings,
+  ] = await Promise.all([
       supabase
         .from('items')
         .select(buildInboxItemFieldsQuery())
@@ -861,6 +987,7 @@ export async function processInboxItem({
         .eq('user_id', userId)
         .is('date_trashed', null)
         .single(),
+      fetchTemplateSettings({ userId }),
     ]);
 
   if (inboxError) {
@@ -872,18 +999,37 @@ export async function processInboxItem({
   }
 
   const normalizedTitle = title?.trim() || inboxItem.title || null;
-  const timestamp = new Date().toISOString();
+  const createdAt = new Date();
+  const timestamp = createdAt.toISOString();
   const templateFields = sanitizeTemplateFields(templateItem);
+  const baseItem = {
+    ...inboxItem,
+    ...templateFields,
+    content: inboxItem.content,
+    date_modified: timestamp,
+    date_trashed: null,
+    is_template: false,
+    status: 'backlog',
+    title: normalizedTitle,
+    user_id: userId,
+  };
+  const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
+    baseItem,
+    createdAt,
+    templateItem,
+    templateSettings,
+  });
   const { data, error } = await supabase
     .from('items')
     .update({
-      ...templateFields,
+      ...baseItem,
+      ...materializedTemplatePayload,
       content: inboxItem.content,
       date_modified: timestamp,
       date_trashed: null,
       is_template: false,
       status: 'backlog',
-      title: normalizedTitle,
+      title: normalizedTitle || materializedTemplatePayload.title || null,
       user_id: userId,
     })
     .eq('id', itemId)
