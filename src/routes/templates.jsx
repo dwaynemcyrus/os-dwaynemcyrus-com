@@ -7,6 +7,13 @@ import {
   trashTemplate,
 } from '../lib/items';
 import {
+  DEFAULT_TEMPLATE_DATE_FORMAT,
+  DEFAULT_TEMPLATE_FOLDER,
+  DEFAULT_TEMPLATE_TIME_FORMAT,
+  fetchTemplateSettings,
+  saveTemplateSettings,
+} from '../lib/settings';
+import {
   formatTemplateGroupLabel,
   formatSubtypeLabel,
   groupTemplatesByType,
@@ -79,6 +86,29 @@ function getSheetMessageClassName(kind) {
   ].join(' ');
 }
 
+function formatTemplateSyntaxPreview(formatValue, date) {
+  const replacements = [
+    ['YYYY', String(date.getFullYear())],
+    ['MM', String(date.getMonth() + 1).padStart(2, '0')],
+    ['DD', String(date.getDate()).padStart(2, '0')],
+    ['HH', String(date.getHours()).padStart(2, '0')],
+    ['mm', String(date.getMinutes()).padStart(2, '0')],
+    ['ss', String(date.getSeconds()).padStart(2, '0')],
+  ];
+
+  return replacements.reduce(
+    (currentValue, [token, replacement]) =>
+      currentValue.replaceAll(token, replacement),
+    formatValue,
+  );
+}
+
+const DEFAULT_TEMPLATE_SETTINGS = {
+  dateFormat: DEFAULT_TEMPLATE_DATE_FORMAT,
+  folder: DEFAULT_TEMPLATE_FOLDER,
+  timeFormat: DEFAULT_TEMPLATE_TIME_FORMAT,
+};
+
 export const templatesRoute = createRoute({
   getParentRoute: () => settingsRoute,
   path: 'templates',
@@ -94,11 +124,24 @@ export const templatesRoute = createRoute({
     const [isCreating, setIsCreating] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isSavingSettings, setIsSavingSettings] = useState(false);
     const [pendingDeleteTemplate, setPendingDeleteTemplate] = useState(null);
+    const [savedTemplateSettings, setSavedTemplateSettings] = useState(
+      DEFAULT_TEMPLATE_SETTINGS,
+    );
+    const [settingsErrorMessage, setSettingsErrorMessage] = useState('');
+    const [settingsStatusMessage, setSettingsStatusMessage] = useState('');
+    const [templateSettings, setTemplateSettings] = useState(
+      DEFAULT_TEMPLATE_SETTINGS,
+    );
     const templateGroups = useMemo(
       () => groupTemplatesByType(templateItems),
       [templateItems],
     );
+    const isTemplateSettingsDirty =
+      templateSettings.folder !== savedTemplateSettings.folder ||
+      templateSettings.dateFormat !== savedTemplateSettings.dateFormat ||
+      templateSettings.timeFormat !== savedTemplateSettings.timeFormat;
     const templateCountLabel = useMemo(() => {
       if (templateItems.length === 1) {
         return '1 template';
@@ -116,23 +159,40 @@ export const templatesRoute = createRoute({
 
       setIsLoading(true);
       setErrorMessage('');
+      setSettingsErrorMessage('');
+      setSettingsStatusMessage('');
 
-      fetchManagedTemplates(auth.user.id)
-        .then((templates) => {
+      Promise.allSettled([
+        fetchManagedTemplates(auth.user.id),
+        fetchTemplateSettings({
+          userId: auth.user.id,
+        }),
+      ])
+        .then(([templatesResult, templateSettingsResult]) => {
           if (cancelled) {
             return;
           }
 
-          setTemplateItems(templates);
-        })
-        .catch((error) => {
-          if (cancelled) {
-            return;
+          if (templatesResult.status === 'fulfilled') {
+            setTemplateItems(templatesResult.value);
+          } else {
+            setErrorMessage(
+              templatesResult.reason?.message ??
+                'Unable to load templates right now.',
+            );
           }
 
-          setErrorMessage(
-            error.message ?? 'Unable to load templates right now.',
-          );
+          if (templateSettingsResult.status === 'fulfilled') {
+            setTemplateSettings(templateSettingsResult.value);
+            setSavedTemplateSettings(templateSettingsResult.value);
+          } else {
+            setTemplateSettings(DEFAULT_TEMPLATE_SETTINGS);
+            setSavedTemplateSettings(DEFAULT_TEMPLATE_SETTINGS);
+            setSettingsErrorMessage(
+              templateSettingsResult.reason?.message ??
+                'Unable to load template settings right now.',
+            );
+          }
         })
         .finally(() => {
           if (cancelled) {
@@ -146,6 +206,49 @@ export const templatesRoute = createRoute({
         cancelled = true;
       };
     }, [auth.user?.id]);
+
+    const datePreview = useMemo(
+      () =>
+        formatTemplateSyntaxPreview(templateSettings.dateFormat, new Date()),
+      [templateSettings.dateFormat],
+    );
+    const timePreview = useMemo(
+      () =>
+        formatTemplateSyntaxPreview(templateSettings.timeFormat, new Date()),
+      [templateSettings.timeFormat],
+    );
+
+    async function handleTemplateSettingsSubmit(event) {
+      event.preventDefault();
+
+      if (!auth.user?.id) {
+        setSettingsErrorMessage('Your session is missing a user id.');
+        return;
+      }
+
+      setIsSavingSettings(true);
+      setSettingsErrorMessage('');
+      setSettingsStatusMessage('');
+
+      try {
+        const savedSettings = await saveTemplateSettings({
+          dateFormat: templateSettings.dateFormat,
+          folder: templateSettings.folder,
+          timeFormat: templateSettings.timeFormat,
+          userId: auth.user.id,
+        });
+
+        setTemplateSettings(savedSettings);
+        setSavedTemplateSettings(savedSettings);
+        setSettingsStatusMessage('Template settings saved.');
+      } catch (error) {
+        setSettingsErrorMessage(
+          error.message ?? 'Unable to save template settings right now.',
+        );
+      } finally {
+        setIsSavingSettings(false);
+      }
+    }
 
     async function openTemplate(templateId) {
       await navigate({
@@ -272,6 +375,152 @@ export const templatesRoute = createRoute({
             {isLoading ? 'Loading templates...' : templateCountLabel}
           </p>
         </header>
+
+        <section className={styles.templatesRoute__settingsPanel}>
+          <header className={sheetStyles.settingsScreen__header}>
+            <h2 className={sheetStyles.settingsScreen__sectionTitle}>
+              Template Settings
+            </h2>
+          </header>
+
+          <form
+            className={styles.templatesRoute__settingsForm}
+            onSubmit={(event) => {
+              void handleTemplateSettingsSubmit(event);
+            }}
+          >
+            <section className={styles.templatesRoute__settingBlock}>
+              <label className={styles.templatesRoute__settingLabel}>
+                <span className={styles.templatesRoute__settingTitle}>
+                  Template folder location
+                </span>
+                <span className={styles.templatesRoute__settingCopy}>
+                  Files in this folder will be available as templates.
+                </span>
+                <input
+                  className={styles.templatesRoute__settingInput}
+                  disabled={isLoading || isSavingSettings}
+                  onChange={(event) => {
+                    setTemplateSettings((currentSettings) => ({
+                      ...currentSettings,
+                      folder: event.target.value,
+                    }));
+                    setSettingsErrorMessage('');
+                    setSettingsStatusMessage('');
+                  }}
+                  type="text"
+                  value={templateSettings.folder}
+                />
+              </label>
+            </section>
+
+            <section className={styles.templatesRoute__settingBlock}>
+              <label className={styles.templatesRoute__settingLabel}>
+                <span className={styles.templatesRoute__settingTitle}>
+                  Date format
+                </span>
+                <span className={styles.templatesRoute__settingCopy}>
+                  <code>{'{{date}}'}</code> in the template file will be replaced
+                  with this value.
+                </span>
+                <span className={styles.templatesRoute__settingCopy}>
+                  You can also use <code>{'{{date:YYYY-MM-DD}}'}</code> to
+                  override the format once.
+                </span>
+                <span className={styles.templatesRoute__settingCopy}>
+                  For more syntax, refer to{' '}
+                  <span className={styles.templatesRoute__settingReference}>
+                    format reference
+                  </span>
+                  .
+                </span>
+                <span className={styles.templatesRoute__settingCopy}>
+                  Your current syntax looks like this:{' '}
+                  <span className={styles.templatesRoute__settingPreview}>
+                    {datePreview}
+                  </span>
+                </span>
+                <input
+                  className={styles.templatesRoute__settingInput}
+                  disabled={isLoading || isSavingSettings}
+                  onChange={(event) => {
+                    setTemplateSettings((currentSettings) => ({
+                      ...currentSettings,
+                      dateFormat: event.target.value,
+                    }));
+                    setSettingsErrorMessage('');
+                    setSettingsStatusMessage('');
+                  }}
+                  type="text"
+                  value={templateSettings.dateFormat}
+                />
+              </label>
+            </section>
+
+            <section className={styles.templatesRoute__settingBlock}>
+              <label className={styles.templatesRoute__settingLabel}>
+                <span className={styles.templatesRoute__settingTitle}>
+                  Time format
+                </span>
+                <span className={styles.templatesRoute__settingCopy}>
+                  <code>{'{{time}}'}</code> in the template file will be replaced
+                  with this value.
+                </span>
+                <span className={styles.templatesRoute__settingCopy}>
+                  You can also use <code>{'{{time:HH:mm}}'}</code> to override
+                  the format once.
+                </span>
+                <span className={styles.templatesRoute__settingCopy}>
+                  For more syntax, refer to{' '}
+                  <span className={styles.templatesRoute__settingReference}>
+                    format reference
+                  </span>
+                  .
+                </span>
+                <span className={styles.templatesRoute__settingCopy}>
+                  Your current syntax looks like this:{' '}
+                  <span className={styles.templatesRoute__settingPreview}>
+                    {timePreview}
+                  </span>
+                </span>
+                <input
+                  className={styles.templatesRoute__settingInput}
+                  disabled={isLoading || isSavingSettings}
+                  onChange={(event) => {
+                    setTemplateSettings((currentSettings) => ({
+                      ...currentSettings,
+                      timeFormat: event.target.value,
+                    }));
+                    setSettingsErrorMessage('');
+                    setSettingsStatusMessage('');
+                  }}
+                  type="text"
+                  value={templateSettings.timeFormat}
+                />
+              </label>
+            </section>
+
+            <button
+              className={`${sheetStyles.settingsScreen__actionButton} ${styles.templatesRoute__settingsButton}`}
+              disabled={isLoading || isSavingSettings || !isTemplateSettingsDirty}
+              type="submit"
+            >
+              {isSavingSettings ? 'Saving...' : 'Save Settings'}
+            </button>
+          </form>
+
+          {settingsErrorMessage ? (
+            <p className={getSheetMessageClassName('error')} role="alert">
+              {settingsErrorMessage}
+            </p>
+          ) : null}
+
+          {settingsStatusMessage ? (
+            <p className={getSheetMessageClassName('status')} role="status">
+              {settingsStatusMessage}
+            </p>
+          ) : null}
+        </section>
 
         <section className={styles.templatesRoute__createSection}>
           <div className={sheetStyles.settingsScreen__section}>

@@ -2,6 +2,7 @@
   gap: 1.5rem;
 }
 
+.templatesRoute__settingsPanel,
 .templatesRoute__createSection,
 .templatesRoute__emptyState,
 .templatesRoute__group,
@@ -10,6 +11,7 @@
   gap: 0.85rem;
 }
 
+.templatesRoute__settingsForm,
 .templatesRoute__createForm,
 .templatesRoute__groups,
 .templatesRoute__item,
@@ -18,14 +20,55 @@
   display: grid;
 }
 
+.templatesRoute__settingsForm,
 .templatesRoute__createForm,
 .templatesRoute__groups,
 .templatesRoute__loadingList {
   gap: 1.25rem;
 }
 
+.templatesRoute__settingsButton,
 .templatesRoute__createButton {
   inline-size: 100%;
+}
+
+.templatesRoute__settingBlock,
+.templatesRoute__settingLabel {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.templatesRoute__settingTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.templatesRoute__settingCopy {
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.45;
+}
+
+.templatesRoute__settingReference,
+.templatesRoute__settingPreview {
+  color: var(--color-text-primary);
+}
+
+.templatesRoute__settingReference {
+  text-decoration: underline;
+  text-underline-offset: 0.16em;
+}
+
+.templatesRoute__settingInput {
+  appearance: none;
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  font: inherit;
+  min-height: 3.25rem;
+  padding: 0 1rem;
+  width: 100%;
 }
 
 .templatesRoute__groupHeader {
@@ -81,6 +124,7 @@
 .templatesRoute__deleteButton:focus-visible,
 .templatesRoute__dialogDismiss:focus-visible,
 .templatesRoute__dialogInput:focus-visible,
+.templatesRoute__settingInput:focus-visible,
 .templatesRoute__dangerButton:focus-visible {
   box-shadow: none;
   outline: 2px solid var(--color-focus-ring);

@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 
+export const DEFAULT_TEMPLATE_FOLDER = 'template';
 export const DEFAULT_TEMPLATE_DATE_FORMAT = 'YYYY-MM-DD';
 export const DEFAULT_TEMPLATE_TIME_FORMAT = 'HH:mm:ss';
 
@@ -128,7 +129,10 @@ export async function fetchTemplateSettings({ userId }) {
   const settingsRow = await fetchUserSettingsRow(userId);
 
   return {
-    folder: normalizeOptionalText(settingsRow?.template_folder),
+    folder: normalizeTemplateFormat(
+      settingsRow?.template_folder,
+      DEFAULT_TEMPLATE_FOLDER,
+    ),
     dateFormat: normalizeTemplateFormat(
       settingsRow?.template_date_format,
       DEFAULT_TEMPLATE_DATE_FORMAT,
@@ -146,7 +150,10 @@ export async function saveTemplateSettings({
   timeFormat,
   userId,
 }) {
-  const normalizedFolder = normalizeOptionalText(folder) || null;
+  const normalizedFolder = normalizeTemplateFormat(
+    folder,
+    DEFAULT_TEMPLATE_FOLDER,
+  );
   const normalizedDateFormat = normalizeTemplateFormat(
     dateFormat,
     DEFAULT_TEMPLATE_DATE_FORMAT,
@@ -176,7 +183,10 @@ export async function saveTemplateSettings({
   }
 
   return {
-    folder: normalizeOptionalText(data.template_folder),
+    folder: normalizeTemplateFormat(
+      data.template_folder,
+      DEFAULT_TEMPLATE_FOLDER,
+    ),
     dateFormat: normalizeTemplateFormat(
       data.template_date_format,
       DEFAULT_TEMPLATE_DATE_FORMAT,
