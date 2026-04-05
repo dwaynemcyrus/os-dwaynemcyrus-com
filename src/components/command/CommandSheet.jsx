@@ -90,7 +90,7 @@ function formatItemMeta(item) {
 
 function formatSlashCommandMeta(slashCommand) {
   if (!slashCommand.template) {
-    return 'Create a user template with this subtype first';
+    return 'Use /new, then choose an existing template subtype';
   }
 
   const metaParts = [];
@@ -433,7 +433,7 @@ export function CommandSheet({ children }) {
     });
   }
 
-  async function handleCreateFromSlashCommand(templateId) {
+  async function handleCreateFromSlashCommand(templateId, titleValue = '') {
     if (!auth.user?.id) {
       setSheetError('Your session is missing a user id.');
       return;
@@ -446,6 +446,7 @@ export function CommandSheet({ children }) {
     try {
       const createdItem = await createItemFromTemplate({
         templateId,
+        title: titleValue,
         userId: auth.user.id,
       });
 
@@ -476,8 +477,10 @@ export function CommandSheet({ children }) {
     }
 
     try {
+      const templateContext = insertTemplateTarget?.getTemplateContext?.();
       const templateRawMarkdown = await buildMaterializedTemplateMarkdown({
         templateItem,
+        titleValue: templateContext?.title ?? '',
         userId: auth.user.id,
       });
 
@@ -575,13 +578,14 @@ export function CommandSheet({ children }) {
 
                     if (!firstAvailableSlashCommand?.template?.id) {
                       setSheetError(
-                        'Create a user template with this subtype before using that slash command.',
+                        'Use /new <subtype> <title> with an existing template subtype.',
                       );
                       return;
                     }
 
                     void handleCreateFromSlashCommand(
                       firstAvailableSlashCommand.template.id,
+                      firstAvailableSlashCommand.title,
                     );
                   }
                 }}
@@ -675,6 +679,7 @@ export function CommandSheet({ children }) {
 
                               void handleCreateFromSlashCommand(
                                 slashCommand.template.id,
+                                slashCommand.title,
                               );
                             }}
                             type="button"
@@ -691,7 +696,7 @@ export function CommandSheet({ children }) {
                     </ul>
                   ) : (
                     <p className={styles.commandSheet__emptyState}>
-                      No slash commands match that input yet.
+                      Use <code>/new</code> to create from an existing template subtype.
                     </p>
                   )}
                 </section>

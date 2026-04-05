@@ -16,7 +16,7 @@ export const settingsSlashCommandsRoute = createRoute({
     const [errorMessage, setErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const slashCommands = useMemo(
-      () => getSlashCommands(commandTemplates, ''),
+      () => getSlashCommands(commandTemplates, '/new'),
       [commandTemplates],
     );
 
@@ -66,7 +66,8 @@ export const settingsSlashCommandsRoute = createRoute({
           <p className={styles.settingsScreen__eyebrow}>Settings</p>
           <h1 className={styles.settingsScreen__title}>Slash Commands</h1>
           <p className={styles.settingsScreen__description}>
-            Available when you type <code>/</code> in the command sheet.
+            Type <code>/new &lt;subtype&gt; &lt;title&gt;</code> in the command
+            sheet to create from an existing user template.
           </p>
         </header>
 

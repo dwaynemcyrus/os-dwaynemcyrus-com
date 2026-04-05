@@ -5,7 +5,6 @@ import {
   fetchUnprocessedInboxItems,
   processInboxItem,
 } from '../lib/items';
-import { getSlashCommands } from '../lib/templates';
 import { useAuth } from '../lib/auth';
 import { authenticatedRoute } from './_authenticated';
 
@@ -75,12 +74,12 @@ export const inboxRoute = createRoute({
     }, [inboxItems.length]);
     const templateOptions = useMemo(
       () =>
-        getSlashCommands(templateItems, '')
-          .filter((slashCommand) => slashCommand.template)
-          .map((slashCommand) => ({
-            command: slashCommand.command,
-            meta: formatTemplateMeta(slashCommand.template),
-            template: slashCommand.template,
+        templateItems
+          .filter((templateItem) => templateItem.subtype?.trim())
+          .map((templateItem) => ({
+            command: templateItem.subtype.trim(),
+            meta: formatTemplateMeta(templateItem),
+            template: templateItem,
           })),
       [templateItems],
     );

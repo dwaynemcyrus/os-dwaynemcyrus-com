@@ -46,6 +46,36 @@ function normalizeSlashQuery(query) {
   return query.trim().replace(/^\//, '').trim().toLowerCase();
 }
 
+function parseNewSlashQuery(query) {
+  const normalizedQuery = normalizeSlashQuery(query);
+
+  if (!normalizedQuery.startsWith('new')) {
+    return {
+      isNewCommand: false,
+      title: '',
+      subtypeQuery: '',
+    };
+  }
+
+  const remainder = normalizedQuery.slice(3).trim();
+
+  if (!remainder) {
+    return {
+      isNewCommand: true,
+      title: '',
+      subtypeQuery: '',
+    };
+  }
+
+  const [subtypeQuery = '', ...titleParts] = remainder.split(/\s+/);
+
+  return {
+    isNewCommand: true,
+    title: titleParts.join(' ').trim(),
+    subtypeQuery,
+  };
+}
+
 function normalizeTemplateLabel(value) {
   return String(value ?? '').trim();
 }
@@ -129,20 +159,30 @@ export function formatTemplateGroupLabel(type) {
 }
 
 export function getSlashCommands(templateItems, query) {
-  const normalizedQuery = normalizeSlashQuery(query);
-  const templateBySubtype = new Map(
-    templateItems.map((item) => [item.subtype, item]),
-  );
+  const { isNewCommand, subtypeQuery, title } = parseNewSlashQuery(query);
 
-  return SLASH_COMMAND_SUBTYPES.filter((subtype) => {
-    if (!normalizedQuery) {
-      return true;
+  if (!isNewCommand) {
+    return [];
+  }
+
+  const templateBySubtype = new Map();
+
+  templateItems.forEach((item) => {
+    const normalizedSubtype = normalizeTemplateLabel(item.subtype);
+
+    if (!normalizedSubtype || templateBySubtype.has(normalizedSubtype)) {
+      return;
     }
 
-    return subtype.includes(normalizedQuery);
-  }).map((subtype) => ({
-    command: `/${subtype}`,
-    subtype,
-    template: templateBySubtype.get(subtype) ?? null,
-  }));
+    templateBySubtype.set(normalizedSubtype, item);
+  });
+
+  return [...templateBySubtype.entries()]
+    .filter(([subtype]) => !subtypeQuery || subtype.includes(subtypeQuery))
+    .map(([subtype, template]) => ({
+      command: `/new ${subtype}`,
+      subtype,
+      template,
+      title,
+    }));
 }
