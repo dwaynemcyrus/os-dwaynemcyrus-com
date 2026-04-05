@@ -55,8 +55,18 @@ const BACK_NAVIGATION_RULES = [
   },
   {
     label: 'Settings',
-    matches: (pathname) => pathname === '/templates' || pathname === '/trash',
+    matches: (pathname) =>
+      pathname === '/settings/daily-note' ||
+      pathname === '/settings/keyboard-shortcuts' ||
+      pathname === '/settings/slash-commands' ||
+      pathname === '/settings/templates' ||
+      pathname === '/settings/trash',
     to: '/settings',
+  },
+  {
+    label: 'Templates',
+    matches: (pathname) => pathname.startsWith('/settings/templates/'),
+    to: '/settings/templates',
   },
 ];
 

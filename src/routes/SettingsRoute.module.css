@@ -1,0 +1,249 @@
+.settingsScreen {
+  display: grid;
+  gap: 1rem;
+  max-width: 32rem;
+  min-block-size: 100%;
+}
+
+.settingsScreen__header {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.settingsScreen__eyebrow {
+  color: var(--color-text-muted);
+  font-size: var(--font-size-section-label);
+  letter-spacing: 0.12em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.settingsScreen__title {
+  font-size: 2rem;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.settingsScreen__description {
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.settingsScreen__list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settingsScreen__rowButton {
+  align-items: center;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  min-height: 4rem;
+  padding: 0 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+.settingsScreen__rowButton:focus-visible,
+.settingsScreen__select:focus-visible,
+.settingsScreen__actionButton:focus-visible,
+.settingsScreen__secondaryButton:focus-visible,
+.settingsScreen__gridButton:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.settingsScreen__rowButton:hover,
+.settingsScreen__gridButton:hover {
+  border-color: var(--color-border-card);
+}
+
+.settingsScreen__rowContent {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.settingsScreen__rowLabel {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.settingsScreen__rowMeta {
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.settingsScreen__rowArrow {
+  color: var(--color-text-secondary);
+  font-size: 1.25rem;
+  line-height: 1;
+}
+
+.settingsScreen__section {
+  display: grid;
+  gap: 1rem;
+}
+
+.settingsScreen__sectionTitle {
+  font-size: 1.35rem;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.settingsScreen__copy {
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.settingsScreen__label {
+  color: var(--color-text-secondary);
+  display: grid;
+  gap: 0.45rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.settingsScreen__form {
+  display: grid;
+  gap: 1rem;
+}
+
+.settingsScreen__formRow {
+  align-items: end;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) auto;
+}
+
+.settingsScreen__select {
+  appearance: none;
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  font: inherit;
+  min-height: 3rem;
+  padding: 0 0.9rem;
+  width: 100%;
+}
+
+.settingsScreen__actionButton,
+.settingsScreen__secondaryButton {
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  min-height: 3rem;
+  padding: 0 1rem;
+}
+
+.settingsScreen__actionButton:disabled,
+.settingsScreen__secondaryButton:disabled {
+  color: var(--color-text-secondary);
+  cursor: not-allowed;
+}
+
+.settingsScreen__message {
+  line-height: 1.5;
+  margin: 0;
+}
+
+.settingsScreen__message--error {
+  color: var(--color-danger);
+}
+
+.settingsScreen__message--status {
+  color: var(--color-text-secondary);
+}
+
+.settingsScreen__cardList {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settingsScreen__cardItem {
+  border: 1px solid var(--color-border-subtle);
+  display: grid;
+  gap: 0.5rem;
+  padding: 1rem;
+}
+
+.settingsScreen__cardTitle {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.settingsScreen__cardMeta {
+  color: var(--color-text-secondary);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.settingsScreen__shortcutList {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settingsScreen__shortcutRow {
+  align-items: start;
+  border: 1px solid var(--color-border-subtle);
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: minmax(0, 7rem) minmax(0, 1fr);
+  padding: 1rem;
+}
+
+.settingsScreen__shortcutKeys {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.settingsScreen__shortcutDescription {
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+}
+
+.settingsScreen__gridList {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.settingsScreen__gridButton {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+  min-height: 100%;
+  padding: 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+@media (min-width: 28rem) {
+  .settingsScreen__gridList {
+    grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr));
+  }
+}

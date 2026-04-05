@@ -7,7 +7,7 @@ import {
   restoreTrashedItem,
 } from '../lib/items';
 import styles from './TrashRoute.module.css';
-import { authenticatedRoute } from './_authenticated';
+import { settingsRoute } from './settings';
 
 const SKELETON_ROWS = ['trash-1', 'trash-2', 'trash-3'];
 
@@ -69,8 +69,8 @@ function formatTrashCountLabel(itemCount) {
 }
 
 export const trashRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/trash',
+  getParentRoute: () => settingsRoute,
+  path: 'trash',
   component: function TrashRoute() {
     const auth = useAuth();
     const [errorMessage, setErrorMessage] = useState('');

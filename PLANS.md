@@ -288,7 +288,7 @@
 - [x] Keep command sheet limited to creation/search/slash commands only.
 - [x] Make the context sheet the primary grouped navigation surface.
 - [x] Move inbox onto the Home/Now screen.
-- [ ] Move templates under settings.
+- [x] Move templates under settings.
 - [ ] Replace the current transitional route map with the grouped model.
 - [ ] Define the grouped model in-app:
   - [ ] execution / tasks
@@ -318,7 +318,14 @@
 - [ ] Rebuild execution screens.
 - [ ] Rebuild strategy screens.
 - [ ] Rebuild knowledge screens.
-- [ ] Rebuild settings as the support/inventory screen.
+- [x] Rebuild settings as the support/inventory screen.
+- [x] Move Daily Note settings to `/settings/daily-note`.
+- [x] Move Templates to `/settings/templates`.
+- [x] Move template editing to `/settings/templates/$id`.
+- [x] Move Keyboard Shortcuts to `/settings/keyboard-shortcuts`.
+- [x] Move Slash Commands to `/settings/slash-commands`.
+- [x] Move Trash to `/settings/trash`.
+- [x] Remove the old top-level `/templates` and `/trash` routes entirely.
 - [ ] Rebuild auth screens to match the app language.
 - [ ] Rebuild trash as a support screen inside the new model.
 

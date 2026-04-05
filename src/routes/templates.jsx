@@ -11,7 +11,7 @@ import {
   formatSubtypeLabel,
   groupTemplatesByType,
 } from '../lib/templates';
-import { authenticatedRoute } from './_authenticated';
+import { settingsRoute } from './settings';
 
 function formatTemplateDate(value) {
   if (!value) {
@@ -69,8 +69,8 @@ function getTemplateDeleteConfirmationValue(templateItem) {
 }
 
 export const templatesRoute = createRoute({
-  getParentRoute: () => authenticatedRoute,
-  path: '/templates',
+  getParentRoute: () => settingsRoute,
+  path: 'templates',
   component: function TemplatesRoute() {
     const auth = useAuth();
     const navigate = templatesRoute.useNavigate();
@@ -141,7 +141,7 @@ export const templatesRoute = createRoute({
         params: {
           id: templateId,
         },
-        to: '/items/$id',
+        to: '/settings/templates/$id',
       });
     }
 
@@ -166,7 +166,7 @@ export const templatesRoute = createRoute({
           params: {
             id: createdTemplate.id,
           },
-          to: '/items/$id',
+          to: '/settings/templates/$id',
         });
       } catch (error) {
         setCreateErrorMessage(
