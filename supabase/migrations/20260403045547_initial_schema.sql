@@ -25,6 +25,7 @@ create table public.items (
   type text,
   subtype text,
   title text,
+  filename text,
   folder text,
   status text,
   access text not null default 'private',
@@ -209,6 +210,10 @@ create index idx_items_user_date_modified
 create index idx_items_user_title
   on public.items (user_id, lower(title))
   where user_id is not null and date_trashed is null;
+
+create unique index idx_items_user_filename_unique
+  on public.items (user_id, filename)
+  where user_id is not null and filename is not null and date_trashed is null;
 
 create index idx_items_user_type_subtype
   on public.items (user_id, type, subtype)

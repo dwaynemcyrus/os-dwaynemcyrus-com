@@ -145,6 +145,7 @@ is_template boolean default false
 type text
 subtype text
 title text
+filename text
 status text
 access text default 'private'
 area text
