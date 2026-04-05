@@ -10,7 +10,7 @@ import {
 import {
   DEFAULT_TEMPLATE_DATE_FORMAT,
   DEFAULT_TEMPLATE_TIME_FORMAT,
-  fetchResolvedDailyTemplateId,
+  fetchResolvedDailyNotePreferences,
   fetchTemplateSettings,
 } from './settings';
 import { supabase } from './supabase';
@@ -389,6 +389,7 @@ async function fetchDailyNoteForDate({ dateField, userId }) {
 
 async function createDailyNoteForDate({
   date,
+  dailyNoteFolder,
   templateId,
   userId,
 }) {
@@ -425,6 +426,7 @@ async function createDailyNoteForDate({
         userId,
       }),
       date_field: dateField,
+      folder: dailyNoteFolder || null,
     };
     const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
       baseItem,
@@ -447,6 +449,7 @@ async function createDailyNoteForDate({
         ...materializedTemplatePayload,
         date_field: dateField,
         filename: dateField,
+        folder: dailyNoteFolder || null,
         title: dateField,
       })
       .select(buildDailyNoteFieldsQuery())
@@ -1392,10 +1395,12 @@ export async function openOrCreateDailyNote({
       };
     }
 
-    const templateId = await fetchResolvedDailyTemplateId({ userId });
+    const { dailyNoteFolder, dailyTemplateId } =
+      await fetchResolvedDailyNotePreferences({ userId });
     const createdDailyNote = await createDailyNoteForDate({
       date,
-      templateId,
+      dailyNoteFolder,
+      templateId: dailyTemplateId,
       userId,
     });
 
