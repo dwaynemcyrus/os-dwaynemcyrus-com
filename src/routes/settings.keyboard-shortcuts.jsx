@@ -13,8 +13,7 @@ export const settingsKeyboardShortcutsRoute = createRoute({
           <p className={styles.settingsScreen__eyebrow}>Settings</p>
           <h1 className={styles.settingsScreen__title}>Keyboard Shortcuts</h1>
           <p className={styles.settingsScreen__description}>
-            These are the active keyboard and editor shortcuts available in the
-            current build.
+            Current keyboard and editor shortcuts.
           </p>
         </header>
 

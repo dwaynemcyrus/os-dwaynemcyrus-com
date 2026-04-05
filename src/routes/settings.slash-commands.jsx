@@ -2,9 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
 import { fetchCommandTemplates } from '../lib/items';
-import {
-  formatSlashCommandMeta,
-} from '../lib/settings-reference';
+import { formatSlashCommandMeta } from '../lib/settings-reference';
 import { getSlashCommands } from '../lib/templates';
 import styles from './SettingsRoute.module.css';
 import { settingsRoute } from './settings';
@@ -68,8 +66,7 @@ export const settingsSlashCommandsRoute = createRoute({
           <p className={styles.settingsScreen__eyebrow}>Settings</p>
           <h1 className={styles.settingsScreen__title}>Slash Commands</h1>
           <p className={styles.settingsScreen__description}>
-            Type <code>/</code> in the command sheet to filter these commands,
-            then press <code>Enter</code> to create from the first match.
+            Available when you type <code>/</code> in the command sheet.
           </p>
         </header>
 
@@ -89,7 +86,7 @@ export const settingsSlashCommandsRoute = createRoute({
             ))}
           </div>
         ) : (
-          <ul className={styles.settingsScreen__gridList}>
+          <ul className={styles.settingsScreen__cardList}>
             {slashCommands.map((slashCommand) => (
               <li key={slashCommand.command}>
                 <div className={styles.settingsScreen__cardItem}>

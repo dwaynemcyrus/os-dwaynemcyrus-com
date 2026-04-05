@@ -9,7 +9,7 @@ const SETTINGS_ROWS = [
   {
     id: 'daily-note',
     label: 'Daily Note',
-    meta: 'Choose the default daily template.',
+    meta: 'Choose the template used by Today’s Note.',
     to: '/settings/daily-note',
   },
   {
@@ -21,13 +21,13 @@ const SETTINGS_ROWS = [
   {
     id: 'keyboard-shortcuts',
     label: 'Keyboard Shortcuts',
-    meta: 'Review the active shortcuts in this build.',
+    meta: 'Review the current shortcut reference.',
     to: '/settings/keyboard-shortcuts',
   },
   {
     id: 'slash-commands',
     label: 'Slash Commands',
-    meta: 'See the commands available in the command sheet.',
+    meta: 'See the current command sheet actions.',
     to: '/settings/slash-commands',
   },
   {
@@ -78,9 +78,6 @@ export const settingsIndexRoute = createRoute({
         <header className={styles.settingsScreen__header}>
           <p className={styles.settingsScreen__eyebrow}>Support</p>
           <h1 className={styles.settingsScreen__title}>Settings</h1>
-          <p className={styles.settingsScreen__description}>
-            Manage support screens, references, templates, and your account.
-          </p>
         </header>
 
         <ul className={styles.settingsScreen__list}>
@@ -115,24 +112,13 @@ export const settingsIndexRoute = createRoute({
         </ul>
 
         <section className={styles.settingsScreen__section}>
-          <header className={styles.settingsScreen__header}>
-            <p className={styles.settingsScreen__eyebrow}>Account</p>
-            <h2 className={styles.settingsScreen__sectionTitle}>Supabase Session</h2>
-            <p className={styles.settingsScreen__description}>
-              Your Personal OS account is currently signed in with this email
-              address.
-            </p>
-          </header>
-
-          <div className={styles.settingsScreen__section}>
-            <p className={styles.settingsScreen__eyebrow}>Email</p>
-            <p className={styles.settingsScreen__sectionTitle}>
-              {auth.user?.email ?? 'Email unavailable'}
-            </p>
-            <p className={styles.settingsScreen__copy}>
-              This address is used for sign-in and password recovery.
-            </p>
-          </div>
+          <p className={styles.settingsScreen__eyebrow}>Account</p>
+          <p className={styles.settingsScreen__sectionTitle}>
+            {auth.user?.email ?? 'Email unavailable'}
+          </p>
+          <p className={styles.settingsScreen__copy}>
+            Sign in, recovery, and session state are tied to this address.
+          </p>
 
           {accountErrorMessage ? (
             <p

@@ -117,8 +117,7 @@ export const settingsDailyNoteRoute = createRoute({
           <p className={styles.settingsScreen__eyebrow}>Settings</p>
           <h1 className={styles.settingsScreen__title}>Daily Note</h1>
           <p className={styles.settingsScreen__description}>
-            Today&apos;s note will open an existing daily entry for your local
-            calendar date, or create one from this selected user template.
+            Choose the template used when you open Today&apos;s Note.
           </p>
         </header>
 
@@ -168,7 +167,7 @@ export const settingsDailyNoteRoute = createRoute({
               }
               type="submit"
             >
-              {isSavingTemplate ? 'Saving...' : 'Save Template'}
+              {isSavingTemplate ? 'Saving...' : 'Save'}
             </button>
           </div>
         </form>
@@ -194,7 +193,7 @@ export const settingsDailyNoteRoute = createRoute({
             className={`${styles.settingsScreen__message} ${styles['settingsScreen__message--status']}`}
             role="status"
           >
-            No daily templates are available yet. Create a template and add
+            No daily templates are available yet. Create one in Templates and add
             <code> subtype: daily</code> when you want it to appear here.
           </p>
         ) : null}
