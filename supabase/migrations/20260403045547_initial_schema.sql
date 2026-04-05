@@ -25,6 +25,7 @@ create table public.items (
   type text,
   subtype text,
   title text,
+  folder text,
   status text,
   access text not null default 'private',
   area text,
