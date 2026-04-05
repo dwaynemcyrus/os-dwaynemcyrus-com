@@ -357,18 +357,14 @@ Single most important UI element. Accessible from every screen via FAB tap.
 - Toggle off or close to exit
 
 **Slash commands:**
-All 31 subtypes available as slash commands.
-Typing / shows full list. Typing /ta filters to matches.
-Selecting creates a new item from the matching template.
+Creation uses `/new <subtype> <title>`.
+Typing `/new` shows existing user template subtypes only.
+Typing `/new ta` filters to matching available subtypes.
+Selecting creates a new item from the matching template and uses the trailing text as the new item title.
 ```
-/daily /istikarah /dream /scratch /devlog
-/essay /framework /lesson /manuscript /chapter
-/comic /poem /story /artwork /case_study
-/workshop /script /slip /identity /principle
-/directive /source /literature /quote /guide
-/offer /asset /software /course /module
-/habit /goal /finance /contact /outreach
-/weekly /monthly /yearly /area /task /project
+/new daily Today
+/new task Call plumber
+/new project Q2 planning
 ```
 
 **Insert template:**

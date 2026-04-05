@@ -21,6 +21,7 @@ cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type:
 subtype:
 title:
+filename:
 status:
 access: private
 area:
@@ -36,6 +37,7 @@ tags:
 - `cuid` — auto-generated timestamp-based unique ID, never changed. Default shape is `YYYYMMDDHHmmss`; if multiple items are created in the same second, the runtime appends a short suffix such as `-01`.
 - `type` — top-level document category
 - `subtype` — specific document kind within the type
+- `filename` — filesystem/export name. Lowercase, spaces become `-`, unique per user across active items. Derived from title until manually edited.
 - `status` — varies by type; valid values defined per subtype below
 - `access` — private | public | paywall
 - `tier` — ONLY present when access is paywall; values: public | member | premium
@@ -45,6 +47,24 @@ tags:
 - `date_modified` — updated on every save
 - `date_trashed` — populated when moved to trash, null otherwise
 - `tags` — freeform array of strings
+
+## Template Runtime Rules
+
+- Template tokens stay literal while a row is saved as a template.
+- Tokens materialize only when the template is used to create, insert, or process a real item.
+- Supported runtime tokens:
+  - `{{date}}` — uses the saved template date format
+  - `{{time}}` — uses the saved template time format
+  - `{{date:...}}` and `{{time:...}}` — one-off format overrides
+  - `{{title}}` — uses the runtime title context for the current flow
+- `{{filename}}` is not supported.
+- Daily notes are a special case: both `title` and `filename` resolve to `YYYY-MM-DD`.
+
+## Command Creation
+
+- Command-sheet creation uses `/new <subtype> <title>`.
+- Only existing user template subtypes appear in the inline subtype suggestions.
+- The trailing title text becomes the runtime `title`, and `filename` derives from it unless manually set later.
 
 **Resources field:**
 Present on selected subtypes only — not universal.
@@ -203,6 +223,7 @@ cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: journal
 subtype: daily
 title: "{{date:YYYY-MM-DD}}"
+filename: "{{date:YYYY-MM-DD}}"
 status: active
 access: private
 area:
