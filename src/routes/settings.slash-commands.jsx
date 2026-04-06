@@ -5,11 +5,11 @@ import { fetchCommandTemplates } from '../lib/items';
 import { formatSlashCommandMeta } from '../lib/settings-reference';
 import { getSlashCommands } from '../lib/templates';
 import styles from './SettingsRoute.module.css';
-import { settingsRoute } from './settings';
+import { authenticatedRoute } from './_authenticated';
 
 export const settingsSlashCommandsRoute = createRoute({
-  getParentRoute: () => settingsRoute,
-  path: 'slash-commands',
+  getParentRoute: () => authenticatedRoute,
+  path: '/settings/slash-commands',
   component: function SettingsSlashCommandsRoute() {
     const auth = useAuth();
     const [commandTemplates, setCommandTemplates] = useState([]);

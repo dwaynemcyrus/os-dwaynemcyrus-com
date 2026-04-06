@@ -9,7 +9,6 @@ import { inboxRoute } from '../routes/inbox';
 import { indexRoute } from '../routes/index';
 import { itemEditorRoute } from '../routes/items.$id';
 import { itemsRoute } from '../routes/items';
-import { settingsRoute } from '../routes/settings';
 import { settingsDailyNoteRoute } from '../routes/settings.daily-note';
 import { settingsIndexRoute } from '../routes/settings.index';
 import { settingsKeyboardShortcutsRoute } from '../routes/settings.keyboard-shortcuts';
@@ -18,21 +17,18 @@ import { settingsTemplateEditorRoute } from '../routes/settings.templates.$id';
 import { templatesRoute } from '../routes/templates';
 import { trashRoute } from '../routes/trash';
 
-const settingsRouteTree = settingsRoute.addChildren([
-  settingsIndexRoute,
-  settingsDailyNoteRoute,
-  settingsKeyboardShortcutsRoute,
-  settingsSlashCommandsRoute,
-  templatesRoute.addChildren([settingsTemplateEditorRoute]),
-  trashRoute,
-]);
-
 const protectedRouteTree = authenticatedRoute.addChildren([
   indexRoute,
   inboxRoute,
   itemsRoute,
   itemEditorRoute,
-  settingsRouteTree,
+  settingsIndexRoute,
+  settingsDailyNoteRoute,
+  settingsKeyboardShortcutsRoute,
+  settingsSlashCommandsRoute,
+  templatesRoute,
+  settingsTemplateEditorRoute,
+  trashRoute,
 ]);
 
 const routeTree = rootRoute.addChildren([

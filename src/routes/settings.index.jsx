@@ -3,7 +3,7 @@ import { createRoute } from '@tanstack/react-router';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../lib/auth';
 import styles from './SettingsRoute.module.css';
-import { settingsRoute } from './settings';
+import { authenticatedRoute } from './_authenticated';
 
 const SETTINGS_ROWS = [
   {
@@ -39,8 +39,8 @@ const SETTINGS_ROWS = [
 ];
 
 export const settingsIndexRoute = createRoute({
-  getParentRoute: () => settingsRoute,
-  path: '/',
+  getParentRoute: () => authenticatedRoute,
+  path: '/settings',
   component: function SettingsIndexRoute() {
     const auth = useAuth();
     const navigate = settingsIndexRoute.useNavigate();

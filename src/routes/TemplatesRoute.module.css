@@ -2,20 +2,6 @@
   gap: 1.5rem;
 }
 
-.templatesRoute__editorLayer {
-  inset-block-end: 0;
-  inset-inline: 0;
-  inset-block-start:
-    calc(max(1rem, env(safe-area-inset-top)) + var(--space-top-chrome-height) + var(--space-top-chrome-gap));
-  position: absolute;
-  z-index: var(--z-index-surface-overlay);
-}
-
-.templatesRoute__editorSheet {
-  background: var(--color-bg-app);
-  block-size: 100%;
-  min-block-size: 100%;
-}
 
 .templatesRoute__settingsPanel,
 .templatesRoute__createSection,

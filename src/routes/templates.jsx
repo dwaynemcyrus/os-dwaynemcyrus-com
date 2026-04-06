@@ -1,5 +1,5 @@
 import { createElement, useEffect, useMemo, useState } from 'react';
-import { Outlet, createRoute, useRouterState } from '@tanstack/react-router';
+import { createRoute } from '@tanstack/react-router';
 import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
 import {
@@ -22,7 +22,7 @@ import {
 } from '../lib/templates';
 import sheetStyles from './SettingsRoute.module.css';
 import styles from './TemplatesRoute.module.css';
-import { settingsRoute } from './settings';
+import { authenticatedRoute } from './_authenticated';
 
 function formatTemplateDate(value) {
   if (!value) {
@@ -109,21 +109,11 @@ const DEFAULT_TEMPLATE_SETTINGS = {
 };
 
 export const templatesRoute = createRoute({
-  getParentRoute: () => settingsRoute,
-  path: 'templates',
+  getParentRoute: () => authenticatedRoute,
+  path: '/settings/templates',
   component: function TemplatesRoute() {
     const auth = useAuth();
     const navigate = templatesRoute.useNavigate();
-    const isEditorRouteOpen = useRouterState({
-      select: (state) => {
-        const { pathname } = state.location;
-
-        return (
-          pathname.startsWith('/settings/templates/') &&
-          pathname !== '/settings/templates'
-        );
-      },
-    });
     const [templateItems, setTemplateItems] = useState([]);
     const [createErrorMessage, setCreateErrorMessage] = useState('');
     const [deleteConfirmationValue, setDeleteConfirmationValue] = useState('');
@@ -378,7 +368,6 @@ export const templatesRoute = createRoute({
     return (
       <>
         <section
-          aria-hidden={isEditorRouteOpen}
           className={`${sheetStyles.settingsScreen} ${styles.templatesRoute}`}
         >
         <header className={sheetStyles.settingsScreen__header}>
@@ -739,13 +728,6 @@ export const templatesRoute = createRoute({
           ) : null}
         </section>
 
-        {isEditorRouteOpen ? (
-          <div className={styles.templatesRoute__editorLayer}>
-            <div className={styles.templatesRoute__editorSheet}>
-              {createElement(Outlet)}
-            </div>
-          </div>
-        ) : null}
       </>
     );
   },

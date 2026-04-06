@@ -9,7 +9,7 @@ import {
 } from '../lib/items';
 import sheetStyles from './SettingsRoute.module.css';
 import styles from './TrashRoute.module.css';
-import { settingsRoute } from './settings';
+import { authenticatedRoute } from './_authenticated';
 
 const SKELETON_ROWS = ['trash-1', 'trash-2', 'trash-3'];
 
@@ -72,8 +72,8 @@ function getSheetMessageClassName(kind) {
 }
 
 export const trashRoute = createRoute({
-  getParentRoute: () => settingsRoute,
-  path: 'trash',
+  getParentRoute: () => authenticatedRoute,
+  path: '/settings/trash',
   component: function TrashRoute() {
     const auth = useAuth();
     const [errorMessage, setErrorMessage] = useState('');

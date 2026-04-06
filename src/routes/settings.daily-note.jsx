@@ -9,7 +9,7 @@ import {
   saveDailyNoteSettings,
 } from '../lib/settings';
 import styles from './SettingsRoute.module.css';
-import { settingsRoute } from './settings';
+import { authenticatedRoute } from './_authenticated';
 
 const DEFAULT_DAILY_SETTINGS = {
   folder: DEFAULT_DAILY_NOTE_FOLDER,
@@ -78,8 +78,8 @@ function formatBulkUpdateStatusMessage({ folder, updatedCount }) {
 }
 
 export const settingsDailyNoteRoute = createRoute({
-  getParentRoute: () => settingsRoute,
-  path: 'daily-note',
+  getParentRoute: () => authenticatedRoute,
+  path: '/settings/daily-note',
   component: function SettingsDailyNoteRoute() {
     const auth = useAuth();
     const [dailyErrorMessage, setDailyErrorMessage] = useState('');

@@ -1,11 +1,11 @@
 import { createRoute } from '@tanstack/react-router';
 import { KEYBOARD_SHORTCUTS } from '../lib/settings-reference';
 import styles from './SettingsRoute.module.css';
-import { settingsRoute } from './settings';
+import { authenticatedRoute } from './_authenticated';
 
 export const settingsKeyboardShortcutsRoute = createRoute({
-  getParentRoute: () => settingsRoute,
-  path: 'keyboard-shortcuts',
+  getParentRoute: () => authenticatedRoute,
+  path: '/settings/keyboard-shortcuts',
   component: function SettingsKeyboardShortcutsRoute() {
     return (
       <section className={styles.settingsScreen}>

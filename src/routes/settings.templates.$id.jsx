@@ -1,11 +1,11 @@
 import { createElement } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { ItemEditorScreen } from '../components/editor/ItemEditorScreen';
-import { templatesRoute } from './templates';
+import { authenticatedRoute } from './_authenticated';
 
 export const settingsTemplateEditorRoute = createRoute({
-  getParentRoute: () => templatesRoute,
-  path: '$id',
+  getParentRoute: () => authenticatedRoute,
+  path: '/settings/templates/$id',
   component: function SettingsTemplateEditorRoute() {
     const { id } = settingsTemplateEditorRoute.useParams();
 
