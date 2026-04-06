@@ -18,7 +18,16 @@
   padding-top: 1rem;
 }
 
-.settingsTemplateEditorRoute :global(.cm-gutter) {
+.settingsTemplateEditorRoute :global(.cm-gutters) {
   padding-top: 1rem;
+}
+
+.settingsTemplateEditorRoute :global(.cm-gutter) {
+  padding-top: 0;
+}
+
+.settingsTemplateEditorRoute :global(.cm-gutterElement),
+.settingsTemplateEditorRoute :global(.cm-activeLineGutter) {
+  margin-top: 0 !important;
 }
 
