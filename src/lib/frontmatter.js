@@ -206,6 +206,7 @@ const FRONTMATTER_FIELD_ORDER = [
 const KNOWN_FRONTMATTER_FIELDS = new Set(FRONTMATTER_FIELD_ORDER);
 const PRESERVED_WHEN_OMITTED_FIELDS = new Set([
   'cuid',
+  'date_field',
   'date_created',
   'date_trashed',
 ]);

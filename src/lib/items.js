@@ -387,7 +387,7 @@ async function fetchDailyNoteForDate({ dateField, userId }) {
     .eq('is_template', false)
     .eq('type', 'journal')
     .eq('subtype', 'daily')
-    .eq('date_field', dateField)
+    .or(`date_field.eq.${dateField},filename.eq.${dateField},title.eq.${dateField}`)
     .is('date_trashed', null)
     .order('date_created', { ascending: false, nullsFirst: false })
     .limit(1)

@@ -1110,3 +1110,8 @@
 
 - [x] Stop the filename editor from writing a `filename` property into raw markdown/frontmatter.
 - [x] Keep `filename` persisted only through the DB save contract, while stripping any authored `filename` frontmatter back out on save.
+
+## Fix: reopen saved daily note
+
+- [x] Preserve `date_field` when a saved editor document omits it from authored frontmatter.
+- [x] Make today's-note lookup recover existing daily notes by `filename`/`title` so already-affected rows still open instead of falling into create.
