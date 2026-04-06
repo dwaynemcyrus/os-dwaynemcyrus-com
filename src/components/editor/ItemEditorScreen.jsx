@@ -127,7 +127,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const lastSavedText = item
     ? `Last saved ${formatEditorDate(item.date_modified ?? item.date_created)}`
     : 'Loading item...';
-  const shouldShowWorkbenchToggle = !isTemplateEditor;
+  const shouldShowWorkbenchToggle = !isReadOnlyTemplate;
 
   draftValueRef.current = draftValue;
   itemRef.current = item;

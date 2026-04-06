@@ -1187,3 +1187,73 @@
 
 **Open questions before execution:**
 - None. The review findings are specific enough to implement directly with the current filename-first contract.
+
+## Feature: unify item editor with template editor
+
+**Summary:** Bring the normal item editor onto the same shell/inset pattern as the template editor, remove the inline backlinks panel, and move backlinks into the chrome `Info` menu as a centered dialog.
+
+**Agents involved:** @frontend
+
+**Sequence:**
+
+### Phase 1 — Match the editor shell and inset
+
+**Goal:** Make `/items/$id` use the same route-level editor clearance and full-screen shell behavior as `/settings/templates/$id`.
+
+**Chunks:**
+
+1. **Shared editor route inset**
+   - Files touched: `src/routes/items.$id.jsx`, `src/routes/settings.templates.$id.jsx`, `src/routes/TemplatesRoute.module.css`
+   - Steps:
+     1. Move the normal item editor onto the same route-level inset wrapper pattern currently used by the template editor.
+     2. Keep the shared chrome floating above both editor routes.
+     3. Remove the item-only inline top padding from `ItemEditorScreen` so both routes rely on the same shell-level spacing.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; the top clearance on the normal item editor visually matches the template editor.
+   - Risks: changing the route-level mount structure can accidentally break the full-height editor layout if the wrapper does not preserve `min-block-size: 0`.
+   - Commit message: `refactor(editor): match route inset`
+
+### Phase 2 — Move backlinks into chrome info
+
+**Goal:** Remove the bottom backlinks panel and surface backlinks from the `Info` dropdown in a centered dialog.
+
+**Chunks:**
+
+1. **Info menu action support**
+   - Files touched: `src/components/layout/AppNav.jsx`, `src/components/layout/AppNav.module.css`, `src/lib/app-chrome.js`
+   - Steps:
+     1. Extend the chrome contract so `Info` can show both static text and actions.
+     2. Keep the existing `Last saved ...` line as the first info content.
+     3. Support an always-visible `Backlinks` action on the item editor while leaving template editor info text-only.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; the `Info` menu can render text plus selectable actions without changing non-editor screens.
+   - Risks: the chrome API is shared globally, so backward compatibility for screens that only provide `infoText` must remain intact.
+   - Commit message: `feat(chrome): support info actions`
+
+2. **Backlinks dialog**
+   - Files touched: `src/components/editor/ItemEditorScreen.jsx`, `src/components/editor/BacklinksPanel.jsx`, `src/components/ui/AppDialog/AppDialog.jsx`
+   - Steps:
+     1. Remove the inline `BacklinksPanel` from the bottom of the editor.
+     2. Open backlinks from the `Info` menu in a centered dialog using the existing dialog pattern.
+     3. Close the dialog when a backlink is selected and navigation occurs.
+     4. Keep the `Backlinks` option visible even when the dialog only shows empty or explanatory states.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; the item editor no longer renders backlinks inline and the `Info` menu opens them in a modal.
+   - Risks: focus and overlay stacking must remain correct with the chrome menu opening a dialog above the editor.
+   - Commit message: `feat(editor): show backlinks dialog`
+
+### Phase 3 — Align item/template editor behavior
+
+**Goal:** Finish the UX parity so the item editor and template editor share the same chrome-driven interaction model, with the approved item/template differences only where intended.
+
+**Chunks:**
+
+1. **Editor chrome parity cleanup**
+   - Files touched: `src/components/editor/ItemEditorScreen.jsx`, `src/routes/settings.templates.$id.jsx`
+   - Steps:
+     1. Keep `Workbench` available from `More` on both the item editor and template editor.
+     2. Keep template editor `Info` text-only, with no backlinks action.
+     3. Verify the item editor and template editor now share the same shell, chrome spacing, and modal-based secondary UI pattern.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; item and template editors feel structurally identical aside from the approved `Info` differences.
+   - Risks: enabling `Workbench` on templates may expose template-specific save edge cases that have not been exercised yet.
+   - Commit message: `fix(editor): align chrome parity`
+
+**Open questions before execution:**
+- None. The backlinks placement, chrome behavior, workbench scope, and inset pattern are now defined tightly enough to implement directly.
