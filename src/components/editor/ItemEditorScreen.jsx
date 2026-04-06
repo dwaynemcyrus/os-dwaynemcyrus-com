@@ -93,6 +93,23 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const [saveErrorMessage, setSaveErrorMessage] = useState('');
   const [saveStatusMessage, setSaveStatusMessage] = useState('');
   const [isWorkbenchEnabled, setIsWorkbenchEnabled] = useState(false);
+  const [isScrollPastEndEnabled, setIsScrollPastEndEnabled] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true;
+    }
+
+    try {
+      const storedValue = window.localStorage.getItem('editor.scrollPastEnd');
+
+      if (storedValue == null) {
+        return true;
+      }
+
+      return storedValue !== 'false';
+    } catch {
+      return true;
+    }
+  });
   const [wikilinkTargets, setWikilinkTargets] = useState([]);
   const [editorSyncVersion, setEditorSyncVersion] = useState(0);
   const editorRef = useRef(null);
@@ -512,6 +529,32 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
       });
     }
 
+    moreActions.push({
+      id: 'scroll-past-end',
+      label: isScrollPastEndEnabled ? 'Scroll Past End Off' : 'Scroll Past End On',
+      disabled: isLoading || Boolean(loadErrorMessage),
+      onSelect() {
+        setIsScrollPastEndEnabled((currentValue) => {
+          const nextValue = !currentValue;
+
+          if (typeof window === 'undefined') {
+            return nextValue;
+          }
+
+          try {
+            window.localStorage.setItem(
+              'editor.scrollPastEnd',
+              nextValue ? 'true' : 'false',
+            );
+          } catch {
+            // ignore persistence failures
+          }
+
+          return nextValue;
+        });
+      },
+    });
+
     return {
       infoActions,
       infoText: lastSavedText,
@@ -530,6 +573,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     handleWorkbenchToggle,
     isDirty,
     isLoading,
+    isScrollPastEndEnabled,
     isTemplateEditor,
     isReadOnlyTemplate,
     isSaving,
@@ -611,6 +655,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
           },
           placeholderText,
           ref: editorRef,
+          scrollPastEndEnabled: isScrollPastEndEnabled,
           syncVersion: editorSyncVersion,
           value: draftValue,
           wikilinkTargets,

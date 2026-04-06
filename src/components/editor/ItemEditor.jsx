@@ -12,6 +12,7 @@ import {
   ViewPlugin,
   keymap,
   placeholder,
+  scrollPastEnd,
 } from '@codemirror/view';
 import { markdown } from '@codemirror/lang-markdown';
 import { basicSetup } from 'codemirror';
@@ -23,6 +24,7 @@ import {
 import styles from './ItemEditor.module.css';
 
 const editableCompartment = new Compartment();
+const scrollPastEndCompartment = new Compartment();
 const wikilinkRefreshEffect = StateEffect.define();
 
 function buildWikilinkCompletionSource(loadWikilinkSuggestions, cacheRef) {
@@ -215,6 +217,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
     onOpenWikilink = () => {},
     onSave,
     placeholderText,
+    scrollPastEndEnabled = true,
     syncVersion,
     value,
     wikilinkTargets = [],
@@ -234,6 +237,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
   const latestWikilinkTargetIndexRef = useRef(
     buildWikilinkTargetIndex(wikilinkTargets),
   );
+  const initialScrollPastEndEnabledRef = useRef(scrollPastEndEnabled);
   const tagSuggestionsCacheRef = useRef(new Map());
   const wikilinkSuggestionsCacheRef = useRef(new Map());
 
@@ -344,6 +348,9 @@ export const ItemEditor = forwardRef(function ItemEditor(
           editableCompartment.of(
             EditorView.editable.of(!initialDisabledRef.current),
           ),
+          scrollPastEndCompartment.of(
+            initialScrollPastEndEnabledRef.current ? scrollPastEnd() : [],
+          ),
           keymap.of([
             {
               key: 'Mod-s',
@@ -379,6 +386,20 @@ export const ItemEditor = forwardRef(function ItemEditor(
       editorViewRef.current = null;
     };
   }, []);
+
+  useEffect(() => {
+    const editorView = editorViewRef.current;
+
+    if (!editorView) {
+      return;
+    }
+
+    editorView.dispatch({
+      effects: scrollPastEndCompartment.reconfigure(
+        scrollPastEndEnabled ? scrollPastEnd() : [],
+      ),
+    });
+  }, [scrollPastEndEnabled]);
 
   useEffect(() => {
     const editorView = editorViewRef.current;

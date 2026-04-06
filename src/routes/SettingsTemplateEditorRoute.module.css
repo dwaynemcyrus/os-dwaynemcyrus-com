@@ -17,20 +17,13 @@
 }
 
 .settingsTemplateEditorRoute :global(.cm-content) {
-  padding-top: calc(
-    max(1rem, env(safe-area-inset-top)) +
-      var(--space-top-chrome-height) +
-      var(--space-top-chrome-gap) +
-      1rem
+  padding-bottom: calc(
+    1rem + var(--space-fab-offset) + env(safe-area-inset-bottom)
   );
+  padding-top: 1rem;
 }
 
 .settingsTemplateEditorRoute :global(.cm-gutter) {
-  padding-top: calc(
-    max(1rem, env(safe-area-inset-top)) +
-      var(--space-top-chrome-height) +
-      var(--space-top-chrome-gap) +
-      1rem
-  );
+  padding-top: 0;
 }
 
