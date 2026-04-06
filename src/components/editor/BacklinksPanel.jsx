@@ -1,5 +1,9 @@
 import styles from './BacklinksPanel.module.css';
 
+function joinClassNames(...classNames) {
+  return classNames.filter(Boolean).join(' ');
+}
+
 function formatGroupLabel(group) {
   if (group === 'Mentions') {
     return group;
@@ -26,9 +30,10 @@ export function BacklinksPanel({
   backlinkGroups,
   errorMessage,
   isLoading,
+  isDialog = false,
   isReadOnlyTemplate = false,
   onOpenItem,
-  savedTitle,
+  savedLabel,
 }) {
   const sortedGroups = [...backlinkGroups].sort((leftGroup, rightGroup) => {
     if (leftGroup.group === 'Mentions') {
@@ -43,7 +48,12 @@ export function BacklinksPanel({
   });
 
   return (
-    <section className={styles.backlinksPanel}>
+    <section
+      className={joinClassNames(
+        styles.backlinksPanel,
+        isDialog ? styles['backlinksPanel--dialog'] : '',
+      )}
+    >
       <header className={styles.backlinksPanel__header}>
         <p className={styles.backlinksPanel__eyebrow}>Backlinks</p>
         <h2 className={styles.backlinksPanel__title}>Saved Mentions</h2>
@@ -68,7 +78,7 @@ export function BacklinksPanel({
         <p className={styles.backlinksPanel__emptyState}>
           Backlinks are only computed for user-owned saved items.
         </p>
-      ) : !savedTitle?.trim() ? (
+      ) : !savedLabel?.trim() ? (
         <p className={styles.backlinksPanel__emptyState}>
           Save a filename or title on this item before backlinks can be computed.
         </p>

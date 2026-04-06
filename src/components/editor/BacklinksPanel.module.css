@@ -7,6 +7,10 @@
   padding: 1.25rem;
 }
 
+.backlinksPanel--dialog {
+  max-block-size: inherit;
+}
+
 .backlinksPanel__header {
   display: grid;
   gap: 0.45rem;

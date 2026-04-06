@@ -84,6 +84,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isBacklinksDialogOpen, setIsBacklinksDialogOpen] = useState(false);
   const [isFilenameDialogOpen, setIsFilenameDialogOpen] = useState(false);
   const [filenameDialogValue, setFilenameDialogValue] = useState('');
   const [pendingFilename, setPendingFilename] = useState(null);
@@ -127,7 +128,6 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     ? `Last saved ${formatEditorDate(item.date_modified ?? item.date_created)}`
     : 'Loading item...';
   const shouldShowWorkbenchToggle = !isTemplateEditor;
-  const shouldShowBacklinksPanel = !isTemplateEditor;
 
   draftValueRef.current = draftValue;
   itemRef.current = item;
@@ -476,7 +476,19 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   }, [pendingFilename, setInsertTemplateTarget, itemId, isReadOnlyTemplate]);
 
   useAppChrome(useMemo(() => {
+    const infoActions = [];
     const moreActions = [];
+
+    if (!isTemplateEditor) {
+      infoActions.push({
+        id: 'backlinks',
+        label: 'Backlinks',
+        disabled: isLoading || Boolean(loadErrorMessage),
+        onSelect() {
+          setIsBacklinksDialogOpen(true);
+        },
+      });
+    }
 
     if (!isReadOnlyTemplate) {
       moreActions.push({
@@ -501,6 +513,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     }
 
     return {
+      infoActions,
       infoText: lastSavedText,
       metaAriaLabel: 'Edit filename',
       metaText: editorMetaText,
@@ -517,6 +530,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     handleWorkbenchToggle,
     isDirty,
     isLoading,
+    isTemplateEditor,
     isReadOnlyTemplate,
     isSaving,
     isWorkbenchEnabled,
@@ -602,24 +616,6 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
           wikilinkTargets,
         })}
       </div>
-
-      {shouldShowBacklinksPanel
-        ? createElement(BacklinksPanel, {
-            backlinkGroups,
-            errorMessage: backlinkErrorMessage,
-            isLoading: isLoadingBacklinks,
-            isReadOnlyTemplate,
-            onOpenItem(openItemId) {
-              return navigate({
-                params: {
-                  id: openItemId,
-                },
-                to: '/items/$id',
-              });
-            },
-            savedTitle: savedLinkLabel,
-          })
-        : null}
 
       {isFilenameDialogOpen ? createElement(
         AppDialog,
@@ -727,6 +723,35 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
             </div>
           </form>
         </>,
+      ) : null}
+
+      {isBacklinksDialogOpen ? createElement(
+        AppDialog,
+        {
+          ariaLabel: 'Close backlinks',
+          onClose() {
+            setIsBacklinksDialogOpen(false);
+          },
+          role: 'dialog',
+        },
+        createElement(BacklinksPanel, {
+          backlinkGroups,
+          errorMessage: backlinkErrorMessage,
+          isDialog: true,
+          isLoading: isLoadingBacklinks,
+          isReadOnlyTemplate,
+          onOpenItem(openItemId) {
+            setIsBacklinksDialogOpen(false);
+
+            return navigate({
+              params: {
+                id: openItemId,
+              },
+              to: '/items/$id',
+            });
+          },
+          savedLabel: savedLinkLabel,
+        }),
       ) : null}
     </section>
   );
