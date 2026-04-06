@@ -14,7 +14,7 @@ import {
   fetchTemplateSettings,
   saveTemplateSettings,
 } from '../lib/settings';
-import { getItemDisplayLabel } from '../lib/filenames';
+import { formatFilenameForDisplay } from '../lib/filenames';
 import {
   formatTemplateGroupLabel,
   formatSubtypeLabel,
@@ -52,8 +52,8 @@ function formatTemplateMeta(templateItem) {
 }
 
 function formatTemplateTitle(templateItem) {
-  return getItemDisplayLabel(
-    templateItem,
+  return formatFilenameForDisplay(
+    templateItem.filename,
     templateItem.subtype?.trim()
       ? formatSubtypeLabel(templateItem.subtype)
       : 'Untitled template',
