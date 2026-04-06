@@ -3,7 +3,10 @@
 }
 
 .templatesRoute__editorLayer {
-  inset: 0;
+  inset-block-end: 0;
+  inset-inline: 0;
+  inset-block-start:
+    calc(max(1rem, env(safe-area-inset-top)) + var(--space-top-chrome-height) + var(--space-top-chrome-gap));
   position: absolute;
   z-index: var(--z-index-surface-overlay);
 }
