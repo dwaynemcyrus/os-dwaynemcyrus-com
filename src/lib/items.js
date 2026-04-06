@@ -8,6 +8,10 @@ import {
   replaceEditorFrontmatterField,
 } from './frontmatter';
 import {
+  buildTitleFromFilename,
+  getItemDisplayLabel,
+} from './filenames';
+import {
   DEFAULT_TEMPLATE_DATE_FORMAT,
   DEFAULT_TEMPLATE_TIME_FORMAT,
   fetchResolvedDailyNotePreferences,
@@ -50,23 +54,26 @@ function formatCapturePayload(rawValue) {
 
   const [firstLine = '', ...remainingLines] = normalizedValue.split('\n');
   const normalizedFirstLine = firstLine.trim();
-  const title = normalizedFirstLine.slice(0, 280).trim();
+  const rawFilenameValue = normalizedFirstLine.slice(0, 280).trim();
+  const filename = normalizeFilenameValue(rawFilenameValue);
+  const title = buildTitleFromFilename(filename, rawFilenameValue);
   const overflow = normalizedFirstLine.slice(280).trim();
   const remainingContent = remainingLines.join('\n').trim();
   const contentParts = [overflow, remainingContent].filter(Boolean);
 
   return {
     content: contentParts.join('\n\n'),
+    filename,
     title,
   };
 }
 
 function buildCommandItemFieldsQuery() {
-  return 'id,cuid,type,subtype,title,content,date_created,date_modified,is_template';
+  return 'id,cuid,type,subtype,title,filename,content,date_created,date_modified,is_template';
 }
 
 function buildInboxItemFieldsQuery() {
-  return 'id,cuid,type,subtype,title,content,status,date_created,date_modified';
+  return 'id,cuid,type,subtype,title,filename,content,status,date_created,date_modified';
 }
 
 function buildEditorItemFieldsQuery() {
@@ -74,11 +81,11 @@ function buildEditorItemFieldsQuery() {
 }
 
 function buildEditorAutocompleteItemFieldsQuery() {
-  return 'id,cuid,title,content,date_created,date_modified';
+  return 'id,cuid,title,filename,content,date_created,date_modified';
 }
 
 function buildWikilinkTargetFieldsQuery() {
-  return 'id,title,type,subtype';
+  return 'id,title,filename,type,subtype';
 }
 
 function buildManagedTemplateFieldsQuery() {
@@ -86,7 +93,7 @@ function buildManagedTemplateFieldsQuery() {
 }
 
 function buildTrashItemFieldsQuery() {
-  return 'id,cuid,type,subtype,title,content,status,workbench,date_created,date_modified,date_trashed';
+  return 'id,cuid,type,subtype,title,filename,content,status,workbench,date_created,date_modified,date_trashed';
 }
 
 function buildDailyNoteFieldsQuery() {
@@ -94,11 +101,11 @@ function buildDailyNoteFieldsQuery() {
 }
 
 function buildHomeWorkbenchFieldsQuery() {
-  return 'id,cuid,type,subtype,title,content,workbench,date_created,date_modified';
+  return 'id,cuid,type,subtype,title,filename,content,workbench,date_created,date_modified';
 }
 
 function buildItemsIndexFieldsQuery() {
-  return 'id,cuid,type,subtype,title,content,status,workbench,date_created,date_modified';
+  return 'id,cuid,type,subtype,title,filename,content,status,workbench,date_created,date_modified';
 }
 
 function isCuidConflictError(error) {
@@ -514,8 +521,7 @@ export async function fetchWikilinkSuggestions({
   return (data ?? [])
     .map((item) => ({
       id: item.id,
-      label:
-        item.title?.trim() || item.content?.split('\n')[0]?.trim() || item.cuid,
+      label: getItemDisplayLabel(item),
     }))
     .filter((item) => item.label);
 }
@@ -949,13 +955,14 @@ export async function createInboxItemFromCapture({ rawValue, userId }) {
 
   for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
     const { data, error } = await supabase
-      .from('items')
-      .insert({
-        ...itemPayload,
-        cuid: createCuid(createdAt, collisionIndex),
-      })
-      .select(buildCommandItemFieldsQuery())
-      .single();
+    .from('items')
+    .insert({
+      ...itemPayload,
+      cuid: createCuid(createdAt, collisionIndex),
+      filename: capturePayload.filename,
+    })
+    .select(buildCommandItemFieldsQuery())
+    .single();
 
     if (!error) {
       return data;
@@ -1091,9 +1098,9 @@ export async function createBlankTemplate({ userId }) {
 }
 
 export async function processInboxItem({
+  filenameInput,
   itemId,
   templateId,
-  title,
   userId,
 }) {
   const [
@@ -1129,13 +1136,22 @@ export async function processInboxItem({
     throw templateError;
   }
 
-  const normalizedTitle = title?.trim() || inboxItem.title || null;
+  const fallbackFilenameInput =
+    buildTitleFromFilename(inboxItem.filename, inboxItem.title) || null;
+  const effectiveFilenameInput =
+    String(filenameInput ?? '').trim() || fallbackFilenameInput || '';
+  const normalizedFilename = normalizeFilenameValue(effectiveFilenameInput);
+  const normalizedTitle =
+    buildTitleFromFilename(normalizedFilename, effectiveFilenameInput) ||
+    fallbackFilenameInput ||
+    null;
   const createdAt = new Date();
   const timestamp = createdAt.toISOString();
   const templateFields = sanitizeTemplateFields(templateItem);
   const baseItem = {
     ...inboxItem,
     ...templateFields,
+    filename: normalizedFilename,
     content: inboxItem.content,
     date_modified: timestamp,
     date_trashed: null,
@@ -1216,11 +1232,14 @@ export async function saveEditorItem({
     modifiedAt,
     parsedFrontmatter: frontmatter,
   });
-  const nextTitle = String(frontmatterPayload.title ?? '').trim() || null;
   const nextFilename = resolveNextFilename({
     parsedFrontmatter: frontmatter,
-    title: nextTitle,
+    title: String(frontmatterPayload.title ?? '').trim() || null,
   });
+  const nextTitle =
+    String(frontmatterPayload.title ?? '').trim() ||
+    buildTitleFromFilename(nextFilename) ||
+    null;
 
   if (existingItem.is_template !== true && !nextFilename) {
     throw new Error(
@@ -1239,6 +1258,7 @@ export async function saveEditorItem({
     content: body,
     filename: nextFilename,
     date_modified: modifiedAt,
+    title: nextTitle,
   };
   const savedSnapshot = buildEditorMarkdownDocument({
     ...existingItem,

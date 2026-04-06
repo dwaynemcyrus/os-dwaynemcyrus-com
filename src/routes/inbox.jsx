@@ -6,6 +6,10 @@ import {
   processInboxItem,
 } from '../lib/items';
 import { useAuth } from '../lib/auth';
+import {
+  buildTitleFromFilename,
+  getItemDisplayLabel,
+} from '../lib/filenames';
 import { authenticatedRoute } from './_authenticated';
 
 function formatInboxDate(value) {
@@ -26,11 +30,7 @@ function formatInboxPreview(item) {
     return item.content.trim();
   }
 
-  if (item.title?.trim()) {
-    return item.title.trim();
-  }
-
-  return 'No captured content yet.';
+  return getItemDisplayLabel(item, 'No captured content yet.');
 }
 
 function formatTemplateMeta(templateItem) {
@@ -63,7 +63,7 @@ export const inboxRoute = createRoute({
     const [processorErrorMessage, setProcessorErrorMessage] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [processorTitle, setProcessorTitle] = useState('');
+    const [processorFilename, setProcessorFilename] = useState('');
     const [selectedTemplateId, setSelectedTemplateId] = useState('');
     const inboxCountLabel = useMemo(() => {
       if (inboxItems.length === 1) {
@@ -133,10 +133,15 @@ export const inboxRoute = createRoute({
     }, [auth.user?.id]);
 
     useEffect(() => {
-      setProcessorTitle(selectedInboxItem?.title ?? '');
+      setProcessorFilename(
+        buildTitleFromFilename(
+          selectedInboxItem?.filename,
+          selectedInboxItem?.title ?? '',
+        ),
+      );
       setSelectedTemplateId('');
       setProcessorErrorMessage('');
-    }, [selectedInboxItem?.id, selectedInboxItem?.title]);
+    }, [selectedInboxItem?.filename, selectedInboxItem?.id, selectedInboxItem?.title]);
 
     function openProcessor(itemId) {
       void navigate({
@@ -176,9 +181,9 @@ export const inboxRoute = createRoute({
 
       try {
         const processedItem = await processInboxItem({
+          filenameInput: processorFilename,
           itemId: selectedInboxItem.id,
           templateId: selectedTemplateId,
-          title: processorTitle,
           userId: auth.user.id,
         });
 
@@ -262,7 +267,7 @@ export const inboxRoute = createRoute({
                     margin: 0,
                   }}
                 >
-                  Review the captured title and content, then choose the target
+                  Review the captured filename and content, then choose the target
                   subtype that should own this item.
                 </p>
               </div>
@@ -302,10 +307,10 @@ export const inboxRoute = createRoute({
                     fontSize: '0.9rem',
                   }}
                 >
-                  Captured Title
+                  Captured Filename
                 </span>
                 <p style={{ margin: 0 }}>
-                  {selectedInboxItem.title || 'Untitled inbox item'}
+                  {getItemDisplayLabel(selectedInboxItem, 'Untitled inbox item')}
                 </p>
               </div>
 
@@ -369,13 +374,13 @@ export const inboxRoute = createRoute({
                     fontWeight: 600,
                   }}
                 >
-                  Title
+                  Filename
                 </span>
                 <input
                   onChange={(event) => {
-                    setProcessorTitle(event.target.value);
+                    setProcessorFilename(event.target.value);
                   }}
-                  placeholder="Refine the captured title"
+                  placeholder="Refine the filename"
                   style={{
                     background: 'transparent',
                     border: '1px solid var(--color-border-card)',
@@ -383,7 +388,7 @@ export const inboxRoute = createRoute({
                     padding: '0 1rem',
                   }}
                   type="text"
-                  value={processorTitle}
+                  value={processorFilename}
                 />
               </label>
 

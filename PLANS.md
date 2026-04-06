@@ -1094,3 +1094,9 @@
 - [x] Restore the template-editor top inset so the nested editor starts below the chrome stripe.
 - [x] Apply the same extra top clearance to the normal item editor at the wrapper layer.
 - [x] Focus the editor automatically on open so a visible cursor is ready for typing.
+
+## Feature: filename-first item labeling
+
+- [x] Make capture and inbox processing derive `filename` first, with `title` defaulting to the humanized filename.
+- [x] Keep filename/title in sync when the editor filename changes and there is no explicit title override.
+- [ ] Apply one shared filename-first display-label helper across inbox, home, items, trash, command sheet, backlinks, and related settings surfaces.

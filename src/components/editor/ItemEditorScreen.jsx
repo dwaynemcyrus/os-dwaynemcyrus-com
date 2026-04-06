@@ -13,8 +13,13 @@ import { AppDialog } from '../ui/AppDialog';
 import { useAuth } from '../../lib/auth';
 import { useAppChrome } from '../../lib/app-chrome';
 import { useCommandContext } from '../../lib/command-context';
-import { formatFilenameForDisplay } from '../../lib/filenames';
 import {
+  buildTitleFromFilename,
+  formatFilenameForDisplay,
+  titleOverridesFilename,
+} from '../../lib/filenames';
+import {
+  normalizeFilenameValue,
   parseEditorMarkdownDocument,
   replaceEditorFrontmatterField,
 } from '../../lib/frontmatter';
@@ -204,13 +209,29 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     event.preventDefault();
 
     try {
+      const normalizedNextFilename = normalizeFilenameValue(filenameDialogValue);
+      const nextDerivedTitle = buildTitleFromFilename(
+        normalizedNextFilename,
+        filenameDialogValue,
+      );
       const nextDraftValue = replaceEditorFrontmatterField({
         key: 'filename',
         rawMarkdown: draftValue,
         value: filenameDialogValue,
       });
+      const shouldSyncTitle = !titleOverridesFilename({
+        filename: currentFilename,
+        title: currentTitle,
+      });
+      const nextDraftValueWithTitle = shouldSyncTitle
+        ? replaceEditorFrontmatterField({
+            key: 'title',
+            rawMarkdown: nextDraftValue,
+            value: nextDerivedTitle,
+          })
+        : nextDraftValue;
 
-      updateDraftValue(nextDraftValue);
+      updateDraftValue(nextDraftValueWithTitle);
       closeFilenameDialog();
 
       window.requestAnimationFrame(() => {
