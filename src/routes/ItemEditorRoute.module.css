@@ -5,8 +5,7 @@
   flex-direction: column;
   min-block-size: 0;
   overflow: hidden;
-  padding-top:
-    calc(max(1rem, env(safe-area-inset-top)) + var(--space-top-chrome-height) + var(--space-top-chrome-gap));
+  padding-top: 1rem;
 }
 
 .itemEditorRoute__sheet {
