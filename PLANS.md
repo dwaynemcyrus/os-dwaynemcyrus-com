@@ -1100,3 +1100,8 @@
 - [x] Make capture and inbox processing derive `filename` first, with `title` defaulting to the humanized filename.
 - [x] Keep filename/title in sync when the editor filename changes and there is no explicit title override.
 - [x] Apply one shared filename-first display-label helper across inbox, home, items, trash, command sheet, backlinks, and related settings surfaces.
+
+## Fix: template token validation on save
+
+- [x] Allow tokenized template frontmatter values to remain editable in the template editor without failing live draft parsing or save-time typed-column validation.
+- [x] Keep non-template item saves strict, and preserve the materialization behavior so tokens only resolve when a template is used.

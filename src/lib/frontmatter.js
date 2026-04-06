@@ -213,9 +213,21 @@ const SYSTEM_MANAGED_FRONTMATTER_FIELDS = new Set([
   'cuid',
   'date_trashed',
 ]);
+const TEMPLATE_TOKEN_ALLOWED_FIELDS = new Set([
+  'cuid',
+  'title',
+  'date_created',
+  'date_modified',
+  'date_published',
+]);
+const TEMPLATE_TOKEN_PATTERN = /\{\{[^}]+\}\}/;
 
 function hasOwnValue(object, key) {
   return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+function hasTemplateToken(value) {
+  return typeof value === 'string' && TEMPLATE_TOKEN_PATTERN.test(value);
 }
 
 function createFrontmatterFieldError(key, message) {
@@ -755,6 +767,23 @@ function buildPersistedFieldValue(key, parsedFrontmatter, existingItem, modified
 
   if (key === 'date_trashed') {
     return existingItem.date_trashed;
+  }
+
+  if (
+    existingItem.is_template === true &&
+    TEMPLATE_TOKEN_ALLOWED_FIELDS.has(key) &&
+    hasOwnValue(parsedFrontmatter, key) &&
+    hasTemplateToken(parsedFrontmatter[key])
+  ) {
+    if (key === 'title') {
+      return null;
+    }
+
+    if (key === 'date_modified') {
+      return modifiedAt;
+    }
+
+    return existingItem[key] ?? null;
   }
 
   if (hasOwnValue(parsedFrontmatter, key)) {
