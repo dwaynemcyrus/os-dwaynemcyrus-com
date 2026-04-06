@@ -2,6 +2,30 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.10.0] - 2026-04-06
+
+Recommended release: `v0.10.0`
+
+### Added
+- A shared floating top chrome pattern across the app, including editor-safe layering and route-aware metadata/actions.
+- A filename-first labeling utility used across capture, inbox processing, list views, command results, backlinks, and related settings surfaces.
+
+### Changed
+- The item and template editors now behave more like full-screen writing surfaces, with autofocus on open, visible caret styling, and cleaner top-chrome integration.
+- Template creation now opens into the nested Settings-owned template editor instead of only creating an untitled row in the list.
+- Capture and inbox processing now derive `filename` first, with `title` defaulting to the humanized filename.
+- Filename edits now persist through the database save contract only; `filename` is no longer written into saved markdown frontmatter.
+
+### Fixed
+- Editor draft parsing now tolerates in-progress frontmatter and draft YAML while still keeping save-time validation strict.
+- Template saves now preserve approved tokenized frontmatter values like `cuid`, `title`, and `date_created` without breaking typed-column persistence.
+- Templates shown in Settings now display by humanized filename where intended, instead of falling back to title-first labels.
+- Reopening Today’s Note now correctly opens an existing saved daily note instead of falling into a duplicate-create path and failing on filename uniqueness.
+- The editor gutter, caret visibility, and initial focus behavior no longer regress while using the new full-screen writing shell.
+
+### Notes
+- This milestone continues the editor/shell rebuild and tightens the distinction between authored markdown/frontmatter and DB-only metadata such as `filename`.
+
 ## [0.9.0] - 2026-04-05
 
 Recommended release: `v0.9.0`
