@@ -41,6 +41,40 @@ function escapeIlikePattern(value) {
   return value.replaceAll('\\', '\\\\').replaceAll('%', '\\%').replaceAll('_', '\\_');
 }
 
+function normalizeFilenameSearchValue(value) {
+  return String(value ?? '')
+    .trim()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+function buildFilenameAwareSearchFilter(query, { includeContent = false } = {}) {
+  const trimmedQuery = String(query ?? '').trim();
+  const escapedTextQuery = escapeIlikePattern(trimmedQuery);
+  const normalizedFilenameQuery = normalizeFilenameSearchValue(trimmedQuery);
+  const clauses = [];
+
+  if (escapedTextQuery) {
+    clauses.push(`title.ilike.%${escapedTextQuery}%`);
+
+    if (includeContent) {
+      clauses.push(`content.ilike.%${escapedTextQuery}%`);
+    }
+  }
+
+  if (normalizedFilenameQuery) {
+    clauses.push(
+      `filename.ilike.%${escapeIlikePattern(normalizedFilenameQuery)}%`,
+    );
+  }
+
+  return clauses.join(',');
+}
+
 function normalizeCaptureInput(value) {
   return value.replaceAll('\r\n', '\n').trim();
 }
@@ -506,7 +540,7 @@ export async function fetchWikilinkSuggestions({
   }
 
   if (trimmedQuery) {
-    request = request.ilike('title', `%${escapeIlikePattern(trimmedQuery)}%`);
+    request = request.or(buildFilenameAwareSearchFilter(trimmedQuery));
   }
 
   const { data, error } = await request
@@ -863,9 +897,10 @@ export async function fetchItemsIndex({
   }
 
   if (trimmedQuery) {
-    const escapedQuery = escapeIlikePattern(trimmedQuery);
     request = request.or(
-      `title.ilike.%${escapedQuery}%,content.ilike.%${escapedQuery}%`,
+      buildFilenameAwareSearchFilter(trimmedQuery, {
+        includeContent: true,
+      }),
     );
   }
 
@@ -923,7 +958,7 @@ export async function searchCommandItemsByTitle(userId, query) {
     .eq('user_id', userId)
     .eq('is_template', false)
     .is('date_trashed', null)
-    .ilike('title', `%${escapeIlikePattern(trimmedQuery)}%`)
+    .or(buildFilenameAwareSearchFilter(trimmedQuery))
     .order('date_modified', { ascending: false, nullsFirst: false })
     .limit(SEARCH_ITEMS_LIMIT);
 
