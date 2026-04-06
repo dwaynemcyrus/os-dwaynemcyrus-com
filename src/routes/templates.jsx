@@ -14,7 +14,7 @@ import {
   fetchTemplateSettings,
   saveTemplateSettings,
 } from '../lib/settings';
-import { formatFilenameForDisplay } from '../lib/filenames';
+import { getItemDisplayLabel } from '../lib/filenames';
 import {
   formatTemplateGroupLabel,
   formatSubtypeLabel,
@@ -52,12 +52,11 @@ function formatTemplateMeta(templateItem) {
 }
 
 function formatTemplateTitle(templateItem) {
-  return formatFilenameForDisplay(
-    templateItem.filename,
-    templateItem.title?.trim() ||
-      (templateItem.subtype?.trim()
-        ? formatSubtypeLabel(templateItem.subtype)
-        : 'Untitled template'),
+  return getItemDisplayLabel(
+    templateItem,
+    templateItem.subtype?.trim()
+      ? formatSubtypeLabel(templateItem.subtype)
+      : 'Untitled template',
   );
 }
 

@@ -10,6 +10,7 @@ import {
 import { useNavigate } from '@tanstack/react-router';
 import { useAuth } from '../../lib/auth';
 import { CommandContext } from '../../lib/command-context';
+import { getItemDisplayLabel } from '../../lib/filenames';
 import {
   buildMaterializedTemplateMarkdown,
   createItemFromTemplate,
@@ -34,31 +35,14 @@ const SHEET_COPY = {
 };
 
 function formatItemLabel(item) {
-  if (item.title) {
-    return item.title;
-  }
-
-  if (item.content) {
-    const firstLine = item.content.split('\n')[0]?.trim();
-
-    if (firstLine) {
-      return firstLine;
-    }
-  }
-
-  return 'Untitled item';
+  return getItemDisplayLabel(item, 'Untitled item');
 }
 
 function formatTemplateLabel(item) {
-  if (item.title) {
-    return item.title;
-  }
-
-  if (item.subtype) {
-    return item.subtype.replaceAll('_', ' ');
-  }
-
-  return 'Untitled template';
+  return getItemDisplayLabel(
+    item,
+    item.subtype ? item.subtype.replaceAll('_', ' ') : 'Untitled template',
+  );
 }
 
 function formatDateLabel(value) {

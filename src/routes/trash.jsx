@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
+import { getItemDisplayLabel } from '../lib/filenames';
 import {
   fetchTrashedItems,
   permanentlyDeleteTrashedItem,
@@ -13,15 +14,7 @@ import { settingsRoute } from './settings';
 const SKELETON_ROWS = ['trash-1', 'trash-2', 'trash-3'];
 
 function formatItemLabel(item) {
-  if (item.title?.trim()) {
-    return item.title.trim();
-  }
-
-  if (item.content?.trim()) {
-    return item.content.trim().split('\n')[0];
-  }
-
-  return item.cuid;
+  return getItemDisplayLabel(item);
 }
 
 function formatPreview(item) {
@@ -99,7 +92,7 @@ export const trashRoute = createRoute({
     const selectedItem =
       trashedItems.find((item) => item.id === selectedItemId) ?? null;
     const deleteConfirmationLabel = selectedItem
-      ? selectedItem.title?.trim() || formatItemLabel(selectedItem)
+      ? formatItemLabel(selectedItem)
       : '';
 
     useEffect(() => {
@@ -209,7 +202,7 @@ export const trashRoute = createRoute({
       }
 
       if (deleteConfirmationValue !== deleteConfirmationLabel) {
-        setActionErrorMessage('Type the exact item title to confirm deletion.');
+        setActionErrorMessage('Type the exact item label to confirm deletion.');
         return;
       }
 

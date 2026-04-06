@@ -1,6 +1,7 @@
 import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
+import { getItemDisplayLabel } from '../lib/filenames';
 import { fetchItemsFilters, fetchItemsIndex } from '../lib/items';
 import styles from './ItemsRoute.module.css';
 import { authenticatedRoute } from './_authenticated';
@@ -12,15 +13,7 @@ function formatSubtypeLabel(value) {
 }
 
 function formatItemLabel(item) {
-  if (item.title?.trim()) {
-    return item.title.trim();
-  }
-
-  if (item.content?.trim()) {
-    return item.content.trim().split('\n')[0];
-  }
-
-  return item.cuid;
+  return getItemDisplayLabel(item);
 }
 
 function formatItemPreview(item) {

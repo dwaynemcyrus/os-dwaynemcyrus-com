@@ -9,6 +9,7 @@ import { createRoute } from '@tanstack/react-router';
 import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
 import { useAppChrome } from '../lib/app-chrome';
+import { getItemDisplayLabel } from '../lib/filenames';
 import {
   fetchHomeSummary,
   HOME_WORKBENCH_LIMIT,
@@ -43,15 +44,7 @@ function formatWorkbenchDate(value) {
 }
 
 function formatWorkbenchLabel(item) {
-  if (item.title?.trim()) {
-    return item.title.trim();
-  }
-
-  if (item.content?.trim()) {
-    return item.content.trim().split('\n')[0];
-  }
-
-  return item.cuid;
+  return getItemDisplayLabel(item);
 }
 
 function formatWorkbenchMeta(item) {

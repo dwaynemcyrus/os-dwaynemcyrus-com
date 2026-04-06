@@ -2,6 +2,10 @@ import {
   buildEditorMarkdownDocument,
   parseEditorMarkdownDocument,
 } from './frontmatter';
+import {
+  buildTitleFromFilename,
+  getItemDisplayLabel,
+} from './filenames';
 
 const WIKILINK_GROUP_BODY = 'Mentions';
 const WIKILINK_PATTERN = /\[\[([^\]\n]+?)\]\]/g;
@@ -92,7 +96,8 @@ function buildTargetsByNormalizedTitle(targetItems) {
   const targetsByNormalizedTitle = new Map();
 
   targetItems.forEach((item) => {
-    const normalizedTitle = normalizeWikilinkLabel(item.title);
+    const resolvedTitle = buildTitleFromFilename(item.filename, item.title);
+    const normalizedTitle = normalizeWikilinkLabel(resolvedTitle);
 
     if (!normalizedTitle) {
       return;
@@ -102,7 +107,7 @@ function buildTargetsByNormalizedTitle(targetItems) {
     currentTargets.push({
       id: item.id,
       subtype: item.subtype ?? null,
-      title: item.title,
+      title: getItemDisplayLabel(item, item.cuid),
       type: item.type ?? null,
     });
     targetsByNormalizedTitle.set(normalizedTitle, currentTargets);
@@ -235,7 +240,7 @@ export function buildBacklinkGroups({
       mentionsGroup.push({
         itemId: item.id,
         subtype: item.subtype ?? null,
-        title: item.title?.trim() || item.cuid,
+        title: getItemDisplayLabel(item, item.cuid),
         type: item.type ?? null,
       });
       groupedBacklinks.set(WIKILINK_GROUP_BODY, mentionsGroup);
@@ -250,7 +255,7 @@ export function buildBacklinkGroups({
       propertyGroup.push({
         itemId: item.id,
         subtype: item.subtype ?? null,
-        title: item.title?.trim() || item.cuid,
+        title: getItemDisplayLabel(item, item.cuid),
         type: item.type ?? null,
       });
       groupedBacklinks.set(propertyName, propertyGroup);

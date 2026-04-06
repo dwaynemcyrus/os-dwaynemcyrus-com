@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { formatFilenameForDisplay } from './filenames';
+import { getItemDisplayLabel } from './filenames';
 
 export const DEFAULT_DAILY_NOTE_FOLDER = '';
 export const DEFAULT_TEMPLATE_FOLDER = '';
@@ -114,8 +114,8 @@ async function resolvePersistedDailyTemplateId({ userId }) {
 }
 
 function sortDailyTemplateItems(leftItem, rightItem) {
-  const titleComparison = String(leftItem.title ?? '').localeCompare(
-    String(rightItem.title ?? ''),
+  const titleComparison = getItemDisplayLabel(leftItem, 'Daily').localeCompare(
+    getItemDisplayLabel(rightItem, 'Daily'),
   );
 
   if (titleComparison !== 0) {
@@ -128,10 +128,7 @@ function sortDailyTemplateItems(leftItem, rightItem) {
 }
 
 function formatDailyTemplateOptionLabel(templateItem) {
-  return formatFilenameForDisplay(
-    templateItem.filename,
-    templateItem.title?.trim() || 'Daily',
-  );
+  return getItemDisplayLabel(templateItem, 'Daily');
 }
 
 async function fetchAvailableFolderOptions({ userId }) {
@@ -213,7 +210,7 @@ export async function fetchDailyNoteSettings({ userId }) {
     options: sortedTemplateItems.map((templateItem) => ({
       id: templateItem.id,
       label: formatDailyTemplateOptionLabel(templateItem),
-      title: templateItem.title?.trim() || 'Daily',
+      title: getItemDisplayLabel(templateItem, 'Daily'),
     })),
     selectedTemplateId,
   };

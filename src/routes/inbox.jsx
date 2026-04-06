@@ -591,7 +591,7 @@ export const inboxRoute = createRoute({
                       fontWeight: 700,
                     }}
                   >
-                    {item.title || 'Untitled inbox item'}
+                    {getItemDisplayLabel(item, 'Untitled inbox item')}
                   </span>
                   <span
                     style={{
