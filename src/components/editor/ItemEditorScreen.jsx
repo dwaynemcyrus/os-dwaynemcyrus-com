@@ -101,7 +101,6 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const itemRef = useRef(null);
   const isTemplateEditor = editorKind === 'template';
   const isReadOnlyTemplate = item?.is_template === true && item?.user_id == null;
-  const isDirty = draftValue !== lastSavedValue;
   const currentFrontmatter = useMemo(
     () =>
       parseEditorMarkdownDocument(draftValue, {
@@ -115,6 +114,10 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const currentFilename = String(
     pendingFilename ?? currentFrontmatter.filename ?? item?.filename ?? '',
   ).trim();
+  const savedFilename = String(item?.filename ?? '').trim();
+  const hasPendingFilenameChange =
+    pendingFilename != null && pendingFilename !== savedFilename;
+  const isDirty = draftValue !== lastSavedValue || hasPendingFilenameChange;
   const editorHeading = getEditorHeading({ isTemplateEditor, item });
   const placeholderText = getEditorPlaceholderText({ isTemplateEditor });
   const editorMetaText = formatFilenameForDisplay(
@@ -215,6 +218,8 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
 
     try {
       const normalizedNextFilename = normalizeFilenameValue(filenameDialogValue);
+      const nextPendingFilename =
+        normalizedNextFilename === savedFilename ? null : normalizedNextFilename;
       const nextDerivedTitle = buildTitleFromFilename(
         normalizedNextFilename,
         filenameDialogValue,
@@ -235,7 +240,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
           })
         : nextDraftValue;
 
-      setPendingFilename(normalizedNextFilename);
+      setPendingFilename(nextPendingFilename);
       updateDraftValue(nextDraftValueWithTitle);
       closeFilenameDialog();
 
