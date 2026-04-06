@@ -65,6 +65,9 @@ function getFilenameDialogValue({ currentFilename, currentTitle }) {
   );
 }
 
+const EDITOR_TOP_CLEARANCE =
+  'calc(max(1rem, env(safe-area-inset-top)) + var(--space-top-chrome-height) + var(--space-top-chrome-gap))';
+
 export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const auth = useAuth();
   const navigate = useNavigate();
@@ -493,11 +496,13 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     <section
       style={{
         blockSize: '100%',
+        boxSizing: 'border-box',
         display: 'flex',
         flex: '1 1 auto',
         flexDirection: 'column',
         minBlockSize: 0,
         overflow: 'hidden',
+        paddingTop: isTemplateEditor ? 0 : EDITOR_TOP_CLEARANCE,
       }}
     >
       {loadErrorMessage ? (
