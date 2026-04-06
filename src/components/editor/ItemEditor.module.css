@@ -55,6 +55,12 @@
   outline-offset: -2px;
 }
 
+.editor :global(.cm-cursor),
+.editor :global(.cm-dropCursor) {
+  border-left-color: var(--color-text-primary);
+  border-left-width: 2px;
+}
+
 .editor :global(.cm-placeholder) {
   color: var(--color-text-muted);
 }
