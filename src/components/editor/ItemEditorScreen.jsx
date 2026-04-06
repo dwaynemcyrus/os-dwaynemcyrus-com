@@ -21,6 +21,7 @@ import {
 import {
   normalizeFilenameValue,
   parseEditorMarkdownDocument,
+  removeEditorFrontmatterField,
   replaceEditorFrontmatterField,
 } from '../../lib/frontmatter';
 import {
@@ -87,6 +88,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isFilenameDialogOpen, setIsFilenameDialogOpen] = useState(false);
   const [filenameDialogValue, setFilenameDialogValue] = useState('');
+  const [pendingFilename, setPendingFilename] = useState(null);
   const [linkErrorMessage, setLinkErrorMessage] = useState('');
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [saveErrorMessage, setSaveErrorMessage] = useState('');
@@ -111,7 +113,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     currentFrontmatter.title ?? item?.title ?? '',
   ).trim();
   const currentFilename = String(
-    currentFrontmatter.filename ?? item?.filename ?? '',
+    pendingFilename ?? currentFrontmatter.filename ?? item?.filename ?? '',
   ).trim();
   const editorHeading = getEditorHeading({ isTemplateEditor, item });
   const placeholderText = getEditorPlaceholderText({ isTemplateEditor });
@@ -148,6 +150,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
 
     try {
       const savedEditorItem = await saveEditorItem({
+        filenameOverride: currentFilename,
         itemId,
         rawMarkdown: draftValue,
         userId: auth.user.id,
@@ -157,6 +160,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
       setDraftValue(savedEditorItem.rawMarkdown);
       setIsWorkbenchEnabled(savedEditorItem.item.workbench === true);
       setLastSavedValue(savedEditorItem.rawMarkdown);
+      setPendingFilename(null);
       setWikilinkTargets((currentTargets) => [
         ...currentTargets.filter((target) => target.id !== savedEditorItem.item.id),
         buildWikilinkTargetRecord(savedEditorItem.item),
@@ -169,6 +173,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
         setDraftValue(error.rawMarkdown);
         setIsWorkbenchEnabled(error.item.workbench === true);
         setLastSavedValue(error.rawMarkdown);
+        setPendingFilename(null);
         setWikilinkTargets((currentTargets) => [
           ...currentTargets.filter((target) => target.id !== error.item.id),
           buildWikilinkTargetRecord(error.item),
@@ -214,10 +219,9 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
         normalizedNextFilename,
         filenameDialogValue,
       );
-      const nextDraftValue = replaceEditorFrontmatterField({
+      const nextDraftValue = removeEditorFrontmatterField({
         key: 'filename',
         rawMarkdown: draftValue,
-        value: filenameDialogValue,
       });
       const shouldSyncTitle = !titleOverridesFilename({
         filename: currentFilename,
@@ -231,6 +235,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
           })
         : nextDraftValue;
 
+      setPendingFilename(normalizedNextFilename);
       updateDraftValue(nextDraftValueWithTitle);
       closeFilenameDialog();
 
@@ -274,6 +279,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
           setDraftValue(editorItemResult.value.rawMarkdown);
           setIsWorkbenchEnabled(editorItemResult.value.item.workbench === true);
           setLastSavedValue(editorItemResult.value.rawMarkdown);
+          setPendingFilename(null);
           setEditorSyncVersion((currentVersion) => currentVersion + 1);
         } else {
           setLoadErrorMessage(
@@ -435,7 +441,10 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
           draftDocument.frontmatter.title ?? currentItem?.title ?? '',
         ).trim();
         const filename = String(
-          draftDocument.frontmatter.filename ?? currentItem?.filename ?? '',
+          pendingFilename
+            ?? draftDocument.frontmatter.filename
+            ?? currentItem?.filename
+            ?? '',
         ).trim();
 
         return {
@@ -460,7 +469,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     return () => {
       setInsertTemplateTarget(null);
     };
-  }, [setInsertTemplateTarget, itemId, isReadOnlyTemplate]);
+  }, [pendingFilename, setInsertTemplateTarget, itemId, isReadOnlyTemplate]);
 
   useAppChrome(useMemo(() => {
     const moreActions = [];

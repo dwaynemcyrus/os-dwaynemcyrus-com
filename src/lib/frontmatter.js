@@ -271,13 +271,6 @@ function buildStoredAuthoredFrontmatter({
 
   Object.entries(parsedFrontmatter).forEach(([key, value]) => {
     if (key === 'filename') {
-      const normalizedFilename = normalizeFilenameValue(value);
-
-      if (normalizedFilename == null) {
-        return;
-      }
-
-      storedFrontmatter[key] = normalizedFilename;
       return;
     }
 
@@ -852,6 +845,21 @@ export function replaceEditorFrontmatterField({
     ...frontmatter,
     [key]: value,
   };
+
+  return buildRawMarkdownDocumentParts({
+    body,
+    frontmatter: nextFrontmatter,
+  }).rawMarkdown;
+}
+
+export function removeEditorFrontmatterField({
+  key,
+  rawMarkdown,
+}) {
+  const { body, frontmatter } = parseEditorMarkdownDocument(rawMarkdown);
+  const nextFrontmatter = { ...frontmatter };
+
+  delete nextFrontmatter[key];
 
   return buildRawMarkdownDocumentParts({
     body,

@@ -1105,3 +1105,8 @@
 
 - [x] Allow tokenized template frontmatter values to remain editable in the template editor without failing live draft parsing or save-time typed-column validation.
 - [x] Keep non-template item saves strict, and preserve the materialization behavior so tokens only resolve when a template is used.
+
+## Fix: keep filename out of frontmatter
+
+- [x] Stop the filename editor from writing a `filename` property into raw markdown/frontmatter.
+- [x] Keep `filename` persisted only through the DB save contract, while stripping any authored `filename` frontmatter back out on save.

@@ -1209,6 +1209,7 @@ export async function processInboxItem({
 }
 
 export async function saveEditorItem({
+  filenameOverride,
   itemId,
   rawMarkdown,
   userId,
@@ -1232,10 +1233,22 @@ export async function saveEditorItem({
     modifiedAt,
     parsedFrontmatter: frontmatter,
   });
-  const nextFilename = resolveNextFilename({
-    parsedFrontmatter: frontmatter,
-    title: String(frontmatterPayload.title ?? '').trim() || null,
-  });
+  const normalizedFilenameOverride = normalizeFilenameValue(filenameOverride);
+  const hasDraftFilename = Object.prototype.hasOwnProperty.call(
+    frontmatter,
+    'filename',
+  );
+  const nextFilename = normalizedFilenameOverride
+    ?? (hasDraftFilename
+      ? resolveNextFilename({
+        parsedFrontmatter: frontmatter,
+        title: String(frontmatterPayload.title ?? '').trim() || null,
+      })
+      : existingItem.filename)
+    ?? resolveNextFilename({
+      parsedFrontmatter: frontmatter,
+      title: String(frontmatterPayload.title ?? '').trim() || null,
+    });
   const nextTitle =
     String(frontmatterPayload.title ?? '').trim() ||
     buildTitleFromFilename(nextFilename) ||
