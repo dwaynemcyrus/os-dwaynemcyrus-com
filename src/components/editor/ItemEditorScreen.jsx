@@ -16,6 +16,7 @@ import { useCommandContext } from '../../lib/command-context';
 import {
   buildTitleFromFilename,
   formatFilenameForDisplay,
+  getItemDisplayLabel,
   titleOverridesFilename,
 } from '../../lib/filenames';
 import {
@@ -124,6 +125,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     currentFilename,
     currentTitle || editorHeading,
   );
+  const savedLinkLabel = getItemDisplayLabel(item, '');
   const lastSavedText = item
     ? `Last saved ${formatEditorDate(item.date_modified ?? item.date_created)}`
     : 'Loading item...';
@@ -137,7 +139,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     return {
       id: editorItem.id,
       subtype: editorItem.subtype ?? null,
-      title: editorItem.title,
+      title: getItemDisplayLabel(editorItem, editorItem.cuid),
       type: editorItem.type ?? null,
     };
   }
@@ -325,7 +327,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
       return;
     }
 
-    if (isReadOnlyTemplate || !item.title?.trim()) {
+    if (isReadOnlyTemplate || !savedLinkLabel) {
       setBacklinkGroups([]);
       setBacklinkErrorMessage('');
       setIsLoadingBacklinks(false);
@@ -338,8 +340,8 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     setBacklinkErrorMessage('');
 
     fetchItemBacklinkGroups({
+      currentLabel: savedLinkLabel,
       itemId: item.id,
-      title: item.title,
       userId: auth.user.id,
     })
       .then((nextBacklinkGroups) => {
@@ -369,7 +371,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     return () => {
       cancelled = true;
     };
-  }, [auth.user?.id, item?.id, item?.title, isReadOnlyTemplate]);
+  }, [auth.user?.id, item?.id, isReadOnlyTemplate, savedLinkLabel]);
 
   const handleWorkbenchToggle = useEffectEvent(() => {
     if (isReadOnlyTemplate) {
@@ -619,7 +621,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
                 to: '/items/$id',
               });
             },
-            savedTitle: item?.title ?? '',
+            savedTitle: savedLinkLabel,
           })
         : null}
 

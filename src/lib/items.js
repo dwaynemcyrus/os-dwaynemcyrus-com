@@ -606,11 +606,11 @@ export async function fetchResolvedEditorWikilinks({
 }
 
 export async function fetchItemBacklinkGroups({
+  currentLabel,
   itemId,
-  title,
   userId,
 }) {
-  if (!String(title ?? '').trim()) {
+  if (!String(currentLabel ?? '').trim()) {
     return [];
   }
 
@@ -630,7 +630,7 @@ export async function fetchItemBacklinkGroups({
 
   return buildBacklinkGroups({
     candidateItems: data ?? [],
-    currentTitle: title,
+    currentTitle: currentLabel,
   });
 }
 

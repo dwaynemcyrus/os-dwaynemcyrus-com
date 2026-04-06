@@ -2,10 +2,7 @@ import {
   buildEditorMarkdownDocument,
   parseEditorMarkdownDocument,
 } from './frontmatter';
-import {
-  buildTitleFromFilename,
-  getItemDisplayLabel,
-} from './filenames';
+import { getItemDisplayLabel } from './filenames';
 
 const WIKILINK_GROUP_BODY = 'Mentions';
 const WIKILINK_PATTERN = /\[\[([^\]\n]+?)\]\]/g;
@@ -96,8 +93,8 @@ function buildTargetsByNormalizedTitle(targetItems) {
   const targetsByNormalizedTitle = new Map();
 
   targetItems.forEach((item) => {
-    const resolvedTitle = buildTitleFromFilename(item.filename, item.title);
-    const normalizedTitle = normalizeWikilinkLabel(resolvedTitle);
+    const resolvedLabel = getItemDisplayLabel(item, item.cuid);
+    const normalizedTitle = normalizeWikilinkLabel(resolvedLabel);
 
     if (!normalizedTitle) {
       return;

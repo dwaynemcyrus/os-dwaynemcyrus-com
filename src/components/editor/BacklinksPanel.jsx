@@ -48,7 +48,7 @@ export function BacklinksPanel({
         <p className={styles.backlinksPanel__eyebrow}>Backlinks</p>
         <h2 className={styles.backlinksPanel__title}>Saved Mentions</h2>
         <p className={styles.backlinksPanel__description}>
-          Backlinks are computed from the last saved title and document state.
+          Backlinks are computed from the last saved label and document state.
         </p>
       </header>
 
@@ -70,7 +70,7 @@ export function BacklinksPanel({
         </p>
       ) : !savedTitle?.trim() ? (
         <p className={styles.backlinksPanel__emptyState}>
-          Save a title on this item before backlinks can be computed.
+          Save a filename or title on this item before backlinks can be computed.
         </p>
       ) : sortedGroups.length > 0 ? (
         <div className={styles.backlinksPanel__groups}>
@@ -105,7 +105,7 @@ export function BacklinksPanel({
         </div>
       ) : (
         <p className={styles.backlinksPanel__emptyState}>
-          No saved items link to this title yet.
+          No saved items link to this label yet.
         </p>
       )}
     </section>
