@@ -1,19 +1,17 @@
 .itemEditorRoute {
   block-size: 100%;
-  min-block-size: 100%;
-}
-
-.itemEditorRoute__editorLayer {
-  inset-block-end: 0;
-  inset-inline: 0;
-  inset-block-start:
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  overflow: hidden;
+  padding-top:
     calc(max(1rem, env(safe-area-inset-top)) + var(--space-top-chrome-height) + var(--space-top-chrome-gap));
-  position: absolute;
-  z-index: var(--z-index-surface-overlay);
 }
 
-.itemEditorRoute__editorSheet {
+.itemEditorRoute__sheet {
   background: var(--color-bg-app);
-  block-size: 100%;
-  min-block-size: 100%;
+  display: flex;
+  flex: 1 1 auto;
+  min-block-size: 0;
 }
