@@ -1257,3 +1257,8 @@
 
 **Open questions before execution:**
 - None. The backlinks placement, chrome behavior, workbench scope, and inset pattern are now defined tightly enough to implement directly.
+
+## Fix: match item editor top clearance
+
+- [x] Replace the item editor's padded route wrapper with the same inset-layer pattern used by the template editor.
+- [x] Keep the editor sheet full-height beneath the shared chrome while restoring the visible gap below the chrome strip.

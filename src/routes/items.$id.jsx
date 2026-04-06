@@ -18,11 +18,17 @@ export const itemEditorRoute = createRoute({
       createElement(
         'div',
         {
-          className: styles.itemEditorRoute__sheet,
+          className: styles.itemEditorRoute__editorLayer,
         },
-        createElement(ItemEditorScreen, {
-          itemId: id,
-        }),
+        createElement(
+          'div',
+          {
+            className: styles.itemEditorRoute__editorSheet,
+          },
+          createElement(ItemEditorScreen, {
+            itemId: id,
+          }),
+        ),
       ),
     );
   },
