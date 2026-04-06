@@ -310,6 +310,9 @@ function splitMarkdownDocument(
   { allowIncompleteFrontmatter = false } = {},
 ) {
   const normalizedRawMarkdown = normalizeMarkdownText(rawMarkdown);
+  const frontmatterMatch = normalizedRawMarkdown.match(
+    /^---\n([\s\S]*?)(?:\n)?---(?:\n|$)/,
+  );
 
   if (!normalizedRawMarkdown.startsWith('---\n')) {
     return {
@@ -321,9 +324,7 @@ function splitMarkdownDocument(
     };
   }
 
-  const frontmatterEndIndex = normalizedRawMarkdown.indexOf('\n---\n', 4);
-
-  if (frontmatterEndIndex === -1) {
+  if (!frontmatterMatch) {
     if (allowIncompleteFrontmatter) {
       return {
         body: '',
@@ -338,7 +339,8 @@ function splitMarkdownDocument(
     throw new Error('The frontmatter block must end with a closing --- line.');
   }
 
-  const afterFrontmatterIndex = frontmatterEndIndex + 5;
+  const frontmatterText = frontmatterMatch[1] ?? '';
+  const afterFrontmatterIndex = frontmatterMatch[0].length;
   const bodyStartIndex = normalizedRawMarkdown.startsWith('\n', afterFrontmatterIndex)
     ? afterFrontmatterIndex + 1
     : afterFrontmatterIndex;
@@ -346,7 +348,7 @@ function splitMarkdownDocument(
   return {
     body: normalizedRawMarkdown.slice(bodyStartIndex),
     bodyStartIndex,
-    frontmatterText: normalizedRawMarkdown.slice(4, frontmatterEndIndex),
+    frontmatterText,
     hasFrontmatter: true,
     isFrontmatterIncomplete: false,
     normalizedRawMarkdown,

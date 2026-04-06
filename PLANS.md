@@ -1087,3 +1087,8 @@
 - [x] Make editor parsing tolerate malformed or non-object draft YAML while typing, without weakening save-time validation.
 - [x] Remove the recent CodeMirror content/gutter top-padding clearance that broke gutter alignment.
 - [x] Reapply editor top clearance at the wrapper/layout layer so the first lines start below the chrome stripe.
+
+## Fix: frontmatter closing fence and editor inset
+
+- [x] Accept a valid closing `---` fence when it appears at end-of-document, including an empty frontmatter block.
+- [ ] Remove the remaining template-editor top inset so the editor has no extra clearance layer while we stabilize editor behavior.
