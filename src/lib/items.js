@@ -421,7 +421,7 @@ async function fetchDailyNoteForDate({ dateField, userId }) {
     .eq('is_template', false)
     .eq('type', 'journal')
     .eq('subtype', 'daily')
-    .or(`date_field.eq.${dateField},filename.eq.${dateField},title.eq.${dateField}`)
+    .eq('date_field', dateField)
     .is('date_trashed', null)
     .order('date_created', { ascending: false, nullsFirst: false })
     .limit(1)
@@ -432,6 +432,57 @@ async function fetchDailyNoteForDate({ dateField, userId }) {
   }
 
   return data;
+}
+
+async function repairMissingDailyNoteDateField({ dateField, userId }) {
+  const { data: candidateItems, error: candidateError } = await supabase
+    .from('items')
+    .select('id')
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .eq('type', 'journal')
+    .eq('subtype', 'daily')
+    .eq('filename', dateField)
+    .is('date_field', null)
+    .is('date_trashed', null)
+    .order('date_created', { ascending: false, nullsFirst: false })
+    .limit(2);
+
+  if (candidateError) {
+    throw candidateError;
+  }
+
+  if (!candidateItems?.length) {
+    return null;
+  }
+
+  if (candidateItems.length > 1) {
+    throw new Error(
+      'Multiple saved daily notes are missing their date field for this day.',
+    );
+  }
+
+  const { data: repairedItem, error: repairError } = await supabase
+    .from('items')
+    .update({
+      date_field: dateField,
+    })
+    .eq('id', candidateItems[0].id)
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .eq('type', 'journal')
+    .eq('subtype', 'daily')
+    .eq('filename', dateField)
+    .is('date_field', null)
+    .is('date_trashed', null)
+    .select(buildDailyNoteFieldsQuery())
+    .single();
+
+  if (repairError) {
+    throw repairError;
+  }
+
+  return repairedItem;
 }
 
 async function createDailyNoteForDate({
@@ -1476,6 +1527,18 @@ export async function openOrCreateDailyNote({
     if (existingDailyNote) {
       return {
         item: existingDailyNote,
+        wasCreated: false,
+      };
+    }
+
+    const repairedDailyNote = await repairMissingDailyNoteDateField({
+      dateField,
+      userId,
+    });
+
+    if (repairedDailyNote) {
+      return {
+        item: repairedDailyNote,
         wasCreated: false,
       };
     }

@@ -1115,3 +1115,75 @@
 
 - [x] Preserve `date_field` when a saved editor document omits it from authored frontmatter.
 - [x] Make today's-note lookup recover existing daily notes by `filename`/`title` so already-affected rows still open instead of falling into create.
+
+## Feature: stabilize filename-first behavior
+
+**Summary:** Correct the remaining regressions introduced by the filename-first/editor-shell work: DB-only filename edits, search consistency, link/backlink identity, and the daily-note reopen path.
+
+**Agents involved:** both
+
+**Sequence:**
+
+### Phase 1 — Editor persistence and search consistency
+
+**Agent:** @frontend
+
+**Goal:** Make filename edits save reliably and make search match the labels users now see in the UI.
+
+**Chunks:**
+
+1. **Filename dirty-state fix**
+   - Files touched: `src/components/editor/ItemEditorScreen.jsx`
+   - Steps:
+     1. Include pending DB-only filename changes in the editor dirty-state calculation.
+     2. Ensure the save affordance enables when only the filename has changed.
+     3. Keep the existing explicit-save flow and clear the pending filename only after a successful save or server-returned rollback state.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; changing filename without editing markdown still enables `Save` and persists the new filename.
+   - Risks: dirty-state changes can accidentally leave the editor permanently dirty if the saved-state comparison is wrong.
+   - Commit message: `fix(editor): track filename dirty`
+
+2. **Filename-aware search**
+   - Files touched: `src/lib/items.js`
+   - Steps:
+     1. Update command search, wikilink suggestion search, and items index search to query `filename` alongside `title` and content where appropriate.
+     2. Keep the Supabase `or(...)` clauses tightly escaped and narrowly scoped so filename matching does not introduce malformed query behavior or accidental overmatching.
+     3. Keep existing result ordering unless a clear filename-first sort is already intended.
+     4. Preserve current result labels so only matching behavior changes in this chunk.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; searching by the visible humanized filename returns the expected item in command search, item search, and wikilink suggestions.
+   - Risks: widening search predicates can surface more ambiguous results, so matching must stay escaped and ranking/order should remain predictable.
+   - Commit message: `fix(search): match filename labels`
+
+**Handoff to:** @architecture — linking identity and daily-note repair logic
+
+### Phase 2 — Linking and daily-note repair
+
+**Agent:** @architecture
+
+**Goal:** Unify link identity with the filename-first label contract and replace the broad daily-note fallback with a narrow repair path.
+
+**Chunks:**
+
+1. **Canonical link label**
+   - Files touched: `src/lib/wikilinks.js`, `src/lib/items.js`, `src/components/editor/ItemEditorScreen.jsx`
+   - Steps:
+     1. Define one canonical item label for linking/backlinks using the same display rule as the UI: explicit title override when it differs, otherwise humanized filename.
+     2. Use that canonical label both when building wikilink targets and when fetching/rendering backlinks.
+     3. Handle newly surfaced ambiguities explicitly by preserving the existing ambiguous-link state instead of silently resolving to one target.
+     4. Keep displayed labels aligned with the same helper so link resolution and backlink visibility no longer diverge.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; an item resolves and reports backlinks under the same visible label.
+   - Risks: changing canonical link identity can expose existing ambiguous links that were previously hidden by title-only matching, so ambiguity handling must remain explicit and non-destructive.
+   - Commit message: `fix(wikilinks): unify label identity`
+
+2. **Narrow daily-note recovery**
+   - Files touched: `src/lib/items.js`
+   - Steps:
+     1. Restore the primary open path to exact `date_field` matching first.
+     2. Add a narrow recovery query only for broken daily-note rows where `date_field` is missing but `filename` or `title` matches the target date.
+     3. Repair the recovered row by writing back the missing `date_field`, then return it.
+     4. Remove the current broad title/filename fallback from the steady-state lookup path.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; today’s note opens an existing note reliably without mistakenly selecting another daily note whose title happens to match the date.
+   - Risks: the repair path must avoid mutating the wrong historical daily note when multiple malformed rows exist.
+   - Commit message: `fix(daily): repair missing date field`
+
+**Open questions before execution:**
+- None. The review findings are specific enough to implement directly with the current filename-first contract.
