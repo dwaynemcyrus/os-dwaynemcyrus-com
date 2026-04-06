@@ -1091,4 +1091,4 @@
 ## Fix: frontmatter closing fence and editor inset
 
 - [x] Accept a valid closing `---` fence when it appears at end-of-document, including an empty frontmatter block.
-- [ ] Remove the remaining template-editor top inset so the editor has no extra clearance layer while we stabilize editor behavior.
+- [x] Remove the remaining template-editor top inset so the editor has no extra clearance layer while we stabilize editor behavior.
