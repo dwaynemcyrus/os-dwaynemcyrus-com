@@ -25,24 +25,31 @@
   overflow: auto;
 }
 
-.editor :global(.cm-content),
-.editor :global(.cm-gutter) {
-  min-block-size: 100%;
-  padding-bottom: 1rem;
-  padding-top: 1rem;
-}
-
 .editor :global(.cm-content) {
   caret-color: currentColor;
   line-height: 1.6;
+  min-block-size: 100%;
+  padding-bottom: 1rem;
   padding-left: 1rem;
   padding-right: 1rem;
+  padding-top: 1rem;
+}
+
+.editor :global(.cm-gutter) {
+  min-block-size: 100%;
+  padding-bottom: 1rem;
+  padding-top: 0;
 }
 
 .editor :global(.cm-gutters) {
   background: transparent;
   border-right: 1px solid var(--color-border-subtle);
   color: var(--color-text-muted);
+}
+
+.editor :global(.cm-gutterElement),
+.editor :global(.cm-activeLineGutter) {
+  margin-top: 0;
 }
 
 .editor :global(.cm-activeLine),
