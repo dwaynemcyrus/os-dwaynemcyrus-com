@@ -25,13 +25,16 @@ export function AppNav({ children }) {
   const defaultChrome = getScreenChromeDefaults(pathname);
   const isWritingEditor = isWritingEditorPath(pathname);
   const resolvedChrome = useMemo(() => ({
+    infoActions: [],
     infoText: '',
     metaText: '',
     moreActions: [],
     ...defaultChrome,
     ...(screenChrome ?? {}),
   }), [defaultChrome, screenChrome]);
-  const hasInfoButton = Boolean(resolvedChrome.infoText?.trim());
+  const hasInfoButton =
+    Boolean(resolvedChrome.infoText?.trim()) ||
+    resolvedChrome.infoActions.length > 0;
   const hasMoreButton = resolvedChrome.moreActions.length > 0;
   const mainClassName = [
     styles.appShell__main,
@@ -137,9 +140,27 @@ export function AppNav({ children }) {
 
                   {isInfoOpen ? (
                     <div className={styles.appShell__menu} role="menu">
-                      <p className={styles.appShell__menuInfo} role="presentation">
-                        {resolvedChrome.infoText}
-                      </p>
+                      {resolvedChrome.infoText?.trim() ? (
+                        <p className={styles.appShell__menuInfo} role="presentation">
+                          {resolvedChrome.infoText}
+                        </p>
+                      ) : null}
+
+                      {resolvedChrome.infoActions.map((action) => (
+                        <button
+                          key={action.id}
+                          className={styles.appShell__menuButton}
+                          disabled={action.disabled}
+                          onClick={() => {
+                            setIsInfoOpen(false);
+                            action.onSelect();
+                          }}
+                          role="menuitem"
+                          type="button"
+                        >
+                          {action.label}
+                        </button>
+                      ))}
                     </div>
                   ) : null}
                 </div>
