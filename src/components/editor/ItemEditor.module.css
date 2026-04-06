@@ -49,7 +49,7 @@
 
 .editor :global(.cm-gutterElement),
 .editor :global(.cm-activeLineGutter) {
-  margin-top: 0;
+  margin-top: 0 !important;
 }
 
 .editor :global(.cm-activeLine),

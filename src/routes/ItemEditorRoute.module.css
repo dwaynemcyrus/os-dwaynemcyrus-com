@@ -5,7 +5,6 @@
   flex-direction: column;
   min-block-size: 0;
   overflow: hidden;
-  padding-top: 1rem;
 }
 
 .itemEditorRoute__sheet {
@@ -13,4 +12,19 @@
   display: flex;
   flex: 1 1 auto;
   min-block-size: 0;
+}
+
+.itemEditorRoute :global(.cm-scroller) {
+  scroll-padding-top: 1rem;
+}
+
+.itemEditorRoute :global(.cm-content) {
+  padding-bottom: calc(
+    1rem + var(--space-fab-offset) + env(safe-area-inset-bottom)
+  );
+  padding-top: 1rem;
+}
+
+.itemEditorRoute :global(.cm-gutter) {
+  padding-top: 1rem;
 }
