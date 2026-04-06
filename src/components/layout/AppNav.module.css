@@ -27,6 +27,10 @@
   position: relative;
 }
 
+.appShell__screen--chromeOverlay {
+  padding-top: 0;
+}
+
 .appShell__chrome {
   inset-block-start: 0;
   inset-inline: 0;

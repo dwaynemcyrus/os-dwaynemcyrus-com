@@ -151,6 +151,10 @@ export function isWritingEditorPath(pathname) {
   );
 }
 
+export function isTemplateEditorPath(pathname) {
+  return pathname.startsWith('/settings/templates/');
+}
+
 export function getContextSheetTabForPath(pathname) {
   const matchingTab = CONTEXT_SHEET_TABS.find((tab) =>
     tab.shortcuts.some((shortcut) => matchesShortcutPath(pathname, shortcut.to)),

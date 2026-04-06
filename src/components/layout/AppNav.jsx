@@ -9,6 +9,7 @@ import { AppChromeContext } from '../../lib/app-chrome';
 import {
   getBackNavigation,
   getScreenChromeDefaults,
+  isTemplateEditorPath,
   isWritingEditorPath,
 } from '../../lib/navigation';
 import styles from './AppNav.module.css';
@@ -24,6 +25,7 @@ export function AppNav({ children }) {
   const backNavigation = getBackNavigation(pathname);
   const defaultChrome = getScreenChromeDefaults(pathname);
   const isWritingEditor = isWritingEditorPath(pathname);
+  const isTemplateEditor = isTemplateEditorPath(pathname);
   const resolvedChrome = useMemo(() => ({
     infoActions: [],
     infoText: '',
@@ -45,6 +47,7 @@ export function AppNav({ children }) {
   const screenClassName = [
     styles.appShell__screen,
     isWritingEditor ? styles['appShell__screen--writing'] : '',
+    isTemplateEditor ? styles['appShell__screen--chromeOverlay'] : '',
   ]
     .filter(Boolean)
     .join(' ');

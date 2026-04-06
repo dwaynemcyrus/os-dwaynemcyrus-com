@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { ItemEditorScreen } from '../components/editor/ItemEditorScreen';
 import { authenticatedRoute } from './_authenticated';
+import styles from './SettingsTemplateEditorRoute.module.css';
 
 export const settingsTemplateEditorRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -9,9 +10,13 @@ export const settingsTemplateEditorRoute = createRoute({
   component: function SettingsTemplateEditorRoute() {
     const { id } = settingsTemplateEditorRoute.useParams();
 
-    return createElement(ItemEditorScreen, {
-      editorKind: 'template',
-      itemId: id,
-    });
+    return createElement(
+      'div',
+      { className: styles.settingsTemplateEditorRoute },
+      createElement(ItemEditorScreen, {
+        editorKind: 'template',
+        itemId: id,
+      }),
+    );
   },
 });
