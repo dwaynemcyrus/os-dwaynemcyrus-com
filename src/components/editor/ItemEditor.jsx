@@ -366,6 +366,14 @@ export const ItemEditor = forwardRef(function ItemEditor(
 
     editorViewRef.current = editorView;
 
+    if (!initialDisabledRef.current) {
+      window.requestAnimationFrame(() => {
+        if (editorViewRef.current === editorView) {
+          editorView.focus();
+        }
+      });
+    }
+
     return () => {
       editorView.destroy();
       editorViewRef.current = null;

@@ -1093,3 +1093,4 @@
 - [x] Accept a valid closing `---` fence when it appears at end-of-document, including an empty frontmatter block.
 - [x] Restore the template-editor top inset so the nested editor starts below the chrome stripe.
 - [x] Apply the same extra top clearance to the normal item editor at the wrapper layer.
+- [x] Focus the editor automatically on open so a visible cursor is ready for typing.
