@@ -821,6 +821,10 @@ function buildPersistedFieldValue(key, parsedFrontmatter, existingItem, modified
   return null;
 }
 
+export function buildEditorMarkdownDocumentFromParts({ body, frontmatter }) {
+  return buildRawMarkdownDocumentParts({ body, frontmatter }).rawMarkdown;
+}
+
 export function buildEditorMarkdownDocument(item) {
   const legacyDocument = splitMarkdownDocument(item.content ?? '');
 

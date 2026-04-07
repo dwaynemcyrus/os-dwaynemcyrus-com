@@ -1,6 +1,7 @@
 import { createCuid } from './cuid';
 import {
   buildEditorMarkdownDocument,
+  buildEditorMarkdownDocumentFromParts,
   buildItemUpdatePayloadFromFrontmatter,
   createStoredAuthoredFrontmatter,
   normalizeFilenameValue,
@@ -347,6 +348,22 @@ function normalizeTemplateTitleValue(value) {
   return String(value ?? '').trim();
 }
 
+function applyTemplateTokens(text, { cuid, normalizedTitle, createdAt, dateFormat, timeFormat }) {
+  return text
+    .replaceAll(LEGACY_CUID_TEMPLATE_TOKEN, cuid)
+    .replaceAll(TEMPLATE_TITLE_TOKEN_PATTERN, normalizedTitle)
+    .replace(
+      TEMPLATE_DATE_TOKEN_PATTERN,
+      (_match, overrideFormat) =>
+        formatTemplateVariableValue(createdAt, overrideFormat, dateFormat),
+    )
+    .replace(
+      TEMPLATE_TIME_TOKEN_PATTERN,
+      (_match, overrideFormat) =>
+        formatTemplateVariableValue(createdAt, overrideFormat, timeFormat),
+    );
+}
+
 function materializeTemplateRawMarkdown({
   createdAt,
   cuid,
@@ -362,20 +379,29 @@ function materializeTemplateRawMarkdown({
     templateSettings?.timeFormat,
     DEFAULT_TEMPLATE_TIME_FORMAT,
   );
+  const tokenContext = {
+    cuid,
+    normalizedTitle: normalizeTemplateTitleValue(titleValue),
+    createdAt,
+    dateFormat,
+    timeFormat,
+  };
 
-  return String(rawMarkdown ?? '')
-    .replaceAll(LEGACY_CUID_TEMPLATE_TOKEN, cuid)
-    .replaceAll(TEMPLATE_TITLE_TOKEN_PATTERN, normalizeTemplateTitleValue(titleValue))
-    .replace(
-      TEMPLATE_DATE_TOKEN_PATTERN,
-      (_match, overrideFormat) =>
-        formatTemplateVariableValue(createdAt, overrideFormat, dateFormat),
-    )
-    .replace(
-      TEMPLATE_TIME_TOKEN_PATTERN,
-      (_match, overrideFormat) =>
-        formatTemplateVariableValue(createdAt, overrideFormat, timeFormat),
-    );
+  const { body, frontmatter } = parseEditorMarkdownDocument(String(rawMarkdown ?? ''));
+
+  const materializedFrontmatter = Object.fromEntries(
+    Object.entries(frontmatter).map(([key, value]) => [
+      key,
+      typeof value === 'string' ? applyTemplateTokens(value, tokenContext) : value,
+    ]),
+  );
+
+  const materializedBody = applyTemplateTokens(body, tokenContext);
+
+  return buildEditorMarkdownDocumentFromParts({
+    body: materializedBody,
+    frontmatter: materializedFrontmatter,
+  });
 }
 
 function buildMaterializedTemplateUpdatePayload({
