@@ -158,6 +158,42 @@ export function formatTemplateGroupLabel(type) {
   return normalizedType;
 }
 
+function parseInsertSlashQuery(query) {
+  const normalizedQuery = normalizeSlashQuery(query);
+
+  if (!normalizedQuery.startsWith('insert')) {
+    return { isInsertCommand: false, templateQuery: '' };
+  }
+
+  return {
+    isInsertCommand: true,
+    templateQuery: normalizedQuery.slice(6).trim(),
+  };
+}
+
+export function getInsertSlashCommands(templateItems, query) {
+  const { isInsertCommand, templateQuery } = parseInsertSlashQuery(query);
+
+  if (!isInsertCommand) {
+    return null;
+  }
+
+  if (!templateQuery) {
+    return templateItems;
+  }
+
+  return templateItems.filter((item) => {
+    const subtype = normalizeTemplateLabel(item.subtype).toLowerCase();
+    const title = normalizeTemplateLabel(item.title).toLowerCase();
+    const filename = normalizeTemplateLabel(item.filename).toLowerCase();
+    return (
+      subtype.includes(templateQuery) ||
+      title.includes(templateQuery) ||
+      filename.includes(templateQuery)
+    );
+  });
+}
+
 export function getSlashCommands(templateItems, query) {
   const { isNewCommand, subtypeQuery, title } = parseNewSlashQuery(query);
 

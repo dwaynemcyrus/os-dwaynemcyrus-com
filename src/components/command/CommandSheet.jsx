@@ -20,7 +20,7 @@ import {
   getCapturePreview,
   searchCommandItemsByTitle,
 } from '../../lib/items';
-import { getSlashCommands } from '../../lib/templates';
+import { getInsertSlashCommands, getSlashCommands } from '../../lib/templates';
 import { ContextSheet } from './ContextSheet';
 import { FabButton } from './FabButton';
 import styles from './CommandSheet.module.css';
@@ -113,7 +113,7 @@ export function CommandSheet({ children }) {
   const descriptionId = useId();
   const deferredQuery = useDeferredValue(query);
   const trimmedQuery = deferredQuery.trim();
-  const capturePreview = getCapturePreview(query);
+  const capturePreview = query.trim().startsWith('/') ? null : getCapturePreview(query);
   const handleEscapeClose = useEffectEvent(() => {
     void requestClose();
   });
@@ -402,6 +402,8 @@ export function CommandSheet({ children }) {
   const firstAvailableSlashCommand = slashCommands.find(
     (slashCommand) => slashCommand.template,
   );
+  const insertSlashTemplates = getInsertSlashCommands(templateItems, trimmedQuery);
+  const isInsertSlashQuery = insertSlashTemplates !== null;
   const commandContextValue = {
     isInsertTemplateAvailable: Boolean(insertTemplateTarget?.onInsertTemplate),
     setInsertTemplateTarget,
@@ -560,6 +562,16 @@ export function CommandSheet({ children }) {
                   ) {
                     event.preventDefault();
 
+                    if (isInsertSlashQuery) {
+                      const firstInsertTemplate = insertSlashTemplates?.[0];
+                      if (!firstInsertTemplate) {
+                        setSheetError('No templates match. Try /insert <template name>.');
+                        return;
+                      }
+                      void handleInsertTemplate(firstInsertTemplate);
+                      return;
+                    }
+
                     if (!firstAvailableSlashCommand?.template?.id) {
                       setSheetError(
                         'Use /new <subtype> <title> with an existing template subtype.',
@@ -644,6 +656,37 @@ export function CommandSheet({ children }) {
                         <div className={styles.commandSheet__skeletonRow} key={rowId} />
                       ))}
                     </div>
+                  ) : isInsertSlashQuery ? (
+                    insertSlashTemplates.length > 0 ? (
+                      <ul className={styles.commandSheet__list}>
+                        {insertSlashTemplates.map((templateItem) => (
+                          <li
+                            className={styles.commandSheet__listItem}
+                            key={`insert-slash-${templateItem.id}`}
+                          >
+                            <button
+                              className={styles.commandSheet__itemButton}
+                              onClick={() => {
+                                void handleInsertTemplate(templateItem);
+                              }}
+                              type="button"
+                            >
+                              <span className={styles.commandSheet__itemTitle}>
+                                {`/insert `}
+                                {formatTemplateLabel(templateItem)}
+                              </span>
+                              <span className={styles.commandSheet__itemMeta}>
+                                {formatItemMeta(templateItem)}
+                              </span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className={styles.commandSheet__emptyState}>
+                        No templates match. Try <code>/insert</code> with a different name.
+                      </p>
+                    )
                   ) : slashCommands.length > 0 ? (
                     <ul className={styles.commandSheet__list}>
                       {slashCommands.map((slashCommand) => (
