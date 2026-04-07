@@ -140,6 +140,11 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     currentFilename,
     currentTitle || editorHeading,
   );
+  const chromeMetaText = useMemo(() => {
+    if (saveErrorMessage) return 'Save failed';
+    if (saveStatusMessage) return saveStatusMessage;
+    return editorMetaText;
+  }, [saveErrorMessage, saveStatusMessage, editorMetaText]);
   const savedLinkLabel = getItemDisplayLabel(item, '');
   const lastSavedText = item
     ? `Last saved ${formatEditorDate(item.date_modified ?? item.date_created)}`
@@ -492,6 +497,24 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     };
   }, [pendingFilename, setInsertTemplateTarget, itemId, isReadOnlyTemplate]);
 
+  useEffect(() => {
+    if (!saveStatusMessage) return;
+
+    const timeoutId = window.setTimeout(() => {
+      setSaveStatusMessage('');
+    }, 2500);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [saveStatusMessage]);
+
+  function handleLoadErrorDismiss() {
+    void navigate({
+      to: isTemplateEditor ? '/settings/templates' : '/items',
+    });
+  }
+
   useAppChrome(useMemo(() => {
     const infoActions = [];
     const moreActions = [];
@@ -559,7 +582,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
       infoActions,
       infoText: lastSavedText,
       metaAriaLabel: 'Edit filename',
-      metaText: editorMetaText,
+      metaText: chromeMetaText,
       moreActions,
       onMetaActivate: isReadOnlyTemplate
         ? undefined
@@ -568,7 +591,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
           },
     };
   }, [
-    editorMetaText,
+    chromeMetaText,
     handleSave,
     handleWorkbenchToggle,
     isDirty,
@@ -596,40 +619,57 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
         overflow: 'hidden',
       }}
     >
-      {loadErrorMessage ? (
-        <p role="alert" style={{ color: 'var(--color-danger)', margin: 0 }}>
-          {loadErrorMessage}
-        </p>
-      ) : null}
+      {loadErrorMessage ? createElement(
+        AppDialog,
+        {
+          ariaLabel: 'Dismiss error',
+          onClose: handleLoadErrorDismiss,
+          role: 'alertdialog',
+        },
+        <div style={{ display: 'grid', gap: '1rem', maxInlineSize: '24rem' }}>
+          <header style={{ display: 'grid', gap: '0.35rem' }}>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: 600, lineHeight: 1.2, margin: 0 }}>
+              Failed to Load
+            </h2>
+            <p style={{ color: 'var(--color-text-secondary)', lineHeight: 1.5, margin: 0 }}>
+              {loadErrorMessage}
+            </p>
+          </header>
 
-      {saveErrorMessage ? (
-        <p role="alert" style={{ color: 'var(--color-danger)', margin: 0 }}>
-          {saveErrorMessage}
-        </p>
-      ) : null}
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            <button
+              onClick={() => {
+                void navigator.clipboard.writeText(loadErrorMessage);
+              }}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--color-border-card)',
+                color: 'var(--color-text-primary)',
+                cursor: 'pointer',
+                font: 'inherit',
+                minHeight: '3rem',
+              }}
+              type="button"
+            >
+              Copy Error
+            </button>
 
-      {saveStatusMessage ? (
-        <p
-          role="status"
-          style={{
-            color: 'var(--color-text-secondary)',
-            margin: 0,
-          }}
-        >
-          {saveStatusMessage}
-        </p>
-      ) : null}
-
-      {linkErrorMessage ? (
-        <p
-          role="alert"
-          style={{
-            color: 'var(--color-text-secondary)',
-            margin: 0,
-          }}
-        >
-          {linkErrorMessage}
-        </p>
+            <button
+              onClick={handleLoadErrorDismiss}
+              style={{
+                background: 'transparent',
+                border: '1px solid var(--color-border-card)',
+                color: 'var(--color-text-primary)',
+                cursor: 'pointer',
+                font: 'inherit',
+                minHeight: '3rem',
+              }}
+              type="button"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>,
       ) : null}
 
       <div
