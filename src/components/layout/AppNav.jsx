@@ -36,12 +36,6 @@ export function AppNav({ children }) {
     Boolean(resolvedChrome.infoText?.trim()) ||
     resolvedChrome.infoActions.length > 0;
   const hasMoreButton = resolvedChrome.moreActions.length > 0;
-  const mainClassName = [
-    styles.appShell__main,
-    isWritingEditor ? styles['appShell__main--writing'] : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
   const screenClassName = [
     styles.appShell__screen,
     isWritingEditor ? styles['appShell__screen--writing'] : '',
@@ -63,8 +57,7 @@ export function AppNav({ children }) {
 
   return (
     <div className={styles.appShell}>
-      <main className={mainClassName} data-app-shell-scroll="true">
-        <div className={styles.appShell__chrome}>
+      <div className={styles.appShell__chrome}>
           {(isInfoOpen || isMoreOpen) ? (
             <button
               aria-label="Close top menu"
@@ -210,11 +203,10 @@ export function AppNav({ children }) {
               ) : null}
             </div>
           </div>
-        </div>
+      </div>
 
-        <div className={screenClassName}>
-          {createElement(AppChromeContext.Provider, { value: setScreenChrome }, children)}
-        </div>
+      <main className={screenClassName}>
+        {createElement(AppChromeContext.Provider, { value: setScreenChrome }, children)}
       </main>
     </div>
   );
