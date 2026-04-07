@@ -142,6 +142,10 @@ function buildItemsIndexFieldsQuery() {
   return 'id,cuid,type,subtype,title,filename,content,status,workbench,date_created,date_modified';
 }
 
+function buildNotesItemsFieldsQuery() {
+  return 'id,cuid,type,subtype,title,filename,content,date_created,date_modified,todos_open,todos_done,is_pinned';
+}
+
 function isCuidConflictError(error) {
   return error?.code === '23505' && error?.message?.includes('cuid');
 }
@@ -978,6 +982,86 @@ export async function fetchItemsIndex({
   return data ?? [];
 }
 
+export async function fetchNotesIndex({ filter, userId }) {
+  let request = supabase
+    .from('items')
+    .select(buildNotesItemsFieldsQuery())
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .is('date_trashed', null)
+    .neq('type', 'action')
+    .neq('type', 'inbox');
+
+  if (filter === 'todo') {
+    request = request.gt('todos_open', 0);
+  } else if (filter === 'today') {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    request = request.gte('date_modified', todayStart.toISOString());
+  } else if (filter === 'pinned') {
+    request = request.eq('is_pinned', true);
+  }
+
+  const { data, error } = await request
+    .order('date_modified', { ascending: false, nullsFirst: false })
+    .order('date_created', { ascending: false, nullsFirst: false })
+    .limit(200);
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
+export async function fetchContextSheetCounts(userId) {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const baseQuery = () =>
+    supabase
+      .from('items')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_template', false)
+      .is('date_trashed', null)
+      .neq('type', 'action')
+      .neq('type', 'inbox');
+
+  const [
+    { count: notesCount, error: notesError },
+    { count: todoCount, error: todoError },
+    { count: todayCount, error: todayError },
+    { count: pinnedCount, error: pinnedError },
+    { count: trashCount, error: trashError },
+  ] = await Promise.all([
+    baseQuery(),
+    baseQuery().gt('todos_open', 0),
+    baseQuery().gte('date_modified', todayStart.toISOString()),
+    baseQuery().eq('is_pinned', true),
+    supabase
+      .from('items')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('is_template', false)
+      .not('date_trashed', 'is', null),
+  ]);
+
+  if (notesError) throw notesError;
+  if (todoError) throw todoError;
+  if (todayError) throw todayError;
+  if (pinnedError) throw pinnedError;
+  if (trashError) throw trashError;
+
+  return {
+    notes: notesCount ?? 0,
+    todo: todoCount ?? 0,
+    today: todayCount ?? 0,
+    pinned: pinnedCount ?? 0,
+    trash: trashCount ?? 0,
+  };
+}
+
 export async function fetchUnprocessedInboxItems(userId) {
   const { data, error } = await supabase
     .from('items')
@@ -1352,12 +1436,17 @@ export async function saveEditorItem({
     userId,
   });
 
+  const todos_open = (body.match(/^- \[ \] /gm) ?? []).length;
+  const todos_done = (body.match(/^- \[x\] /gim) ?? []).length;
+
   const updatePayload = {
     ...frontmatterPayload,
     content: body,
     filename: nextFilename,
     date_modified: modifiedAt,
     title: nextTitle,
+    todos_open,
+    todos_done,
   };
   const savedSnapshot = buildEditorMarkdownDocument({
     ...existingItem,

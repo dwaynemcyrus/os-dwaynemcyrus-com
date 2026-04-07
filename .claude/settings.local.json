@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(wc:*)",
-      "Bash(grep -r \"export\" /Users/cyrus/Code/os-dwaynemcyrus-com/src/lib/*.js)"
+      "Bash(grep -r \"export\" /Users/cyrus/Code/os-dwaynemcyrus-com/src/lib/*.js)",
+      "Bash(grep -n \"z-index\\\\|--color\\\\|--font\" /Users/cyrus/Code/os-dwaynemcyrus-com/src/styles/*.css)",
+      "Bash(xargs ls:*)"
     ]
   }
 }

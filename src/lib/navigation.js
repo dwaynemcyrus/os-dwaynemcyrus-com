@@ -1,37 +1,74 @@
 const CONTEXT_SHEET_TABS = [
   {
-    id: 'strategy',
-    label: 'Strategy',
-    shortcuts: [
+    id: 'execution',
+    label: 'Execution',
+    rows: [
       {
-        id: 'now',
-        label: 'Now',
-        meta: 'Today, focus, and workbench',
-        to: '/',
+        kind: 'link',
+        id: 'inbox',
+        label: 'Inbox',
+        to: '/inbox',
       },
     ],
   },
   {
-    id: 'execution',
-    label: 'Execution',
-    shortcuts: [
+    id: 'strategy',
+    label: 'Strategy',
+    rows: [
       {
-        id: 'inbox',
-        label: 'Inbox',
-        meta: 'Unprocessed captures',
-        to: '/inbox',
+        kind: 'link',
+        id: 'now',
+        label: 'Now',
+        to: '/',
       },
     ],
   },
   {
     id: 'knowledge',
     label: 'Knowledge',
-    shortcuts: [
+    rows: [
       {
-        id: 'library',
-        label: 'Library',
-        meta: 'Saved items and notes',
-        to: '/items',
+        kind: 'link',
+        id: 'notes',
+        label: 'Notes',
+        to: '/notes',
+        countKey: 'notes',
+        expandable: true,
+        subRows: [
+          {
+            kind: 'link',
+            id: 'notes-todo',
+            label: 'Todo',
+            to: '/notes/todo',
+            countKey: 'todo',
+          },
+          {
+            kind: 'link',
+            id: 'notes-today',
+            label: 'Today',
+            to: '/notes/today',
+            countKey: 'today',
+          },
+          {
+            kind: 'link',
+            id: 'notes-pinned',
+            label: 'Pinned',
+            to: '/notes/pinned',
+            countKey: 'pinned',
+          },
+          {
+            kind: 'soon',
+            id: 'notes-locked',
+            label: 'Locked',
+          },
+        ],
+      },
+      {
+        kind: 'link',
+        id: 'trash',
+        label: 'Trash',
+        to: '/trash',
+        countKey: 'trash',
       },
     ],
   },
@@ -45,6 +82,22 @@ const SCREEN_CHROME_RULES = [
   {
     metaText: 'Library',
     matches: (pathname) => pathname === '/items',
+  },
+  {
+    metaText: 'Notes',
+    matches: (pathname) => pathname === '/notes',
+  },
+  {
+    metaText: 'Todo',
+    matches: (pathname) => pathname === '/notes/todo',
+  },
+  {
+    metaText: 'Today',
+    matches: (pathname) => pathname === '/notes/today',
+  },
+  {
+    metaText: 'Pinned',
+    matches: (pathname) => pathname === '/notes/pinned',
   },
   {
     metaText: 'Settings',
@@ -75,8 +128,19 @@ const SCREEN_CHROME_RULES = [
 const BACK_NAVIGATION_RULES = [
   {
     label: 'Now',
-    matches: (pathname) => pathname === '/inbox' || pathname === '/items',
+    matches: (pathname) =>
+      pathname === '/inbox' ||
+      pathname === '/items' ||
+      pathname === '/notes',
     to: '/',
+  },
+  {
+    label: 'Notes',
+    matches: (pathname) =>
+      pathname === '/notes/todo' ||
+      pathname === '/notes/today' ||
+      pathname === '/notes/pinned',
+    to: '/notes',
   },
   {
     label: 'Library',
@@ -111,6 +175,22 @@ function matchesShortcutPath(pathname, shortcutTo) {
   }
 
   return pathname === shortcutTo || pathname.startsWith(`${shortcutTo}/`);
+}
+
+function getAllTabPaths(tab) {
+  const paths = [];
+
+  for (const row of tab.rows) {
+    if (row.to) paths.push(row.to);
+
+    if (row.subRows) {
+      for (const subRow of row.subRows) {
+        if (subRow.to) paths.push(subRow.to);
+      }
+    }
+  }
+
+  return paths;
 }
 
 export function getBackNavigation(pathname) {
@@ -157,7 +237,7 @@ export function isTemplateEditorPath(pathname) {
 
 export function getContextSheetTabForPath(pathname) {
   const matchingTab = CONTEXT_SHEET_TABS.find((tab) =>
-    tab.shortcuts.some((shortcut) => matchesShortcutPath(pathname, shortcut.to)),
+    getAllTabPaths(tab).some((path) => matchesShortcutPath(pathname, path)),
   );
 
   return matchingTab?.id ?? CONTEXT_SHEET_TABS[0].id;
