@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
 import { getItemDisplayLabel } from '../lib/filenames';
-import { fetchNotesIndex } from '../lib/items';
+import { fetchNotesIndex, ITEMS_REFRESH_EVENT } from '../lib/items';
 import { authenticatedRoute } from './_authenticated';
 import styles from './NotesRoute.module.css';
 
@@ -41,26 +41,32 @@ export const notesFilterRoute = createRoute({
 
       let cancelled = false;
 
-      setIsLoading(true);
-      setErrorMessage('');
-      setItems([]);
+      function loadNotes() {
+        setIsLoading(true);
+        setErrorMessage('');
+        setItems([]);
 
-      fetchNotesIndex({ filter, userId: auth.user.id })
-        .then((data) => {
-          if (cancelled) return;
-          setItems(data);
-        })
-        .catch((error) => {
-          if (cancelled) return;
-          setErrorMessage(error.message ?? 'Unable to load notes right now.');
-        })
-        .finally(() => {
-          if (cancelled) return;
-          setIsLoading(false);
-        });
+        fetchNotesIndex({ filter, userId: auth.user.id })
+          .then((data) => {
+            if (cancelled) return;
+            setItems(data);
+          })
+          .catch((error) => {
+            if (cancelled) return;
+            setErrorMessage(error.message ?? 'Unable to load notes right now.');
+          })
+          .finally(() => {
+            if (cancelled) return;
+            setIsLoading(false);
+          });
+      }
+
+      loadNotes();
+      window.addEventListener(ITEMS_REFRESH_EVENT, loadNotes);
 
       return () => {
         cancelled = true;
+        window.removeEventListener(ITEMS_REFRESH_EVENT, loadNotes);
       };
     }, [auth.user?.id, filter]);
 

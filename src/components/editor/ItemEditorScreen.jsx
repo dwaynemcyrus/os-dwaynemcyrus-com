@@ -31,7 +31,9 @@ import {
   fetchTagSuggestions,
   fetchWikilinkSuggestions,
   fetchWikilinkTargets,
+  ITEMS_REFRESH_EVENT,
   saveEditorItem,
+  toggleItemPin,
 } from '../../lib/items';
 
 function formatEditorDate(value) {
@@ -88,7 +90,6 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const [isFilenameDialogOpen, setIsFilenameDialogOpen] = useState(false);
   const [filenameDialogValue, setFilenameDialogValue] = useState('');
   const [pendingFilename, setPendingFilename] = useState(null);
-  const [linkErrorMessage, setLinkErrorMessage] = useState('');
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [saveErrorMessage, setSaveErrorMessage] = useState('');
   const [saveStatusMessage, setSaveStatusMessage] = useState('');
@@ -283,7 +284,6 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     let cancelled = false;
 
     setIsLoading(true);
-    setLinkErrorMessage('');
     setLoadErrorMessage('');
     setSaveErrorMessage('');
     setSaveStatusMessage('');
@@ -321,10 +321,6 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
             editorItemResult.status === 'fulfilled'
               ? [buildWikilinkTargetRecord(editorItemResult.value.item)]
               : [],
-          );
-          setLinkErrorMessage(
-            wikilinkTargetsResult.reason?.message ??
-              'Wikilink resolution is unavailable right now.',
           );
         }
       })
@@ -415,6 +411,43 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     } catch (error) {
       setSaveErrorMessage(
         error.message ?? 'Unable to update the workbench toggle right now.',
+      );
+    }
+  });
+
+  const handlePinToggle = useEffectEvent(async () => {
+    if (
+      !auth.user?.id ||
+      !item?.id ||
+      isReadOnlyTemplate ||
+      isLoading ||
+      isSaving ||
+      Boolean(loadErrorMessage)
+    ) {
+      return;
+    }
+
+    setSaveErrorMessage('');
+    setSaveStatusMessage('');
+
+    try {
+      const pinnedItem = await toggleItemPin({
+        itemId,
+        userId: auth.user.id,
+      });
+
+      setItem(pinnedItem);
+      setIsWorkbenchEnabled(pinnedItem.workbench === true);
+      setWikilinkTargets((currentTargets) => [
+        ...currentTargets.filter((target) => target.id !== pinnedItem.id),
+        buildWikilinkTargetRecord(pinnedItem),
+      ]);
+      setEditorSyncVersion((currentVersion) => currentVersion + 1);
+      setSaveStatusMessage(pinnedItem.is_pinned ? 'Pinned.' : 'Unpinned.');
+      window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
+    } catch (error) {
+      setSaveErrorMessage(
+        error.message ?? 'Unable to update the pin state right now.',
       );
     }
   });
@@ -541,6 +574,21 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
       });
     }
 
+    if (!isTemplateEditor && item?.is_template !== true) {
+      moreActions.push({
+        id: 'pin',
+        label: item?.is_pinned ? 'unpin' : 'pin',
+        disabled:
+          isLoading ||
+          isSaving ||
+          Boolean(loadErrorMessage) ||
+          !item?.id,
+        onSelect() {
+          void handlePinToggle();
+        },
+      });
+    }
+
     if (shouldShowWorkbenchToggle) {
       moreActions.push({
         id: 'workbench',
@@ -594,6 +642,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     chromeMetaText,
     handleSave,
     handleWorkbenchToggle,
+    handlePinToggle,
     isDirty,
     isLoading,
     isScrollPastEndEnabled,
@@ -603,6 +652,9 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     isWorkbenchEnabled,
     lastSavedText,
     loadErrorMessage,
+    item?.id,
+    item?.is_pinned,
+    item?.is_template,
     openFilenameDialog,
     shouldShowWorkbenchToggle,
   ]));

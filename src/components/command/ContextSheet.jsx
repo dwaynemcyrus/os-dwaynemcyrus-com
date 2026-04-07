@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useRouterState } from '@tanstack/react-router';
 import { useAuth } from '../../lib/auth';
-import { fetchContextSheetCounts } from '../../lib/items';
+import { fetchContextSheetCounts, ITEMS_REFRESH_EVENT } from '../../lib/items';
 import {
   getContextSheetTabForPath,
   getContextSheetTabs,
@@ -38,9 +38,25 @@ export function ContextSheet({ isOpen, onClose }) {
       return;
     }
 
-    fetchContextSheetCounts(auth.user.id)
-      .then(setCounts)
-      .catch(() => {});
+    let cancelled = false;
+
+    function loadCounts() {
+      fetchContextSheetCounts(auth.user.id)
+        .then((nextCounts) => {
+          if (!cancelled) {
+            setCounts(nextCounts);
+          }
+        })
+        .catch(() => {});
+    }
+
+    loadCounts();
+    window.addEventListener(ITEMS_REFRESH_EVENT, loadCounts);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener(ITEMS_REFRESH_EVENT, loadCounts);
+    };
   }, [isOpen, activeTab?.id, auth.user?.id]);
 
   async function handleNavigate(to) {

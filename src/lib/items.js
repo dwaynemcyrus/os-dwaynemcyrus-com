@@ -28,6 +28,7 @@ const TAG_SUGGESTIONS_LIMIT = 10;
 export const HOME_WORKBENCH_LIMIT = 12;
 const ITEMS_ROUTE_LIMIT = 200;
 const MAX_CUID_RETRIES = 20;
+export const ITEMS_REFRESH_EVENT = 'personal-os:items-refresh';
 const TEMPLATE_DATE_TOKEN_PATTERN = /\{\{date(?::([^}]*))?\}\}/g;
 const TEMPLATE_TIME_TOKEN_PATTERN = /\{\{time(?::([^}]*))?\}\}/g;
 const TEMPLATE_TITLE_TOKEN_PATTERN = /\{\{title\}\}/g;
@@ -1509,6 +1510,43 @@ export async function saveEditorItem({
     item: savedItem,
     rawMarkdown: savedSnapshot,
   };
+}
+
+export async function toggleItemPin({ itemId, userId }) {
+  const { data: existingItem, error: existingItemError } = await supabase
+    .from('items')
+    .select('id,is_pinned,is_template')
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .is('date_trashed', null)
+    .single();
+
+  if (existingItemError) {
+    throw existingItemError;
+  }
+
+  if (existingItem.is_template === true) {
+    throw new Error('Templates cannot be pinned.');
+  }
+
+  const updatedAt = new Date().toISOString();
+  const { data: pinnedItem, error: updateError } = await supabase
+    .from('items')
+    .update({
+      date_modified: updatedAt,
+      is_pinned: !existingItem.is_pinned,
+    })
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .is('date_trashed', null)
+    .select(buildEditorItemFieldsQuery())
+    .single();
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  return pinnedItem;
 }
 
 export async function trashTemplate({ templateId, userId }) {
