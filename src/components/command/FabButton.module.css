@@ -15,7 +15,11 @@
   position: fixed;
   transform: translateX(-50%) rotate(45deg);
   transition: transform 160ms ease, opacity 160ms ease;
-  z-index: var(--z-index-fab);
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  z-index: var(--z-index-sheet);
 }
 
 .fabButton:hover {
@@ -27,11 +31,43 @@
   outline: none;
 }
 
+.fabButton[aria-expanded="true"] {
+  background: var(--color-bg-surface-hover);
+  color: var(--color-text-primary);
+}
+
 .fabButton__icon {
-  display: inline-block;
-  font-size: 1.1rem;
-  font-weight: 700;
-  line-height: 1;
+  border: 4px solid currentColor;
+  border-radius: 999px;
+  display: block;
+  height: 20px;
+  transform: rotate(-45deg);
+  width: 20px;
+}
+
+.fabButton[aria-expanded="true"] .fabButton__icon {
+  border: none;
+  height: 1rem;
+  position: relative;
+  width: 1rem;
+}
+
+.fabButton[aria-expanded="true"] .fabButton__icon::before,
+.fabButton[aria-expanded="true"] .fabButton__icon::after {
+  background: currentColor;
+  content: "";
+  display: block;
+  height: 0.16rem;
+  inset-block-start: calc(50% - 0.08rem);
+  inset-inline: 0;
+  position: absolute;
+}
+
+.fabButton[aria-expanded="true"] .fabButton__icon::before {
+  transform: rotate(45deg);
+}
+
+.fabButton[aria-expanded="true"] .fabButton__icon::after {
   transform: rotate(-45deg);
 }
 

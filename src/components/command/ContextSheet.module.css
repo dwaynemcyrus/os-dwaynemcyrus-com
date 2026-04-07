@@ -9,6 +9,10 @@
     1rem
     calc(6rem + env(safe-area-inset-bottom));
   position: fixed;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
   z-index: var(--z-index-sheet);
 }
 

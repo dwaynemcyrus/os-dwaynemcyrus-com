@@ -92,9 +92,7 @@ export function FabButton({
       onPointerUp={handlePointerUp}
       type="button"
     >
-      <span aria-hidden="true" className={styles.fabButton__icon}>
-        {isSheetOpen ? '×' : '+'}
-      </span>
+      <span aria-hidden="true" className={styles.fabButton__icon} />
     </button>
   );
 }

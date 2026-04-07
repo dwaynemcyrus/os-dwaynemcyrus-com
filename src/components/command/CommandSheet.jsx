@@ -492,13 +492,6 @@ export function CommandSheet({ children }) {
     <div className={styles.commandSheetShell}>
       <div className={styles.commandSheetShell__content}>{children}</div>
 
-      {createElement(FabButton, {
-        isSheetOpen: isAnySheetOpen,
-        onClose: handleCloseActiveSheet,
-        onOpen: openSearchMode,
-        onOpenContext: openContextMode,
-      })}
-
       {isCommandSheetOpen ? (
         <div
           className={styles.commandSheet}
@@ -909,6 +902,13 @@ export function CommandSheet({ children }) {
       {createElement(ContextSheet, {
         isOpen: isContextSheetOpen,
         onClose: closeContextSheet,
+      })}
+
+      {createElement(FabButton, {
+        isSheetOpen: isAnySheetOpen,
+        onClose: handleCloseActiveSheet,
+        onOpen: openSearchMode,
+        onOpenContext: openContextMode,
       })}
     </div>
   );
