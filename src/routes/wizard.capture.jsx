@@ -5,7 +5,6 @@ import { useAppChrome } from '../lib/app-chrome';
 import { fetchUnprocessedInboxItems, ITEMS_REFRESH_EVENT } from '../lib/items';
 import { normalizeFilenameValue } from '../lib/frontmatter';
 import {
-  createSourceFromCapture,
   enrichSourceWithMetadata,
   isLikelyUrl,
 } from '../lib/sources';
@@ -37,15 +36,28 @@ function writeItemHistory(itemId, userId, content, changeType, frontmatter) {
     .catch(() => {});
 }
 
-// GTD decision tree — each step is one question with a set of options.
-// option.next   → advance to that step
-// option.action → terminal: execute an action and process the capture
-// option.soon   → disabled, shown with SOON badge, no navigation
+const EMPTY_SELECTIONS = {
+  type: null,
+  subtype: null,
+  medium: null,
+  url: '',
+  author: '',
+  area: null,
+  workbench: false,
+};
+
+// GTD decision tree — option-list steps only.
+// Special steps (review, source-url, source-author, area-assign,
+// workbench-toggle, confirm) are rendered inline.
+//
+// option.select → merge into selections state before advancing
+// option.next   → advance to that step (pushes history)
+// option.action → terminal: 'delete' | 'back'
+// option.soon   → disabled, shown with SOON badge
 const STEP_TREE = {
   actionable: {
     question: 'Is this actionable?',
     subtitle: 'Do you need to do something about this?',
-    back: 'review',
     options: [
       {
         id: 'no',
@@ -64,7 +76,6 @@ const STEP_TREE = {
   'not-actionable': {
     question: 'What is this?',
     subtitle: null,
-    back: 'actionable',
     options: [
       {
         id: 'consume',
@@ -108,57 +119,55 @@ const STEP_TREE = {
   'consume-type': {
     question: 'What kind of source is this?',
     subtitle: null,
-    back: 'not-actionable',
     options: [
       {
         id: 'article',
         label: 'Article',
         description: 'A written piece to read.',
-        action: 'source',
-        medium: 'article',
+        select: { type: 'reference', subtype: 'source', medium: 'article' },
+        next: 'source-url',
         primary: true,
       },
       {
         id: 'video',
         label: 'Video',
         description: 'A video to watch.',
-        action: 'source',
-        medium: 'video',
+        select: { type: 'reference', subtype: 'source', medium: 'video' },
+        next: 'source-url',
       },
       {
         id: 'podcast',
         label: 'Podcast',
         description: 'A podcast episode to listen to.',
-        action: 'source',
-        medium: 'podcast',
+        select: { type: 'reference', subtype: 'source', medium: 'podcast' },
+        next: 'source-url',
       },
       {
         id: 'book',
         label: 'Book',
         description: 'A book to read.',
-        action: 'source',
-        medium: 'book',
+        select: { type: 'reference', subtype: 'source', medium: 'book' },
+        next: 'source-url',
       },
       {
         id: 'post',
         label: 'Post',
         description: 'A social media post.',
-        action: 'source',
-        medium: 'post',
+        select: { type: 'reference', subtype: 'source', medium: 'post' },
+        next: 'source-url',
       },
       {
         id: 'other',
         label: 'Other',
         description: 'Another kind of content.',
-        action: 'source',
-        medium: 'other',
+        select: { type: 'reference', subtype: 'source', medium: 'other' },
+        next: 'source-url',
       },
     ],
   },
   'trash-confirm': {
     question: 'Are you sure?',
     subtitle: 'This moves it to trash. You can restore it later.',
-    back: 'not-actionable',
     options: [
       {
         id: 'confirm-trash',
@@ -170,14 +179,13 @@ const STEP_TREE = {
         id: 'cancel',
         label: 'No — Go Back',
         description: '',
-        next: 'not-actionable',
+        action: 'back',
       },
     ],
   },
   'actionable-yes': {
     question: "What's the next action?",
     subtitle: null,
-    back: 'actionable',
     options: [
       {
         id: 'do-now',
@@ -212,8 +220,14 @@ export const wizardCaptureRoute = createRoute({
     const [captures, setCaptures] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [step, setStep] = useState(FIRST_STEP);
+    const [stepHistory, setStepHistory] = useState([]);
     const [titleDraft, setTitleDraft] = useState('');
+    const [urlDraft, setUrlDraft] = useState('');
+    const [authorDraft, setAuthorDraft] = useState('');
+    const [selections, setSelections] = useState(EMPTY_SELECTIONS);
+    const [areaItems, setAreaItems] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isLoadingAreas, setIsLoadingAreas] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [actionMessage, setActionMessage] = useState('');
@@ -250,6 +264,8 @@ export const wizardCaptureRoute = createRoute({
           setCaptures(data);
           setCurrentIndex(0);
           setStep(FIRST_STEP);
+          setStepHistory([]);
+          setSelections(EMPTY_SELECTIONS);
         })
         .catch((error) => {
           if (cancelled) return;
@@ -265,6 +281,7 @@ export const wizardCaptureRoute = createRoute({
       };
     }, [auth.user?.id]);
 
+    // Sync title draft when capture changes
     useEffect(() => {
       const capture = captures[currentIndex];
       if (!capture) {
@@ -274,11 +291,61 @@ export const wizardCaptureRoute = createRoute({
       setTitleDraft(capture.title || capture.content?.slice(0, 80) || '');
     }, [captures, currentIndex]);
 
+    // Pre-fill URL draft from capture content when entering source-url step
+    useEffect(() => {
+      if (step !== 'source-url') return;
+      const capture = captures[currentIndex];
+      if (!capture) return;
+      const rawText = (capture.content ?? '').trim();
+      setUrlDraft(isLikelyUrl(rawText) ? rawText : (selections.url || ''));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [step]);
+
+    // Load area items when entering area-assign step
+    useEffect(() => {
+      if (step !== 'area-assign' || !auth.user?.id) return;
+
+      let cancelled = false;
+      setIsLoadingAreas(true);
+
+      supabase
+        .from('items')
+        .select('id,title,filename')
+        .eq('user_id', auth.user.id)
+        .eq('type', 'review')
+        .eq('subtype', 'area')
+        .is('date_trashed', null)
+        .order('title', { ascending: true })
+        .then(({ data, error }) => {
+          if (cancelled) return;
+          if (!error) setAreaItems(data ?? []);
+          setIsLoadingAreas(false);
+        });
+
+      return () => { cancelled = true; };
+    }, [step, auth.user?.id]);
+
     useEffect(() => {
       if (!actionMessage) return;
       const t = window.setTimeout(() => setActionMessage(''), 2500);
       return () => window.clearTimeout(t);
     }, [actionMessage]);
+
+    function advanceStep(nextStep) {
+      setStepHistory((prev) => [...prev, step]);
+      setStep(nextStep);
+      setErrorMessage('');
+    }
+
+    function goBack() {
+      setStepHistory((prev) => {
+        const next = [...prev];
+        const prevStep = next.pop() ?? FIRST_STEP;
+        setStep(prevStep);
+        return next;
+      });
+      setErrorMessage('');
+    }
 
     function advanceToNext() {
       setCaptures((prev) => {
@@ -287,15 +354,11 @@ export const wizardCaptureRoute = createRoute({
         return next;
       });
       setStep(FIRST_STEP);
+      setStepHistory([]);
+      setSelections(EMPTY_SELECTIONS);
+      setUrlDraft('');
+      setAuthorDraft('');
       setErrorMessage('');
-    }
-
-    function handleStepBack() {
-      const currentStep = STEP_TREE[step];
-      if (currentStep?.back) {
-        setStep(currentStep.back);
-        setErrorMessage('');
-      }
     }
 
     async function handleKeep() {
@@ -329,51 +392,9 @@ export const wizardCaptureRoute = createRoute({
 
         writeItemHistory(capture.id, auth.user.id, capture.content, 'updated', { title });
 
-        setStep('actionable');
+        advanceStep('actionable');
       } catch (error) {
         setErrorMessage(error.message ?? 'Unable to keep capture.');
-      } finally {
-        setIsProcessing(false);
-      }
-    }
-
-    async function handleSaveAsSource(medium = null) {
-      if (!auth.user?.id) return;
-
-      const capture = captures[currentIndex];
-      if (!capture) return;
-
-      setIsProcessing(true);
-      setErrorMessage('');
-
-      try {
-        const rawText = capture.content ?? capture.title ?? '';
-        const { sourceId, duplicate } = await createSourceFromCapture({
-          captureId: capture.id,
-          rawText,
-          userId: auth.user.id,
-          medium,
-        });
-
-        if (duplicate === 'archived') {
-          setActionMessage('Already archived — moved back to Sources inbox.');
-        } else if (duplicate === 'existing') {
-          setActionMessage('Already in Sources.');
-        } else {
-          setActionMessage('Saved as source.');
-          if (isLikelyUrl(rawText)) {
-            enrichSourceWithMetadata(sourceId, auth.user.id, rawText.trim()).catch(() => {});
-          }
-        }
-
-        writeItemHistory(capture.id, auth.user.id, capture.content, 'updated', {
-          processed_as: 'source',
-        });
-
-        window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
-        advanceToNext();
-      } catch (error) {
-        setErrorMessage(error.message ?? 'Unable to save as source right now.');
       } finally {
         setIsProcessing(false);
       }
@@ -408,21 +429,80 @@ export const wizardCaptureRoute = createRoute({
       }
     }
 
+    async function handleFinalSave() {
+      if (!auth.user?.id) return;
+
+      const capture = captures[currentIndex];
+      if (!capture) return;
+
+      setIsProcessing(true);
+      setErrorMessage('');
+
+      try {
+        const now = new Date().toISOString();
+        const updatePayload = {
+          type: selections.type,
+          subtype: selections.subtype,
+          status: 'backlog',
+          workbench: selections.workbench,
+          date_modified: now,
+        };
+
+        if (selections.medium) updatePayload.source_type = selections.medium;
+
+        const urlTrimmed = selections.url?.trim() || '';
+        if (urlTrimmed) updatePayload.url = urlTrimmed;
+
+        if (selections.author?.trim()) updatePayload.author = selections.author.trim();
+
+        if (selections.area) {
+          updatePayload.area = `[[${selections.area.title}]]`;
+        }
+
+        const { error } = await supabase
+          .from('items')
+          .update(updatePayload)
+          .eq('id', capture.id)
+          .eq('user_id', auth.user.id);
+
+        if (error) throw error;
+
+        if (urlTrimmed && isLikelyUrl(urlTrimmed)) {
+          enrichSourceWithMetadata(capture.id, auth.user.id, urlTrimmed).catch(() => {});
+        }
+
+        writeItemHistory(capture.id, auth.user.id, capture.content, 'updated', {
+          type: selections.type,
+          subtype: selections.subtype,
+          medium: selections.medium || null,
+        });
+
+        window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
+        setStepHistory([]);
+        setStep('confirm');
+      } catch (error) {
+        setErrorMessage(error.message ?? 'Unable to save.');
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+
     function handleOption(option) {
       if (option.soon) return;
-      if (option.next) {
-        setStep(option.next);
-        return;
+      if (option.select) {
+        setSelections((prev) => ({ ...prev, ...option.select }));
       }
-      if (option.action === 'source') void handleSaveAsSource(option.medium ?? null);
-      if (option.action === 'delete') void handleDelete();
+      if (option.action === 'back') { goBack(); return; }
+      if (option.action === 'delete') { void handleDelete(); return; }
+      if (option.next) {
+        advanceStep(option.next);
+      }
     }
 
     const currentCapture = captures[currentIndex];
     const total = captures.length;
     const position = total > 0 ? currentIndex + 1 : 0;
     const isDone = !isLoading && total === 0;
-    const currentStep = STEP_TREE[step];
 
     if (isLoading) {
       return (
@@ -449,6 +529,432 @@ export const wizardCaptureRoute = createRoute({
             </button>
           </div>
         </div>
+      );
+    }
+
+    function renderStepSection() {
+      // ── Review (Step 0) ──────────────────────────────────────────────
+      if (step === 'review') {
+        return (
+          <section className={styles.wizardCaptureRoute__step}>
+            <header className={styles.wizardCaptureRoute__stepHeader}>
+              <h2 className={styles.wizardCaptureRoute__stepQuestion}>
+                Set a title
+              </h2>
+              <p className={styles.wizardCaptureRoute__stepSubtitle}>
+                Give this capture a short, clear title before processing it.
+              </p>
+            </header>
+
+            <div className={styles.wizardCaptureRoute__titleField}>
+              <label
+                className={styles.wizardCaptureRoute__titleLabel}
+                htmlFor="wizard-title"
+              >
+                Title
+              </label>
+              <input
+                className={styles.wizardCaptureRoute__titleInput}
+                disabled={isProcessing}
+                id="wizard-title"
+                onChange={(e) => setTitleDraft(e.target.value)}
+                type="text"
+                value={titleDraft}
+              />
+            </div>
+
+            <ul className={styles.wizardCaptureRoute__optionList}>
+              <li>
+                <button
+                  className={`${styles.wizardCaptureRoute__option} ${styles['wizardCaptureRoute__option--primary']}`}
+                  disabled={isProcessing}
+                  onClick={() => void handleKeep()}
+                  type="button"
+                >
+                  <span className={styles.wizardCaptureRoute__optionLabel}>Keep</span>
+                  <span className={styles.wizardCaptureRoute__optionDesc}>
+                    Save the title and continue processing.
+                  </span>
+                </button>
+              </li>
+              <li>
+                <button
+                  className={`${styles.wizardCaptureRoute__option} ${styles['wizardCaptureRoute__option--danger']}`}
+                  disabled={isProcessing}
+                  onClick={() => void handleDelete()}
+                  type="button"
+                >
+                  <span className={styles.wizardCaptureRoute__optionLabel}>Delete</span>
+                  <span className={styles.wizardCaptureRoute__optionDesc}>
+                    Remove it completely.
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </section>
+        );
+      }
+
+      // ── Source URL input ─────────────────────────────────────────────
+      if (step === 'source-url') {
+        return (
+          <section className={styles.wizardCaptureRoute__step}>
+            <header className={styles.wizardCaptureRoute__stepHeader}>
+              {stepHistory.length > 0 ? (
+                <button
+                  className={styles.wizardCaptureRoute__backButton}
+                  onClick={goBack}
+                  type="button"
+                >
+                  ← Back
+                </button>
+              ) : null}
+              <h2 className={styles.wizardCaptureRoute__stepQuestion}>
+                URL or link?
+              </h2>
+              <p className={styles.wizardCaptureRoute__stepSubtitle}>
+                Optional — paste a link if available.
+              </p>
+            </header>
+
+            <div className={styles.wizardCaptureRoute__titleField}>
+              <label
+                className={styles.wizardCaptureRoute__titleLabel}
+                htmlFor="wizard-url"
+              >
+                URL
+              </label>
+              <input
+                className={styles.wizardCaptureRoute__titleInput}
+                disabled={isProcessing}
+                id="wizard-url"
+                onChange={(e) => setUrlDraft(e.target.value)}
+                placeholder="https://"
+                type="url"
+                value={urlDraft}
+              />
+            </div>
+
+            <div className={styles.wizardCaptureRoute__inputActions}>
+              <button
+                className={styles.wizardCaptureRoute__nextButton}
+                disabled={isProcessing}
+                onClick={() => {
+                  setSelections((prev) => ({ ...prev, url: urlDraft.trim() }));
+                  advanceStep('source-author');
+                }}
+                type="button"
+              >
+                Next →
+              </button>
+              <button
+                className={styles.wizardCaptureRoute__skipButton}
+                disabled={isProcessing}
+                onClick={() => {
+                  setSelections((prev) => ({ ...prev, url: '' }));
+                  advanceStep('source-author');
+                }}
+                type="button"
+              >
+                Skip
+              </button>
+            </div>
+          </section>
+        );
+      }
+
+      // ── Source author input ──────────────────────────────────────────
+      if (step === 'source-author') {
+        return (
+          <section className={styles.wizardCaptureRoute__step}>
+            <header className={styles.wizardCaptureRoute__stepHeader}>
+              {stepHistory.length > 0 ? (
+                <button
+                  className={styles.wizardCaptureRoute__backButton}
+                  onClick={goBack}
+                  type="button"
+                >
+                  ← Back
+                </button>
+              ) : null}
+              <h2 className={styles.wizardCaptureRoute__stepQuestion}>
+                Author?
+              </h2>
+              <p className={styles.wizardCaptureRoute__stepSubtitle}>
+                Optional — who created this?
+              </p>
+            </header>
+
+            <div className={styles.wizardCaptureRoute__titleField}>
+              <label
+                className={styles.wizardCaptureRoute__titleLabel}
+                htmlFor="wizard-author"
+              >
+                Author
+              </label>
+              <input
+                className={styles.wizardCaptureRoute__titleInput}
+                disabled={isProcessing}
+                id="wizard-author"
+                onChange={(e) => setAuthorDraft(e.target.value)}
+                placeholder="Name"
+                type="text"
+                value={authorDraft}
+              />
+            </div>
+
+            <div className={styles.wizardCaptureRoute__inputActions}>
+              <button
+                className={styles.wizardCaptureRoute__nextButton}
+                disabled={isProcessing}
+                onClick={() => {
+                  setSelections((prev) => ({ ...prev, author: authorDraft.trim() }));
+                  advanceStep('area-assign');
+                }}
+                type="button"
+              >
+                Next →
+              </button>
+              <button
+                className={styles.wizardCaptureRoute__skipButton}
+                disabled={isProcessing}
+                onClick={() => {
+                  setSelections((prev) => ({ ...prev, author: '' }));
+                  advanceStep('area-assign');
+                }}
+                type="button"
+              >
+                Skip
+              </button>
+            </div>
+          </section>
+        );
+      }
+
+      // ── Area assignment ──────────────────────────────────────────────
+      if (step === 'area-assign') {
+        return (
+          <section className={styles.wizardCaptureRoute__step}>
+            <header className={styles.wizardCaptureRoute__stepHeader}>
+              {stepHistory.length > 0 ? (
+                <button
+                  className={styles.wizardCaptureRoute__backButton}
+                  onClick={goBack}
+                  type="button"
+                >
+                  ← Back
+                </button>
+              ) : null}
+              <h2 className={styles.wizardCaptureRoute__stepQuestion}>
+                Which area does this belong to?
+              </h2>
+            </header>
+
+            {isLoadingAreas ? (
+              <div className={styles.wizardCaptureRoute__skeleton} style={{ blockSize: '4rem' }} />
+            ) : (
+              <ul className={styles.wizardCaptureRoute__optionList}>
+                <li>
+                  <button
+                    className={`${styles.wizardCaptureRoute__option} ${
+                      selections.area === null ? styles['wizardCaptureRoute__option--primary'] : ''
+                    }`}
+                    disabled={isProcessing}
+                    onClick={() => {
+                      setSelections((prev) => ({ ...prev, area: null }));
+                      advanceStep('workbench-toggle');
+                    }}
+                    type="button"
+                  >
+                    <span className={styles.wizardCaptureRoute__optionLabel}>
+                      No specific area
+                    </span>
+                  </button>
+                </li>
+                {areaItems.map((area) => (
+                  <li key={area.id}>
+                    <button
+                      className={`${styles.wizardCaptureRoute__option} ${
+                        selections.area?.id === area.id
+                          ? styles['wizardCaptureRoute__option--primary']
+                          : ''
+                      }`}
+                      disabled={isProcessing}
+                      onClick={() => {
+                        setSelections((prev) => ({ ...prev, area }));
+                        advanceStep('workbench-toggle');
+                      }}
+                      type="button"
+                    >
+                      <span className={styles.wizardCaptureRoute__optionLabel}>
+                        {area.title || area.filename || 'Untitled area'}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        );
+      }
+
+      // ── Workbench toggle ─────────────────────────────────────────────
+      if (step === 'workbench-toggle') {
+        return (
+          <section className={styles.wizardCaptureRoute__step}>
+            <header className={styles.wizardCaptureRoute__stepHeader}>
+              {stepHistory.length > 0 ? (
+                <button
+                  className={styles.wizardCaptureRoute__backButton}
+                  onClick={goBack}
+                  type="button"
+                >
+                  ← Back
+                </button>
+              ) : null}
+              <h2 className={styles.wizardCaptureRoute__stepQuestion}>
+                Add to workbench?
+              </h2>
+              <p className={styles.wizardCaptureRoute__stepSubtitle}>
+                Workbench items appear on your home screen for active focus.
+              </p>
+            </header>
+
+            <div className={styles.wizardCaptureRoute__workbenchRow}>
+              <input
+                checked={selections.workbench}
+                className={styles.wizardCaptureRoute__workbenchCheck}
+                id="wizard-workbench"
+                onChange={(e) => {
+                  setSelections((prev) => ({ ...prev, workbench: e.target.checked }));
+                }}
+                type="checkbox"
+              />
+              <label
+                className={styles.wizardCaptureRoute__workbenchCheckLabel}
+                htmlFor="wizard-workbench"
+              >
+                Yes — add to workbench
+              </label>
+            </div>
+
+            <button
+              className={styles.wizardCaptureRoute__nextButton}
+              disabled={isProcessing}
+              onClick={() => void handleFinalSave()}
+              type="button"
+            >
+              Save and continue →
+            </button>
+          </section>
+        );
+      }
+
+      // ── Confirmation screen ──────────────────────────────────────────
+      if (step === 'confirm') {
+        const subtypeLabel = selections.medium
+          ? `${selections.medium.charAt(0).toUpperCase()}${selections.medium.slice(1)}`
+          : selections.subtype ?? '';
+
+        return (
+          <section className={styles.wizardCaptureRoute__confirm}>
+            <p className={styles.wizardCaptureRoute__confirmTitle}>✓ Saved</p>
+            <dl className={styles.wizardCaptureRoute__confirmMeta}>
+              {subtypeLabel ? (
+                <div>
+                  <dt>Type</dt>
+                  <dd>{subtypeLabel}</dd>
+                </div>
+              ) : null}
+              <div>
+                <dt>Area</dt>
+                <dd>{selections.area?.title ?? 'None'}</dd>
+              </div>
+              {selections.workbench ? (
+                <div>
+                  <dt>Workbench</dt>
+                  <dd>Yes</dd>
+                </div>
+              ) : null}
+            </dl>
+            <div className={styles.wizardCaptureRoute__confirmActions}>
+              <button
+                className={styles.wizardCaptureRoute__nextButton}
+                onClick={advanceToNext}
+                type="button"
+              >
+                Next item →
+              </button>
+              <button
+                className={styles.wizardCaptureRoute__skipButton}
+                onClick={() => void navigate({ to: '/' })}
+                type="button"
+              >
+                Stop processing
+              </button>
+            </div>
+          </section>
+        );
+      }
+
+      // ── STEP_TREE option-list steps ──────────────────────────────────
+      const currentStep = STEP_TREE[step];
+
+      return (
+        <section className={styles.wizardCaptureRoute__step}>
+          <header className={styles.wizardCaptureRoute__stepHeader}>
+            {stepHistory.length > 0 ? (
+              <button
+                className={styles.wizardCaptureRoute__backButton}
+                onClick={goBack}
+                type="button"
+              >
+                ← Back
+              </button>
+            ) : null}
+            <h2 className={styles.wizardCaptureRoute__stepQuestion}>
+              {currentStep?.question}
+            </h2>
+            {currentStep?.subtitle ? (
+              <p className={styles.wizardCaptureRoute__stepSubtitle}>
+                {currentStep.subtitle}
+              </p>
+            ) : null}
+          </header>
+
+          <ul className={styles.wizardCaptureRoute__optionList}>
+            {currentStep?.options.map((option) => (
+              <li key={option.id}>
+                <button
+                  className={`${styles.wizardCaptureRoute__option} ${
+                    option.primary ? styles['wizardCaptureRoute__option--primary'] : ''
+                  } ${
+                    option.action === 'delete' ? styles['wizardCaptureRoute__option--danger'] : ''
+                  } ${
+                    option.soon ? styles['wizardCaptureRoute__option--soon'] : ''
+                  }`}
+                  disabled={isProcessing || Boolean(option.soon)}
+                  onClick={() => handleOption(option)}
+                  type="button"
+                >
+                  <span className={styles.wizardCaptureRoute__optionLabel}>
+                    {option.label}
+                    {option.soon ? (
+                      <span className={styles.wizardCaptureRoute__soonBadge}>
+                        SOON
+                      </span>
+                    ) : null}
+                  </span>
+                  {option.description ? (
+                    <span className={styles.wizardCaptureRoute__optionDesc}>
+                      {option.description}
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
       );
     }
 
@@ -496,6 +1002,8 @@ export const wizardCaptureRoute = createRoute({
                     onClick={() => {
                       setCurrentIndex(index);
                       setStep(FIRST_STEP);
+                      setStepHistory([]);
+                      setSelections(EMPTY_SELECTIONS);
                       setIsListOpen(false);
                     }}
                     type="button"
@@ -515,134 +1023,20 @@ export const wizardCaptureRoute = createRoute({
 
         {currentCapture && !isListOpen ? (
           <>
-            <div className={styles.wizardCaptureRoute__card}>
-              <p className={styles.wizardCaptureRoute__captureText}>
-                {currentCapture.content ?? currentCapture.title ?? 'Empty capture'}
-              </p>
-              {currentCapture.date_created ? (
-                <p className={styles.wizardCaptureRoute__captureDate}>
-                  Captured {formatCaptureDate(currentCapture.date_created)}
+            {step !== 'confirm' ? (
+              <div className={styles.wizardCaptureRoute__card}>
+                <p className={styles.wizardCaptureRoute__captureText}>
+                  {currentCapture.content ?? currentCapture.title ?? 'Empty capture'}
                 </p>
-              ) : null}
-            </div>
-
-            {step === 'review' ? (
-              <section className={styles.wizardCaptureRoute__step}>
-                <header className={styles.wizardCaptureRoute__stepHeader}>
-                  <h2 className={styles.wizardCaptureRoute__stepQuestion}>
-                    Set a title
-                  </h2>
-                  <p className={styles.wizardCaptureRoute__stepSubtitle}>
-                    Give this capture a short, clear title before processing it.
+                {currentCapture.date_created ? (
+                  <p className={styles.wizardCaptureRoute__captureDate}>
+                    Captured {formatCaptureDate(currentCapture.date_created)}
                   </p>
-                </header>
+                ) : null}
+              </div>
+            ) : null}
 
-                <div className={styles.wizardCaptureRoute__titleField}>
-                  <label
-                    className={styles.wizardCaptureRoute__titleLabel}
-                    htmlFor="wizard-title"
-                  >
-                    Title
-                  </label>
-                  <input
-                    className={styles.wizardCaptureRoute__titleInput}
-                    disabled={isProcessing}
-                    id="wizard-title"
-                    onChange={(e) => setTitleDraft(e.target.value)}
-                    type="text"
-                    value={titleDraft}
-                  />
-                </div>
-
-                <ul className={styles.wizardCaptureRoute__optionList}>
-                  <li>
-                    <button
-                      className={`${styles.wizardCaptureRoute__option} ${styles['wizardCaptureRoute__option--primary']}`}
-                      disabled={isProcessing}
-                      onClick={() => void handleKeep()}
-                      type="button"
-                    >
-                      <span className={styles.wizardCaptureRoute__optionLabel}>
-                        Keep
-                      </span>
-                      <span className={styles.wizardCaptureRoute__optionDesc}>
-                        Save the title and continue processing.
-                      </span>
-                    </button>
-                  </li>
-                  <li>
-                    <button
-                      className={`${styles.wizardCaptureRoute__option} ${styles['wizardCaptureRoute__option--danger']}`}
-                      disabled={isProcessing}
-                      onClick={() => void handleDelete()}
-                      type="button"
-                    >
-                      <span className={styles.wizardCaptureRoute__optionLabel}>
-                        Delete
-                      </span>
-                      <span className={styles.wizardCaptureRoute__optionDesc}>
-                        Remove it completely.
-                      </span>
-                    </button>
-                  </li>
-                </ul>
-              </section>
-            ) : (
-              <section className={styles.wizardCaptureRoute__step}>
-                <header className={styles.wizardCaptureRoute__stepHeader}>
-                  {currentStep?.back ? (
-                    <button
-                      className={styles.wizardCaptureRoute__backButton}
-                      onClick={handleStepBack}
-                      type="button"
-                    >
-                      ← Back
-                    </button>
-                  ) : null}
-                  <h2 className={styles.wizardCaptureRoute__stepQuestion}>
-                    {currentStep?.question}
-                  </h2>
-                  {currentStep?.subtitle ? (
-                    <p className={styles.wizardCaptureRoute__stepSubtitle}>
-                      {currentStep.subtitle}
-                    </p>
-                  ) : null}
-                </header>
-
-                <ul className={styles.wizardCaptureRoute__optionList}>
-                  {currentStep?.options.map((option) => (
-                    <li key={option.id}>
-                      <button
-                        className={`${styles.wizardCaptureRoute__option} ${
-                          option.primary ? styles['wizardCaptureRoute__option--primary'] : ''
-                        } ${
-                          option.action === 'delete' ? styles['wizardCaptureRoute__option--danger'] : ''
-                        } ${
-                          option.soon ? styles['wizardCaptureRoute__option--soon'] : ''
-                        }`}
-                        disabled={isProcessing || Boolean(option.soon)}
-                        onClick={() => handleOption(option)}
-                        type="button"
-                      >
-                        <span className={styles.wizardCaptureRoute__optionLabel}>
-                          {option.label}
-                          {option.soon ? (
-                            <span className={styles.wizardCaptureRoute__soonBadge}>
-                              SOON
-                            </span>
-                          ) : null}
-                        </span>
-                        {option.description ? (
-                          <span className={styles.wizardCaptureRoute__optionDesc}>
-                            {option.description}
-                          </span>
-                        ) : null}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            )}
+            {renderStepSection()}
           </>
         ) : null}
       </div>
