@@ -13,6 +13,7 @@ import { getItemDisplayLabel } from '../lib/filenames';
 import {
   fetchHomeSummary,
   HOME_WORKBENCH_LIMIT,
+  ITEMS_REFRESH_EVENT,
   openOrCreateDailyNote,
 } from '../lib/items';
 import styles from './HomeRoute.module.css';
@@ -123,36 +124,33 @@ export const indexRoute = createRoute({
 
       let cancelled = false;
 
-      setIsLoadingHome(true);
-      setHomeErrorMessage('');
+      function loadHome() {
+        setIsLoadingHome(true);
+        setHomeErrorMessage('');
 
-      fetchHomeSummary(auth.user.id)
-        .then((summary) => {
-          if (cancelled) {
-            return;
-          }
+        fetchHomeSummary(auth.user.id)
+          .then((summary) => {
+            if (cancelled) return;
+            setHomeSummary(summary);
+          })
+          .catch((error) => {
+            if (cancelled) return;
+            setHomeErrorMessage(
+              error.message ?? 'Unable to load your home summary right now.',
+            );
+          })
+          .finally(() => {
+            if (cancelled) return;
+            setIsLoadingHome(false);
+          });
+      }
 
-          setHomeSummary(summary);
-        })
-        .catch((error) => {
-          if (cancelled) {
-            return;
-          }
-
-          setHomeErrorMessage(
-            error.message ?? 'Unable to load your home summary right now.',
-          );
-        })
-        .finally(() => {
-          if (cancelled) {
-            return;
-          }
-
-          setIsLoadingHome(false);
-        });
+      loadHome();
+      window.addEventListener(ITEMS_REFRESH_EVENT, loadHome);
 
       return () => {
         cancelled = true;
+        window.removeEventListener(ITEMS_REFRESH_EVENT, loadHome);
       };
     }, [auth.user?.id]);
 

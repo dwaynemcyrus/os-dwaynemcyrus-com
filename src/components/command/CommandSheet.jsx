@@ -18,6 +18,7 @@ import {
   fetchCommandTemplates,
   fetchRecentCommandItems,
   getCapturePreview,
+  ITEMS_REFRESH_EVENT,
   searchCommandItemsByTitle,
 } from '../../lib/items';
 import { getInsertSlashCommands, getSlashCommands } from '../../lib/templates';
@@ -25,7 +26,6 @@ import { ContextSheet } from './ContextSheet';
 import { FabButton } from './FabButton';
 import styles from './CommandSheet.module.css';
 
-const INBOX_COUNT_REFRESH_EVENT = 'personal-os:inbox-count-refresh';
 const RECENT_SKELETON_ROWS = ['recent-1', 'recent-2', 'recent-3'];
 const TEMPLATE_SKELETON_ROWS = ['template-1', 'template-2', 'template-3'];
 const SHEET_COPY = {
@@ -220,7 +220,7 @@ export function CommandSheet({ children }) {
       });
 
       setRecentItems((previousItems) => [createdItem, ...previousItems].slice(0, 8));
-      window.dispatchEvent(new Event(INBOX_COUNT_REFRESH_EVENT));
+      window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
       setSheetStatus('Saved to inbox.');
 
       if (closeAfterCapture) {

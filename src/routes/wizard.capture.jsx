@@ -22,6 +22,41 @@ function formatCaptureDate(value) {
   }).format(new Date(value));
 }
 
+const ACTIONS = [
+  {
+    id: 'source',
+    label: 'Save as Source',
+    description: 'Reference material to read, watch, or listen to later.',
+    available: true,
+    primary: true,
+  },
+  {
+    id: 'task',
+    label: 'Add to Tasks',
+    description: 'Something you need to do.',
+    available: false,
+  },
+  {
+    id: 'note',
+    label: 'Save as Note',
+    description: 'An idea, thought, or piece of reference writing.',
+    available: false,
+  },
+  {
+    id: 'someday',
+    label: 'Someday / Maybe',
+    description: 'Not now, but worth keeping.',
+    available: false,
+  },
+  {
+    id: 'delete',
+    label: 'Delete',
+    description: 'Remove from inbox. This cannot be undone.',
+    available: true,
+    danger: true,
+  },
+];
+
 export const wizardCaptureRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/wizard/capture',
@@ -39,12 +74,12 @@ export const wizardCaptureRoute = createRoute({
     const moreActions = useMemo(() => [
       {
         id: 'list',
-        label: 'View All Captures',
+        label: isListOpen ? 'Hide Capture List' : 'View All Captures',
         onSelect() {
           setIsListOpen((v) => !v);
         },
       },
-    ], []);
+    ], [isListOpen]);
 
     useAppChrome(
       useMemo(() => ({
@@ -87,7 +122,7 @@ export const wizardCaptureRoute = createRoute({
       return () => window.clearTimeout(t);
     }, [actionMessage]);
 
-    function advance() {
+    function removeCurrentCapture() {
       setCaptures((prev) => {
         const next = prev.filter((_, i) => i !== currentIndex);
         setCurrentIndex((idx) => Math.min(idx, Math.max(0, next.length - 1)));
@@ -113,9 +148,9 @@ export const wizardCaptureRoute = createRoute({
         });
 
         if (duplicate === 'archived') {
-          setActionMessage('This source was already archived. Moved it back to inbox.');
+          setActionMessage('Already archived — moved back to Sources inbox.');
         } else if (duplicate === 'existing') {
-          setActionMessage('This source is already saved.');
+          setActionMessage('Already in Sources.');
         } else {
           setActionMessage('Saved as source.');
 
@@ -125,17 +160,12 @@ export const wizardCaptureRoute = createRoute({
         }
 
         window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
-        advance();
+        removeCurrentCapture();
       } catch (error) {
         setErrorMessage(error.message ?? 'Unable to save as source right now.');
       } finally {
         setIsProcessing(false);
       }
-    }
-
-    async function handleSkip() {
-      setActionMessage('Skipped.');
-      advance();
     }
 
     async function handleDelete() {
@@ -157,12 +187,17 @@ export const wizardCaptureRoute = createRoute({
 
         setActionMessage('Deleted.');
         window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
-        advance();
+        removeCurrentCapture();
       } catch (error) {
         setErrorMessage(error.message ?? 'Unable to delete capture.');
       } finally {
         setIsProcessing(false);
       }
+    }
+
+    function handleAction(actionId) {
+      if (actionId === 'source') return handleSaveAsSource();
+      if (actionId === 'delete') return handleDelete();
     }
 
     const currentCapture = captures[currentIndex];
@@ -182,9 +217,9 @@ export const wizardCaptureRoute = createRoute({
       return (
         <div className={styles.wizardCaptureRoute}>
           <div className={styles.wizardCaptureRoute__done}>
-            <p className={styles.wizardCaptureRoute__doneTitle}>All caught up.</p>
+            <p className={styles.wizardCaptureRoute__doneTitle}>Inbox zero.</p>
             <p className={styles.wizardCaptureRoute__doneSubtitle}>
-              No captures left to review.
+              All captures have been processed.
             </p>
             <button
               className={styles.wizardCaptureRoute__doneButton}
@@ -252,45 +287,56 @@ export const wizardCaptureRoute = createRoute({
         ) : null}
 
         {currentCapture && !isListOpen ? (
-          <div className={styles.wizardCaptureRoute__card}>
-            <p className={styles.wizardCaptureRoute__captureText}>
-              {currentCapture.content ?? currentCapture.title ?? 'Empty capture'}
-            </p>
-            {currentCapture.date_created ? (
-              <p className={styles.wizardCaptureRoute__captureDate}>
-                Captured {formatCaptureDate(currentCapture.date_created)}
+          <>
+            <div className={styles.wizardCaptureRoute__card}>
+              <p className={styles.wizardCaptureRoute__captureText}>
+                {currentCapture.content ?? currentCapture.title ?? 'Empty capture'}
               </p>
-            ) : null}
-          </div>
-        ) : null}
+              {currentCapture.date_created ? (
+                <p className={styles.wizardCaptureRoute__captureDate}>
+                  Captured {formatCaptureDate(currentCapture.date_created)}
+                </p>
+              ) : null}
+            </div>
 
-        {!isListOpen ? (
-          <div className={styles.wizardCaptureRoute__actions}>
-            <button
-              className={`${styles.wizardCaptureRoute__action} ${styles['wizardCaptureRoute__action--primary']}`}
-              disabled={isProcessing}
-              onClick={() => void handleSaveAsSource()}
-              type="button"
-            >
-              {isProcessing ? 'Saving...' : 'Save as Source'}
-            </button>
-            <button
-              className={styles.wizardCaptureRoute__action}
-              disabled={isProcessing}
-              onClick={() => void handleSkip()}
-              type="button"
-            >
-              Skip
-            </button>
-            <button
-              className={`${styles.wizardCaptureRoute__action} ${styles['wizardCaptureRoute__action--danger']}`}
-              disabled={isProcessing}
-              onClick={() => void handleDelete()}
-              type="button"
-            >
-              Delete
-            </button>
-          </div>
+            <section className={styles.wizardCaptureRoute__actions}>
+              <h2 className={styles.wizardCaptureRoute__actionsTitle}>
+                What is this?
+              </h2>
+              <ul className={styles.wizardCaptureRoute__actionList}>
+                {ACTIONS.map((action) => (
+                  <li key={action.id}>
+                    <button
+                      className={`${styles.wizardCaptureRoute__action} ${
+                        action.primary ? styles['wizardCaptureRoute__action--primary'] : ''
+                      } ${
+                        action.danger ? styles['wizardCaptureRoute__action--danger'] : ''
+                      } ${
+                        !action.available ? styles['wizardCaptureRoute__action--soon'] : ''
+                      }`}
+                      disabled={isProcessing || !action.available}
+                      onClick={() => {
+                        if (action.available) void handleAction(action.id);
+                      }}
+                      type="button"
+                    >
+                      <span className={styles.wizardCaptureRoute__actionLabel}>
+                        {action.label}
+                        {!action.available ? (
+                          <span className={styles.wizardCaptureRoute__soonBadge}>
+                            SOON
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className={styles.wizardCaptureRoute__actionDesc}>
+                        {action.description}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
         ) : null}
       </div>
     );
