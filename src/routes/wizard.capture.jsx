@@ -3,6 +3,7 @@ import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
 import { useAppChrome } from '../lib/app-chrome';
 import { fetchUnprocessedInboxItems, ITEMS_REFRESH_EVENT } from '../lib/items';
+import { normalizeFilenameValue } from '../lib/frontmatter';
 import {
   createSourceFromCapture,
   enrichSourceWithMetadata,
@@ -61,47 +62,115 @@ const STEP_TREE = {
     ],
   },
   'not-actionable': {
-    question: 'What do you want to do with it?',
+    question: 'What is this?',
     subtitle: null,
     back: 'actionable',
     options: [
       {
-        id: 'trash',
-        label: 'Trash',
-        description: 'Remove it completely.',
-        action: 'delete',
+        id: 'consume',
+        label: 'Something to consume',
+        description: 'Articles, books, videos, tweets, podcasts.',
+        next: 'consume-type',
+        primary: true,
       },
       {
-        id: 'someday',
-        label: 'Someday / Maybe',
-        description: 'Not now, but worth keeping.',
+        id: 'journal',
+        label: 'A spiritual or personal journal entry',
+        description: 'Istikarah, dream, scratch thought.',
+        soon: true,
+      },
+      {
+        id: 'track',
+        label: 'Something to track over time',
+        description: 'A contact, goal, outreach log.',
         soon: true,
       },
       {
         id: 'reference',
-        label: 'Reference',
-        description: 'Save it to read, watch, or look back on.',
-        next: 'reference',
+        label: 'Reference material',
+        description: 'A note, idea, quote, principle, guide.',
+        soon: true,
+      },
+      {
+        id: 'someday',
+        label: 'Someday / Maybe',
+        description: 'I might want to do this one day.',
+        soon: true,
+      },
+      {
+        id: 'trash',
+        label: 'Trash',
+        description: "I don't need this.",
+        next: 'trash-confirm',
       },
     ],
   },
-  reference: {
-    question: 'What kind of reference?',
+  'consume-type': {
+    question: 'What kind of source is this?',
     subtitle: null,
     back: 'not-actionable',
     options: [
       {
-        id: 'source',
-        label: 'Source',
-        description: 'Something to read, watch, or listen to.',
+        id: 'article',
+        label: 'Article',
+        description: 'A written piece to read.',
         action: 'source',
+        medium: 'article',
         primary: true,
       },
       {
-        id: 'note',
-        label: 'Note',
-        description: 'An idea, piece of writing, or reference note.',
-        soon: true,
+        id: 'video',
+        label: 'Video',
+        description: 'A video to watch.',
+        action: 'source',
+        medium: 'video',
+      },
+      {
+        id: 'podcast',
+        label: 'Podcast',
+        description: 'A podcast episode to listen to.',
+        action: 'source',
+        medium: 'podcast',
+      },
+      {
+        id: 'book',
+        label: 'Book',
+        description: 'A book to read.',
+        action: 'source',
+        medium: 'book',
+      },
+      {
+        id: 'post',
+        label: 'Post',
+        description: 'A social media post.',
+        action: 'source',
+        medium: 'post',
+      },
+      {
+        id: 'other',
+        label: 'Other',
+        description: 'Another kind of content.',
+        action: 'source',
+        medium: 'other',
+      },
+    ],
+  },
+  'trash-confirm': {
+    question: 'Are you sure?',
+    subtitle: 'This moves it to trash. You can restore it later.',
+    back: 'not-actionable',
+    options: [
+      {
+        id: 'confirm-trash',
+        label: 'Yes — Move to Trash',
+        description: '',
+        action: 'delete',
+      },
+      {
+        id: 'cancel',
+        label: 'No — Go Back',
+        description: '',
+        next: 'not-actionable',
       },
     ],
   },
@@ -240,11 +309,19 @@ export const wizardCaptureRoute = createRoute({
 
       try {
         const title = titleDraft.trim() || capture.content?.slice(0, 80) || '';
+        let filename = null;
+        try { filename = normalizeFilenameValue(title); } catch { /* noop */ }
 
-        if (title !== (capture.title || '')) {
+        const titleChanged = title !== (capture.title || '');
+        const filenameChanged = filename && filename !== (capture.filename || '');
+
+        if (titleChanged || filenameChanged) {
+          const updatePayload = { title };
+          if (filename) updatePayload.filename = filename;
+
           const { error } = await supabase
             .from('items')
-            .update({ title })
+            .update(updatePayload)
             .eq('id', capture.id)
             .eq('user_id', auth.user.id);
           if (error) throw error;
@@ -260,7 +337,7 @@ export const wizardCaptureRoute = createRoute({
       }
     }
 
-    async function handleSaveAsSource() {
+    async function handleSaveAsSource(medium = null) {
       if (!auth.user?.id) return;
 
       const capture = captures[currentIndex];
@@ -275,6 +352,7 @@ export const wizardCaptureRoute = createRoute({
           captureId: capture.id,
           rawText,
           userId: auth.user.id,
+          medium,
         });
 
         if (duplicate === 'archived') {
@@ -336,7 +414,7 @@ export const wizardCaptureRoute = createRoute({
         setStep(option.next);
         return;
       }
-      if (option.action === 'source') void handleSaveAsSource();
+      if (option.action === 'source') void handleSaveAsSource(option.medium ?? null);
       if (option.action === 'delete') void handleDelete();
     }
 
@@ -554,9 +632,11 @@ export const wizardCaptureRoute = createRoute({
                             </span>
                           ) : null}
                         </span>
-                        <span className={styles.wizardCaptureRoute__optionDesc}>
-                          {option.description}
-                        </span>
+                        {option.description ? (
+                          <span className={styles.wizardCaptureRoute__optionDesc}>
+                            {option.description}
+                          </span>
+                        ) : null}
                       </button>
                     </li>
                   ))}

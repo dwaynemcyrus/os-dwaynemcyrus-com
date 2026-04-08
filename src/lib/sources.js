@@ -235,7 +235,7 @@ async function findExistingSourceByUrl(normalizedUrl, userId) {
   return data ?? null;
 }
 
-export async function createSourceFromCapture({ captureId, rawText, userId }) {
+export async function createSourceFromCapture({ captureId, rawText, userId, medium = null }) {
   const trimmed = rawText.trim();
   const normalizedUrl = normalizeUrl(trimmed);
   const isUrl = Boolean(normalizedUrl);
@@ -274,7 +274,7 @@ export async function createSourceFromCapture({ captureId, rawText, userId }) {
     }
   }
 
-  const sourceType = isUrl ? detectSourceType(trimmed) : 'book';
+  const sourceType = medium || (isUrl ? detectSourceType(trimmed) : 'other');
 
   const payload = {
     user_id: userId,
