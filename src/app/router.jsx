@@ -11,6 +11,10 @@ import { itemEditorRoute } from '../routes/items.$id';
 import { itemsRoute } from '../routes/items';
 import { notesRoute } from '../routes/notes';
 import { notesFilterRoute } from '../routes/notes.$filter';
+import { sourcesRoute } from '../routes/sources';
+import { sourcesFilterRoute } from '../routes/sources.$filter';
+import { sourcesIdRoute } from '../routes/sources.$id';
+import { wizardCaptureRoute } from '../routes/wizard.capture';
 import { settingsDailyNoteRoute } from '../routes/settings.daily-note';
 import { settingsIndexRoute } from '../routes/settings.index';
 import { settingsKeyboardShortcutsRoute } from '../routes/settings.keyboard-shortcuts';
@@ -26,6 +30,10 @@ const protectedRouteTree = authenticatedRoute.addChildren([
   itemEditorRoute,
   notesRoute,
   notesFilterRoute,
+  sourcesRoute,
+  sourcesFilterRoute,
+  sourcesIdRoute,
+  wizardCaptureRoute,
   settingsIndexRoute,
   settingsDailyNoteRoute,
   settingsKeyboardShortcutsRoute,

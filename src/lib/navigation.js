@@ -65,6 +65,36 @@ const CONTEXT_SHEET_TABS = [
       },
       {
         kind: 'link',
+        id: 'sources',
+        label: 'Sources',
+        to: '/sources/inbox',
+        countKey: 'sources',
+        expandable: true,
+        subRows: [
+          {
+            kind: 'link',
+            id: 'sources-inbox',
+            label: 'Inbox',
+            to: '/sources/inbox',
+            countKey: 'sources_backlog',
+          },
+          {
+            kind: 'link',
+            id: 'sources-reading',
+            label: 'Reading',
+            to: '/sources/reading',
+            countKey: 'sources_active',
+          },
+          {
+            kind: 'link',
+            id: 'sources-archive',
+            label: 'Archive',
+            to: '/sources/archive',
+          },
+        ],
+      },
+      {
+        kind: 'link',
         id: 'trash',
         label: 'Trash',
         to: '/trash',
@@ -98,6 +128,22 @@ const SCREEN_CHROME_RULES = [
   {
     metaText: 'Pinned',
     matches: (pathname) => pathname === '/notes/pinned',
+  },
+  {
+    metaText: 'Sources',
+    matches: (pathname) => pathname === '/sources/inbox',
+  },
+  {
+    metaText: 'Reading',
+    matches: (pathname) => pathname === '/sources/reading',
+  },
+  {
+    metaText: 'Archive',
+    matches: (pathname) => pathname === '/sources/archive',
+  },
+  {
+    metaText: 'Capture Review',
+    matches: (pathname) => pathname === '/wizard/capture',
   },
   {
     metaText: 'Settings',
@@ -146,6 +192,23 @@ const BACK_NAVIGATION_RULES = [
     label: 'Library',
     matches: (pathname) => pathname.startsWith('/items/'),
     to: '/items',
+  },
+  {
+    label: 'Sources',
+    matches: (pathname) =>
+      pathname === '/sources/reading' ||
+      pathname === '/sources/archive',
+    to: '/sources/inbox',
+  },
+  {
+    label: 'Sources',
+    matches: (pathname) => pathname.startsWith('/sources/') && pathname.split('/').length === 4,
+    to: '/sources/inbox',
+  },
+  {
+    label: 'Now',
+    matches: (pathname) => pathname === '/wizard/capture',
+    to: '/',
   },
   {
     label: 'Now',
@@ -229,6 +292,10 @@ export function isWritingEditorPath(pathname) {
     pathname.startsWith('/items/') ||
     pathname.startsWith('/settings/templates/')
   );
+}
+
+export function isSourceViewerPath(pathname) {
+  return pathname.startsWith('/sources/') && pathname.split('/').length === 3;
 }
 
 export function isTemplateEditorPath(pathname) {

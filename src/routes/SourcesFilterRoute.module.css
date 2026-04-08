@@ -1,0 +1,166 @@
+.sourcesFilterRoute {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.sourcesFilterRoute__header {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.sourcesFilterRoute__eyebrow {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.sourcesFilterRoute__title {
+  font-size: 2rem;
+  font-weight: 600;
+  line-height: 1;
+  margin: 0;
+}
+
+.sourcesFilterRoute__error {
+  color: var(--color-danger);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sourcesFilterRoute__empty {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sourcesFilterRoute__list {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sourcesFilterRoute__skeletonList {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sourcesFilterRoute__skeletonCard {
+  background: var(--color-surface-raised);
+  block-size: 5.5rem;
+  border: 1px solid var(--color-border-subtle);
+}
+
+/* Source card */
+
+.sourceCard {
+  align-items: stretch;
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: flex;
+  gap: 0;
+  min-block-size: 5.5rem;
+  overflow: hidden;
+  text-align: left;
+  width: 100%;
+}
+
+.sourceCard:hover {
+  border-color: var(--color-border-card);
+}
+
+.sourceCard:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.sourceCard__thumbnail {
+  flex-shrink: 0;
+  inline-size: 5.5rem;
+  overflow: hidden;
+  position: relative;
+}
+
+.sourceCard__thumbnailImg {
+  block-size: 100%;
+  inline-size: 100%;
+  object-fit: cover;
+}
+
+.sourceCard__thumbnailPlaceholder {
+  background: var(--color-surface-raised);
+  block-size: 100%;
+  flex-shrink: 0;
+  inline-size: 5.5rem;
+}
+
+.sourceCard__body {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 0.3rem;
+  min-inline-size: 0;
+  padding: 0.75rem 1rem;
+}
+
+.sourceCard__source {
+  align-items: center;
+  display: flex;
+  gap: 0.35rem;
+  min-inline-size: 0;
+}
+
+.sourceCard__favicon {
+  border-radius: 2px;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.sourceCard__siteName {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sourceCard__title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.3;
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.sourceCard__meta {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.sourceCard__typeBadge {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.1rem 0.4rem;
+  text-transform: uppercase;
+}
+
+.sourceCard__date {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}

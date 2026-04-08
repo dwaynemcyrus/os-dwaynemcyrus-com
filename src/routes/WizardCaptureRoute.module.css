@@ -1,0 +1,204 @@
+.wizardCaptureRoute {
+  display: grid;
+  gap: 1.5rem;
+  max-inline-size: 40rem;
+}
+
+.wizardCaptureRoute__skeleton {
+  background: var(--color-surface-raised);
+  block-size: 10rem;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.wizardCaptureRoute__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.wizardCaptureRoute__progress {
+  color: var(--color-text-muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  margin: 0;
+}
+
+.wizardCaptureRoute__error {
+  color: var(--color-danger);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.wizardCaptureRoute__actionMessage {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+/* Current capture card */
+
+.wizardCaptureRoute__card {
+  border: 1px solid var(--color-border-card);
+  display: grid;
+  gap: 0.5rem;
+  padding: 1.25rem 1rem;
+}
+
+.wizardCaptureRoute__captureText {
+  font-size: 1.05rem;
+  line-height: 1.5;
+  margin: 0;
+  overflow-wrap: break-word;
+  word-break: break-all;
+}
+
+.wizardCaptureRoute__captureDate {
+  color: var(--color-text-muted);
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+/* Actions */
+
+.wizardCaptureRoute__actions {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.wizardCaptureRoute__action {
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.95rem;
+  min-block-size: 3rem;
+  padding: 0 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+.wizardCaptureRoute__action:hover {
+  border-color: var(--color-text-primary);
+}
+
+.wizardCaptureRoute__action:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.wizardCaptureRoute__action:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.wizardCaptureRoute__action--primary {
+  background: var(--color-text-primary);
+  border-color: var(--color-text-primary);
+  color: var(--color-surface-base);
+  font-weight: 600;
+}
+
+.wizardCaptureRoute__action--primary:hover {
+  opacity: 0.85;
+}
+
+.wizardCaptureRoute__action--danger {
+  color: var(--color-danger);
+}
+
+.wizardCaptureRoute__action--danger:hover {
+  border-color: var(--color-danger);
+}
+
+/* Done state */
+
+.wizardCaptureRoute__done {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.wizardCaptureRoute__doneTitle {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.wizardCaptureRoute__doneSubtitle {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.wizardCaptureRoute__doneButton {
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  justify-self: start;
+  min-block-size: 2.5rem;
+  padding: 0 1rem;
+}
+
+/* List view */
+
+.wizardCaptureRoute__list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.wizardCaptureRoute__listTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.wizardCaptureRoute__listItems {
+  display: grid;
+  gap: 0.5rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.wizardCaptureRoute__listItem {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: grid;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+.wizardCaptureRoute__listItem--active {
+  border-color: var(--color-text-primary);
+}
+
+.wizardCaptureRoute__listItem:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.wizardCaptureRoute__listItemText {
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.wizardCaptureRoute__listItemDate {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+}

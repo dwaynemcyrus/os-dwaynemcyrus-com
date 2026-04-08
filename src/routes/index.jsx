@@ -283,18 +283,27 @@ export const indexRoute = createRoute({
             <span className={styles.homeRoute__rowValue}>{workbenchCountValue}</span>
           </button>
 
-          <button
-            className={styles.homeRoute__row}
-            onClick={() => {
-              void navigate({
-                to: '/inbox',
-              });
-            }}
-            type="button"
-          >
-            <span className={styles.homeRoute__rowLabel}>Inbox</span>
-            <span className={styles.homeRoute__rowValue}>{inboxCountValue}</span>
-          </button>
+          <div className={styles.homeRoute__inboxRow}>
+            <button
+              className={`${styles.homeRoute__row} ${styles['homeRoute__row--inboxNav']}`}
+              onClick={() => {
+                void navigate({ to: '/inbox' });
+              }}
+              type="button"
+            >
+              <span className={styles.homeRoute__rowLabel}>Inbox</span>
+              <span className={styles.homeRoute__rowValue}>{inboxCountValue}</span>
+            </button>
+            <button
+              className={styles.homeRoute__captureReview}
+              onClick={() => {
+                void navigate({ to: '/wizard/capture' });
+              }}
+              type="button"
+            >
+              Capture Review
+            </button>
+          </div>
         </div>
 
         {isWorkbenchDialogOpen ? (
