@@ -22,6 +22,20 @@ function formatCaptureDate(value) {
   }).format(new Date(value));
 }
 
+function writeItemHistory(itemId, userId, content, changeType, frontmatter) {
+  supabase
+    .from('item_history')
+    .insert({
+      item_id: itemId,
+      user_id: userId,
+      content: content ?? '',
+      change_type: changeType,
+      frontmatter: frontmatter ?? null,
+    })
+    .then(() => {})
+    .catch(() => {});
+}
+
 // GTD decision tree — each step is one question with a set of options.
 // option.next   → advance to that step
 // option.action → terminal: execute an action and process the capture
@@ -30,7 +44,7 @@ const STEP_TREE = {
   actionable: {
     question: 'Is this actionable?',
     subtitle: 'Do you need to do something about this?',
-    back: null,
+    back: 'review',
     options: [
       {
         id: 'no',
@@ -118,7 +132,7 @@ const STEP_TREE = {
   },
 };
 
-const FIRST_STEP = 'actionable';
+const FIRST_STEP = 'review';
 
 export const wizardCaptureRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -129,6 +143,7 @@ export const wizardCaptureRoute = createRoute({
     const [captures, setCaptures] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [step, setStep] = useState(FIRST_STEP);
+    const [titleDraft, setTitleDraft] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isProcessing, setIsProcessing] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
@@ -182,6 +197,15 @@ export const wizardCaptureRoute = createRoute({
     }, [auth.user?.id]);
 
     useEffect(() => {
+      const capture = captures[currentIndex];
+      if (!capture) {
+        setTitleDraft('');
+        return;
+      }
+      setTitleDraft(capture.title || capture.content?.slice(0, 80) || '');
+    }, [captures, currentIndex]);
+
+    useEffect(() => {
       if (!actionMessage) return;
       const t = window.setTimeout(() => setActionMessage(''), 2500);
       return () => window.clearTimeout(t);
@@ -202,6 +226,37 @@ export const wizardCaptureRoute = createRoute({
       if (currentStep?.back) {
         setStep(currentStep.back);
         setErrorMessage('');
+      }
+    }
+
+    async function handleKeep() {
+      if (!auth.user?.id) return;
+
+      const capture = captures[currentIndex];
+      if (!capture) return;
+
+      setIsProcessing(true);
+      setErrorMessage('');
+
+      try {
+        const title = titleDraft.trim() || capture.content?.slice(0, 80) || '';
+
+        if (title !== (capture.title || '')) {
+          const { error } = await supabase
+            .from('items')
+            .update({ title })
+            .eq('id', capture.id)
+            .eq('user_id', auth.user.id);
+          if (error) throw error;
+        }
+
+        writeItemHistory(capture.id, auth.user.id, capture.content, 'updated', { title });
+
+        setStep('actionable');
+      } catch (error) {
+        setErrorMessage(error.message ?? 'Unable to keep capture.');
+      } finally {
+        setIsProcessing(false);
       }
     }
 
@@ -233,6 +288,10 @@ export const wizardCaptureRoute = createRoute({
           }
         }
 
+        writeItemHistory(capture.id, auth.user.id, capture.content, 'updated', {
+          processed_as: 'source',
+        });
+
         window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
         advanceToNext();
       } catch (error) {
@@ -258,6 +317,8 @@ export const wizardCaptureRoute = createRoute({
           .eq('user_id', auth.user.id);
 
         if (error) throw error;
+
+        writeItemHistory(capture.id, auth.user.id, capture.content, 'trashed', null);
 
         setActionMessage('Deleted.');
         window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
@@ -319,6 +380,13 @@ export const wizardCaptureRoute = createRoute({
           <p className={styles.wizardCaptureRoute__progress}>
             {position} of {total}
           </p>
+          <button
+            className={styles.wizardCaptureRoute__stopButton}
+            onClick={() => void navigate({ to: '/' })}
+            type="button"
+          >
+            Stop
+          </button>
         </header>
 
         {actionMessage ? (
@@ -380,58 +448,121 @@ export const wizardCaptureRoute = createRoute({
               ) : null}
             </div>
 
-            <section className={styles.wizardCaptureRoute__step}>
-              <header className={styles.wizardCaptureRoute__stepHeader}>
-                {currentStep?.back ? (
-                  <button
-                    className={styles.wizardCaptureRoute__backButton}
-                    onClick={handleStepBack}
-                    type="button"
-                  >
-                    ← Back
-                  </button>
-                ) : null}
-                <h2 className={styles.wizardCaptureRoute__stepQuestion}>
-                  {currentStep?.question}
-                </h2>
-                {currentStep?.subtitle ? (
+            {step === 'review' ? (
+              <section className={styles.wizardCaptureRoute__step}>
+                <header className={styles.wizardCaptureRoute__stepHeader}>
+                  <h2 className={styles.wizardCaptureRoute__stepQuestion}>
+                    Set a title
+                  </h2>
                   <p className={styles.wizardCaptureRoute__stepSubtitle}>
-                    {currentStep.subtitle}
+                    Give this capture a short, clear title before processing it.
                   </p>
-                ) : null}
-              </header>
+                </header>
 
-              <ul className={styles.wizardCaptureRoute__optionList}>
-                {currentStep?.options.map((option) => (
-                  <li key={option.id}>
+                <div className={styles.wizardCaptureRoute__titleField}>
+                  <label
+                    className={styles.wizardCaptureRoute__titleLabel}
+                    htmlFor="wizard-title"
+                  >
+                    Title
+                  </label>
+                  <input
+                    className={styles.wizardCaptureRoute__titleInput}
+                    disabled={isProcessing}
+                    id="wizard-title"
+                    onChange={(e) => setTitleDraft(e.target.value)}
+                    type="text"
+                    value={titleDraft}
+                  />
+                </div>
+
+                <ul className={styles.wizardCaptureRoute__optionList}>
+                  <li>
                     <button
-                      className={`${styles.wizardCaptureRoute__option} ${
-                        option.primary ? styles['wizardCaptureRoute__option--primary'] : ''
-                      } ${
-                        option.action === 'delete' ? styles['wizardCaptureRoute__option--danger'] : ''
-                      } ${
-                        option.soon ? styles['wizardCaptureRoute__option--soon'] : ''
-                      }`}
-                      disabled={isProcessing || Boolean(option.soon)}
-                      onClick={() => handleOption(option)}
+                      className={`${styles.wizardCaptureRoute__option} ${styles['wizardCaptureRoute__option--primary']}`}
+                      disabled={isProcessing}
+                      onClick={() => void handleKeep()}
                       type="button"
                     >
                       <span className={styles.wizardCaptureRoute__optionLabel}>
-                        {option.label}
-                        {option.soon ? (
-                          <span className={styles.wizardCaptureRoute__soonBadge}>
-                            SOON
-                          </span>
-                        ) : null}
+                        Keep
                       </span>
                       <span className={styles.wizardCaptureRoute__optionDesc}>
-                        {option.description}
+                        Save the title and continue processing.
                       </span>
                     </button>
                   </li>
-                ))}
-              </ul>
-            </section>
+                  <li>
+                    <button
+                      className={`${styles.wizardCaptureRoute__option} ${styles['wizardCaptureRoute__option--danger']}`}
+                      disabled={isProcessing}
+                      onClick={() => void handleDelete()}
+                      type="button"
+                    >
+                      <span className={styles.wizardCaptureRoute__optionLabel}>
+                        Delete
+                      </span>
+                      <span className={styles.wizardCaptureRoute__optionDesc}>
+                        Remove it completely.
+                      </span>
+                    </button>
+                  </li>
+                </ul>
+              </section>
+            ) : (
+              <section className={styles.wizardCaptureRoute__step}>
+                <header className={styles.wizardCaptureRoute__stepHeader}>
+                  {currentStep?.back ? (
+                    <button
+                      className={styles.wizardCaptureRoute__backButton}
+                      onClick={handleStepBack}
+                      type="button"
+                    >
+                      ← Back
+                    </button>
+                  ) : null}
+                  <h2 className={styles.wizardCaptureRoute__stepQuestion}>
+                    {currentStep?.question}
+                  </h2>
+                  {currentStep?.subtitle ? (
+                    <p className={styles.wizardCaptureRoute__stepSubtitle}>
+                      {currentStep.subtitle}
+                    </p>
+                  ) : null}
+                </header>
+
+                <ul className={styles.wizardCaptureRoute__optionList}>
+                  {currentStep?.options.map((option) => (
+                    <li key={option.id}>
+                      <button
+                        className={`${styles.wizardCaptureRoute__option} ${
+                          option.primary ? styles['wizardCaptureRoute__option--primary'] : ''
+                        } ${
+                          option.action === 'delete' ? styles['wizardCaptureRoute__option--danger'] : ''
+                        } ${
+                          option.soon ? styles['wizardCaptureRoute__option--soon'] : ''
+                        }`}
+                        disabled={isProcessing || Boolean(option.soon)}
+                        onClick={() => handleOption(option)}
+                        type="button"
+                      >
+                        <span className={styles.wizardCaptureRoute__optionLabel}>
+                          {option.label}
+                          {option.soon ? (
+                            <span className={styles.wizardCaptureRoute__soonBadge}>
+                              SOON
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className={styles.wizardCaptureRoute__optionDesc}>
+                          {option.description}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            )}
           </>
         ) : null}
       </div>

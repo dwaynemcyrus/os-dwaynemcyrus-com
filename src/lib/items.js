@@ -1116,8 +1116,8 @@ export async function fetchUnprocessedInboxItems(userId) {
     .eq('type', 'inbox')
     .eq('status', 'unprocessed')
     .is('date_trashed', null)
-    .order('date_created', { ascending: false, nullsFirst: false })
-    .order('date_modified', { ascending: false, nullsFirst: false });
+    .order('date_created', { ascending: true, nullsFirst: false })
+    .order('date_modified', { ascending: true, nullsFirst: false });
 
   if (error) {
     throw error;

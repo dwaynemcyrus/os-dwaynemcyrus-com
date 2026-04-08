@@ -23,6 +23,26 @@
   margin: 0;
 }
 
+.wizardCaptureRoute__stopButton {
+  background: transparent;
+  border: none;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  padding: 0;
+}
+
+.wizardCaptureRoute__stopButton:hover {
+  color: var(--color-text-primary);
+}
+
+.wizardCaptureRoute__stopButton:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 2px;
+}
+
 .wizardCaptureRoute__error {
   color: var(--color-danger);
   line-height: 1.5;
@@ -60,6 +80,39 @@
   color: var(--color-text-muted);
   font-size: 0.8rem;
   margin: 0;
+}
+
+/* Review step (Step 0) */
+
+.wizardCaptureRoute__titleField {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.wizardCaptureRoute__titleLabel {
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+.wizardCaptureRoute__titleInput {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.95rem;
+  padding: 0.6rem 0.75rem;
+  width: 100%;
+}
+
+.wizardCaptureRoute__titleInput:focus {
+  border-color: var(--color-border-card);
+  outline: none;
+}
+
+.wizardCaptureRoute__titleInput:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
 }
 
 /* Step */
