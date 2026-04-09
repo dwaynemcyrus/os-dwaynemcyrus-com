@@ -16,6 +16,7 @@ import { sourcesFilterRoute } from '../routes/sources.$filter';
 import { sourcesIdRoute } from '../routes/sources.$id';
 import { wizardCaptureRoute } from '../routes/wizard.capture';
 import { settingsDailyNoteRoute } from '../routes/settings.daily-note';
+import { settingsLibraryRoute } from '../routes/settings.library';
 import { settingsIndexRoute } from '../routes/settings.index';
 import { settingsKeyboardShortcutsRoute } from '../routes/settings.keyboard-shortcuts';
 import { settingsSlashCommandsRoute } from '../routes/settings.slash-commands';
@@ -36,6 +37,7 @@ const protectedRouteTree = authenticatedRoute.addChildren([
   wizardCaptureRoute,
   settingsIndexRoute,
   settingsDailyNoteRoute,
+  settingsLibraryRoute,
   settingsKeyboardShortcutsRoute,
   settingsSlashCommandsRoute,
   templatesRoute,

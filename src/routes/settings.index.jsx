@@ -7,6 +7,12 @@ import { authenticatedRoute } from './_authenticated';
 
 const SETTINGS_ROWS = [
   {
+    id: 'library',
+    label: 'Library',
+    meta: 'Browse and search all items.',
+    to: '/settings/library',
+  },
+  {
     id: 'daily-note',
     label: 'Daily Note',
     meta: 'Choose the template used by Today’s Note.',
