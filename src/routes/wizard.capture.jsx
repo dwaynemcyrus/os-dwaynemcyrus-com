@@ -7,6 +7,7 @@ import { normalizeFilenameValue } from '../lib/frontmatter';
 import {
   enrichSourceWithMetadata,
   isLikelyUrl,
+  normalizeUrl,
 } from '../lib/sources';
 import { supabase } from '../lib/supabase';
 import { authenticatedRoute } from './_authenticated';
@@ -789,7 +790,52 @@ export const wizardCaptureRoute = createRoute({
         if (selections.medium) updatePayload.source_type = selections.medium;
 
         const urlTrimmed = selections.url?.trim() || '';
-        if (urlTrimmed) updatePayload.url = urlTrimmed;
+        const normalizedUrlValue = urlTrimmed ? normalizeUrl(urlTrimmed) : null;
+
+        // Dedup check for sources with a URL
+        if (
+          selections.type === 'reference' &&
+          selections.subtype === 'source' &&
+          normalizedUrlValue
+        ) {
+          const { data: existing } = await supabase
+            .from('items')
+            .select('id,status')
+            .eq('user_id', auth.user.id)
+            .eq('normalized_url', normalizedUrlValue)
+            .neq('id', capture.id)
+            .is('date_trashed', null)
+            .maybeSingle();
+
+          if (existing) {
+            if (existing.status === 'archived') {
+              await supabase
+                .from('items')
+                .update({ status: 'backlog', date_modified: now })
+                .eq('id', existing.id)
+                .eq('user_id', auth.user.id);
+            }
+            await supabase
+              .from('items')
+              .update({ date_trashed: now })
+              .eq('id', capture.id)
+              .eq('user_id', auth.user.id);
+
+            setActionMessage(
+              existing.status === 'archived'
+                ? 'Already archived — moved back to Sources inbox.'
+                : 'Already in Sources.',
+            );
+            window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
+            advanceToNext();
+            return;
+          }
+        }
+
+        if (urlTrimmed) {
+          updatePayload.url = urlTrimmed;
+          if (normalizedUrlValue) updatePayload.normalized_url = normalizedUrlValue;
+        }
 
         if (selections.author?.trim()) updatePayload.author = selections.author.trim();
 
