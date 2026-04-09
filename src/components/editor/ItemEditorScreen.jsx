@@ -159,7 +159,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     return {
       id: editorItem.id,
       subtype: editorItem.subtype ?? null,
-      title: getItemDisplayLabel(editorItem, editorItem.cuid),
+      title: getItemDisplayLabel(editorItem, editorItem.id),
       type: editorItem.type ?? null,
     };
   }

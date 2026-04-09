@@ -76,5 +76,5 @@ export function getItemDisplayLabel(item, fallbackValue = '') {
     return contentFirstLine;
   }
 
-  return normalizeTextValue(fallbackValue) || normalizeTextValue(item?.cuid);
+  return normalizeTextValue(fallbackValue);
 }

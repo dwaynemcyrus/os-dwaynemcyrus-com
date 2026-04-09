@@ -1,4 +1,3 @@
-import { createCuid } from './cuid';
 import {
   buildEditorMarkdownDocument,
   buildEditorMarkdownDocumentFromParts,
@@ -27,13 +26,11 @@ const TAG_ITEM_POOL_LIMIT = 200;
 const TAG_SUGGESTIONS_LIMIT = 10;
 export const HOME_WORKBENCH_LIMIT = 12;
 const ITEMS_ROUTE_LIMIT = 200;
-const MAX_CUID_RETRIES = 20;
 export const ITEMS_REFRESH_EVENT = 'personal-os:items-refresh';
 const TEMPLATE_DATE_TOKEN_PATTERN = /\{\{date(?::([^}]*))?\}\}/g;
 const TEMPLATE_TIME_TOKEN_PATTERN = /\{\{time(?::([^}]*))?\}\}/g;
 const TEMPLATE_TITLE_TOKEN_PATTERN = /\{\{title\}\}/g;
 const TEMPLATE_FORMAT_TOKEN_PATTERN = /YYYY|YY|MM|DD|HH|mm|ss|M|D|H|m|s/g;
-const LEGACY_CUID_TEMPLATE_TOKEN = '{{date:YYYYMMDD}}{{time:HHmmss}}';
 const TEMPLATE_VARIABLE_PATTERN = /\{\{[^}]+\}\}/;
 const MISSING_DAILY_TEMPLATE_ERROR_MESSAGE =
   'No daily template has been selected yet.';
@@ -105,11 +102,11 @@ function formatCapturePayload(rawValue) {
 }
 
 function buildCommandItemFieldsQuery() {
-  return 'id,cuid,type,subtype,title,filename,content,date_created,date_modified,is_template';
+  return 'id,type,subtype,title,filename,content,date_created,date_modified,is_template';
 }
 
 function buildInboxItemFieldsQuery() {
-  return 'id,cuid,type,subtype,title,filename,content,status,date_created,date_modified';
+  return 'id,type,subtype,title,filename,content,status,date_created,date_modified';
 }
 
 function buildEditorItemFieldsQuery() {
@@ -117,7 +114,7 @@ function buildEditorItemFieldsQuery() {
 }
 
 function buildEditorAutocompleteItemFieldsQuery() {
-  return 'id,cuid,title,filename,content,date_created,date_modified';
+  return 'id,title,filename,content,date_created,date_modified';
 }
 
 function buildWikilinkTargetFieldsQuery() {
@@ -125,31 +122,27 @@ function buildWikilinkTargetFieldsQuery() {
 }
 
 function buildManagedTemplateFieldsQuery() {
-  return 'id,cuid,type,subtype,title,filename,folder,content,date_created,date_modified,date_trashed,is_template,user_id';
+  return 'id,type,subtype,title,filename,folder,content,date_created,date_modified,date_trashed,is_template,user_id';
 }
 
 function buildTrashItemFieldsQuery() {
-  return 'id,cuid,type,subtype,title,filename,content,status,workbench,date_created,date_modified,date_trashed';
+  return 'id,type,subtype,title,filename,content,status,workbench,date_created,date_modified,date_trashed';
 }
 
 function buildDailyNoteFieldsQuery() {
-  return 'id,cuid,type,subtype,title,status,date_created,date_modified,date_field';
+  return 'id,type,subtype,title,status,date_created,date_modified,date_field';
 }
 
 function buildHomeWorkbenchFieldsQuery() {
-  return 'id,cuid,type,subtype,title,filename,content,workbench,date_created,date_modified';
+  return 'id,type,subtype,title,filename,content,workbench,date_created,date_modified';
 }
 
 function buildItemsIndexFieldsQuery() {
-  return 'id,cuid,type,subtype,title,filename,content,status,workbench,date_created,date_modified';
+  return 'id,type,subtype,title,filename,content,status,workbench,date_created,date_modified';
 }
 
 function buildNotesItemsFieldsQuery() {
-  return 'id,cuid,type,subtype,title,filename,content,date_created,date_modified,todos_open,todos_done,is_pinned';
-}
-
-function isCuidConflictError(error) {
-  return error?.code === '23505' && error?.message?.includes('cuid');
+  return 'id,type,subtype,title,filename,content,date_created,date_modified,todos_open,todos_done,is_pinned';
 }
 
 function isMissingSingleRowError(error) {
@@ -180,7 +173,6 @@ function sanitizeTemplateFields(templateItem) {
 
   delete templateFields.id;
   delete templateFields.user_id;
-  delete templateFields.cuid;
   delete templateFields.is_template;
   delete templateFields.created_at;
   delete templateFields.updated_at;
@@ -248,7 +240,6 @@ async function ensureFilenameIsUnique({
 }
 
 function buildClonedTemplatePayload({
-  collisionIndex,
   isTemplate,
   templateItem,
   timestamp,
@@ -258,7 +249,6 @@ function buildClonedTemplatePayload({
 
   return {
     ...templateFields,
-    cuid: createCuid(new Date(timestamp), collisionIndex),
     date_created: timestamp,
     date_modified: timestamp,
     date_trashed: null,
@@ -268,7 +258,6 @@ function buildClonedTemplatePayload({
 }
 
 function buildBlankTemplatePayload({
-  collisionIndex,
   createdAt,
   folder,
   userId,
@@ -277,7 +266,6 @@ function buildBlankTemplatePayload({
 
   return {
     content: '',
-    cuid: createCuid(createdAt, collisionIndex),
     date_created: timestamp,
     date_modified: timestamp,
     date_trashed: null,
@@ -349,9 +337,8 @@ function normalizeTemplateTitleValue(value) {
   return String(value ?? '').trim();
 }
 
-function applyTemplateTokens(text, { cuid, normalizedTitle, createdAt, dateFormat, timeFormat }) {
+function applyTemplateTokens(text, { normalizedTitle, createdAt, dateFormat, timeFormat }) {
   return text
-    .replaceAll(LEGACY_CUID_TEMPLATE_TOKEN, cuid)
     .replaceAll(TEMPLATE_TITLE_TOKEN_PATTERN, normalizedTitle)
     .replace(
       TEMPLATE_DATE_TOKEN_PATTERN,
@@ -367,7 +354,6 @@ function applyTemplateTokens(text, { cuid, normalizedTitle, createdAt, dateForma
 
 function materializeTemplateRawMarkdown({
   createdAt,
-  cuid,
   rawMarkdown,
   templateSettings,
   titleValue,
@@ -381,7 +367,6 @@ function materializeTemplateRawMarkdown({
     DEFAULT_TEMPLATE_TIME_FORMAT,
   );
   const tokenContext = {
-    cuid,
     normalizedTitle: normalizeTemplateTitleValue(titleValue),
     createdAt,
     dateFormat,
@@ -416,7 +401,6 @@ function buildMaterializedTemplateUpdatePayload({
   const modifiedAt = createdAt.toISOString();
   const materializedRawMarkdown = materializeTemplateRawMarkdown({
     createdAt,
-    cuid: baseItem.cuid,
     rawMarkdown: buildEditorMarkdownDocument(templateItem),
     templateSettings,
     titleValue,
@@ -549,55 +533,48 @@ async function createDailyNoteForDate({
   const timestamp = date.toISOString();
   const { dateField } = formatLocalDateParts(date);
 
-  for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
-    const baseItem = {
-      ...buildClonedTemplatePayload({
-        collisionIndex,
-        isTemplate: false,
-        templateItem,
-        timestamp,
-        userId,
-      }),
-      date_field: dateField,
-      folder: dailyNoteFolder || null,
-    };
-    const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
-      baseItem,
-      createdAt: date,
-      fallbackTitle: dateField,
+  const baseItem = {
+    ...buildClonedTemplatePayload({
+      isTemplate: false,
       templateItem,
-      templateSettings,
-      titleValue: dateField,
-    });
-
-    await ensureFilenameIsUnique({
-      filename: dateField,
+      timestamp,
       userId,
-    });
+    }),
+    date_field: dateField,
+    folder: dailyNoteFolder || null,
+  };
+  const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
+    baseItem,
+    createdAt: date,
+    fallbackTitle: dateField,
+    templateItem,
+    templateSettings,
+    titleValue: dateField,
+  });
 
-    const { data, error } = await supabase
-      .from('items')
-      .insert({
-        ...baseItem,
-        ...materializedTemplatePayload,
-        date_field: dateField,
-        filename: dateField,
-        folder: dailyNoteFolder || null,
-        title: dateField,
-      })
-      .select(buildDailyNoteFieldsQuery())
-      .single();
+  await ensureFilenameIsUnique({
+    filename: dateField,
+    userId,
+  });
 
-    if (!error) {
-      return data;
-    }
+  const { data, error } = await supabase
+    .from('items')
+    .insert({
+      ...baseItem,
+      ...materializedTemplatePayload,
+      date_field: dateField,
+      filename: dateField,
+      folder: dailyNoteFolder || null,
+      title: dateField,
+    })
+    .select(buildDailyNoteFieldsQuery())
+    .single();
 
-    if (!isCuidConflictError(error) || collisionIndex === MAX_CUID_RETRIES) {
-      throw error;
-    }
+  if (error) {
+    throw error;
   }
 
-  throw new Error('Unable to create today\'s daily note right now.');
+  return data;
 }
 
 export function getCapturePreview(rawValue) {
@@ -1169,27 +1146,20 @@ export async function createInboxItemFromCapture({ rawValue, userId }) {
     user_id: userId,
   };
 
-  for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
-    const { data, error } = await supabase
+  const { data, error } = await supabase
     .from('items')
     .insert({
       ...itemPayload,
-      cuid: createCuid(createdAt, collisionIndex),
       filename: capturePayload.filename,
     })
     .select(buildCommandItemFieldsQuery())
     .single();
 
-    if (!error) {
-      return data;
-    }
-
-    if (!isCuidConflictError(error) || collisionIndex === MAX_CUID_RETRIES) {
-      throw error;
-    }
+  if (error) {
+    throw error;
   }
 
-  throw new Error('Unable to create a unique timestamp id right now.');
+  return data;
 }
 
 export async function createItemFromTemplate({
@@ -1219,53 +1189,46 @@ export async function createItemFromTemplate({
   const createdAt = new Date();
   const timestamp = createdAt.toISOString();
 
-  for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
-    const baseItem = buildClonedTemplatePayload({
-      collisionIndex,
-      isTemplate: false,
-      templateItem,
-      timestamp,
-      userId,
-    });
-    const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
-      baseItem,
-      createdAt,
-      fallbackTitle: title,
-      templateItem,
-      templateSettings,
-      titleValue: title,
-    });
+  const baseItem = buildClonedTemplatePayload({
+    isTemplate: false,
+    templateItem,
+    timestamp,
+    userId,
+  });
+  const materializedTemplatePayload = buildMaterializedTemplateUpdatePayload({
+    baseItem,
+    createdAt,
+    fallbackTitle: title,
+    templateItem,
+    templateSettings,
+    titleValue: title,
+  });
 
-    if (!materializedTemplatePayload.filename) {
-      throw new Error(
-        'Add a title or filename with letters or numbers before creating this item.',
-      );
-    }
-
-    await ensureFilenameIsUnique({
-      filename: materializedTemplatePayload.filename,
-      userId,
-    });
-
-    const { data, error } = await supabase
-      .from('items')
-      .insert({
-        ...baseItem,
-        ...materializedTemplatePayload,
-      })
-      .select(buildCommandItemFieldsQuery())
-      .single();
-
-    if (!error) {
-      return data;
-    }
-
-    if (!isCuidConflictError(error) || collisionIndex === MAX_CUID_RETRIES) {
-      throw error;
-    }
+  if (!materializedTemplatePayload.filename) {
+    throw new Error(
+      'Add a title or filename with letters or numbers before creating this item.',
+    );
   }
 
-  throw new Error('Unable to create a unique timestamp id right now.');
+  await ensureFilenameIsUnique({
+    filename: materializedTemplatePayload.filename,
+    userId,
+  });
+
+  const { data, error } = await supabase
+    .from('items')
+    .insert({
+      ...baseItem,
+      ...materializedTemplatePayload,
+    })
+    .select(buildCommandItemFieldsQuery())
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 }
 
 export async function buildMaterializedTemplateMarkdown({
@@ -1278,7 +1241,6 @@ export async function buildMaterializedTemplateMarkdown({
 
   return materializeTemplateRawMarkdown({
     createdAt,
-    cuid: createCuid(createdAt),
     rawMarkdown: buildEditorMarkdownDocument(templateItem),
     templateSettings,
     titleValue,
@@ -1289,28 +1251,21 @@ export async function createBlankTemplate({ userId }) {
   const createdAt = new Date();
   const templateSettings = await fetchTemplateSettings({ userId });
 
-  for (let collisionIndex = 0; collisionIndex <= MAX_CUID_RETRIES; collisionIndex += 1) {
-    const { data, error } = await supabase
-      .from('items')
-      .insert(buildBlankTemplatePayload({
-        collisionIndex,
-        createdAt,
-        folder: templateSettings.folder,
-        userId,
-      }))
-      .select(buildManagedTemplateFieldsQuery())
-      .single();
+  const { data, error } = await supabase
+    .from('items')
+    .insert(buildBlankTemplatePayload({
+      createdAt,
+      folder: templateSettings.folder,
+      userId,
+    }))
+    .select(buildManagedTemplateFieldsQuery())
+    .single();
 
-    if (!error) {
-      return data;
-    }
-
-    if (!isCuidConflictError(error) || collisionIndex === MAX_CUID_RETRIES) {
-      throw error;
-    }
+  if (error) {
+    throw error;
   }
 
-  throw new Error('Unable to create a unique timestamp id right now.');
+  return data;
 }
 
 export async function processInboxItem({

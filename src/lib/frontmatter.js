@@ -87,7 +87,6 @@ const FRONTMATTER_DEFAULTS = {
 const AUTHORED_FRONTMATTER_STORAGE_KEY = '__personal_os_authored_frontmatter';
 
 const UNIVERSAL_FRONTMATTER_FIELDS = [
-  'cuid',
   'type',
   'subtype',
   'title',
@@ -102,7 +101,6 @@ const UNIVERSAL_FRONTMATTER_FIELDS = [
 ];
 
 const FRONTMATTER_FIELD_ORDER = [
-  'cuid',
   'type',
   'subtype',
   'title',
@@ -205,17 +203,14 @@ const FRONTMATTER_FIELD_ORDER = [
 
 const KNOWN_FRONTMATTER_FIELDS = new Set(FRONTMATTER_FIELD_ORDER);
 const PRESERVED_WHEN_OMITTED_FIELDS = new Set([
-  'cuid',
   'date_field',
   'date_created',
   'date_trashed',
 ]);
 const SYSTEM_MANAGED_FRONTMATTER_FIELDS = new Set([
-  'cuid',
   'date_trashed',
 ]);
 const TEMPLATE_TOKEN_ALLOWED_FIELDS = new Set([
-  'cuid',
   'title',
   'date_created',
   'date_modified',
@@ -282,11 +277,6 @@ function buildStoredAuthoredFrontmatter({
 
     if (!SYSTEM_MANAGED_FRONTMATTER_FIELDS.has(key)) {
       storedFrontmatter[key] = value;
-      return;
-    }
-
-    if (key === 'cuid') {
-      storedFrontmatter[key] = existingItem.cuid;
       return;
     }
 
@@ -755,10 +745,6 @@ function buildRawMarkdownDocumentParts({
 }
 
 function buildPersistedFieldValue(key, parsedFrontmatter, existingItem, modifiedAt) {
-  if (key === 'cuid') {
-    return existingItem.cuid;
-  }
-
   if (key === 'date_trashed') {
     return existingItem.date_trashed;
   }
@@ -892,12 +878,6 @@ export function mergeTemplateIntoEditorDocument({
     ...currentFrontmatter,
     ...templateFrontmatter,
   };
-
-  if (hasOwnValue(currentFrontmatter, 'cuid')) {
-    nextFrontmatter.cuid = currentFrontmatter.cuid;
-  } else {
-    delete nextFrontmatter.cuid;
-  }
 
   if (hasExistingScalarValue(currentFrontmatter.title)) {
     nextFrontmatter.title = currentFrontmatter.title;

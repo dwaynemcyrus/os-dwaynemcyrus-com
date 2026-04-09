@@ -3,7 +3,6 @@ begin;
 -- System templates seeded from docs/agents/schema-reference.md
 -- Explicit subtype lists in docs/agents/build-spec.md are treated as canonical.
 insert into public.items (
-  cuid,
   user_id,
   is_template,
   type,
@@ -107,7 +106,6 @@ insert into public.items (
 
 ) values
 (
-  'system-template-journal-daily',
   null,
   true,
   'journal',
@@ -203,7 +201,6 @@ insert into public.items (
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: journal
 subtype: daily
 title: "{{date:YYYY-MM-DD}}"
@@ -237,7 +234,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-journal-istikarah',
   null,
   true,
   'journal',
@@ -333,7 +329,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: journal
 subtype: istikarah
 title:
@@ -374,7 +369,6 @@ What did you notice and what does it mean?',
   '[]'::jsonb
 ),
 (
-  'system-template-journal-dream',
   null,
   true,
   'journal',
@@ -470,7 +464,6 @@ What did you notice and what does it mean?',
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: journal
 subtype: dream
 title:
@@ -502,7 +495,6 @@ What do you think this dream means?',
   '[]'::jsonb
 ),
 (
-  'system-template-journal-scratch',
   null,
   true,
   'journal',
@@ -598,7 +590,6 @@ What do you think this dream means?',
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: journal
 subtype: scratch
 title:
@@ -618,7 +609,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-journal-devlog',
   null,
   true,
   'journal',
@@ -714,7 +704,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: journal
 subtype: devlog
 title: "{{date:YYYY-MM-DD}}"
@@ -750,7 +739,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-creation-essay',
   null,
   true,
   'creation',
@@ -846,7 +834,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: essay
 title:
@@ -884,7 +871,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-creation-framework',
   null,
   true,
   'creation',
@@ -980,7 +966,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: framework
 title:
@@ -1031,7 +1016,6 @@ A concrete example of this framework in action.',
   '[]'::jsonb
 ),
 (
-  'system-template-creation-lesson',
   null,
   true,
   'creation',
@@ -1127,7 +1111,6 @@ A concrete example of this framework in action.',
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: lesson
 title:
@@ -1167,7 +1150,6 @@ How can the reader apply this insight in their own life?',
   '[]'::jsonb
 ),
 (
-  'system-template-creation-manuscript',
   null,
   true,
   'creation',
@@ -1263,7 +1245,6 @@ How can the reader apply this insight in their own life?',
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: manuscript
 title:
@@ -1320,7 +1301,6 @@ Any additional thoughts, research, or ideas.',
   '[]'::jsonb
 ),
 (
-  'system-template-creation-chapter',
   null,
   true,
   'creation',
@@ -1416,7 +1396,6 @@ Any additional thoughts, research, or ideas.',
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: chapter
 title:
@@ -1454,7 +1433,6 @@ One paragraph describing what this chapter covers.
   '[]'::jsonb
 ),
 (
-  'system-template-creation-comic',
   null,
   true,
   'creation',
@@ -1550,7 +1528,6 @@ One paragraph describing what this chapter covers.
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: comic
 title:
@@ -1611,7 +1588,6 @@ What is this issue about in one paragraph?
   '[]'::jsonb
 ),
 (
-  'system-template-creation-poem',
   null,
   true,
   'creation',
@@ -1707,7 +1683,6 @@ What is this issue about in one paragraph?
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: poem
 title:
@@ -1745,7 +1720,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-creation-story',
   null,
   true,
   'creation',
@@ -1841,7 +1815,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: story
 title:
@@ -1883,7 +1856,6 @@ What is this story about in one paragraph?
   '[]'::jsonb
 ),
 (
-  'system-template-creation-artwork',
   null,
   true,
   'creation',
@@ -1979,7 +1951,6 @@ What is this story about in one paragraph?
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: artwork
 title:
@@ -2033,7 +2004,6 @@ How was this made?
   '[]'::jsonb
 ),
 (
-  'system-template-creation-case_study',
   null,
   true,
   'creation',
@@ -2129,7 +2099,6 @@ How was this made?
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: case_study
 title:
@@ -2179,7 +2148,6 @@ What did you learn?',
   '[]'::jsonb
 ),
 (
-  'system-template-creation-workshop',
   null,
   true,
   'creation',
@@ -2275,7 +2243,6 @@ What did you learn?',
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: workshop
 title:
@@ -2329,7 +2296,6 @@ Post-event additions and observations.',
   '[]'::jsonb
 ),
 (
-  'system-template-creation-script',
   null,
   true,
   'creation',
@@ -2425,7 +2391,6 @@ Post-event additions and observations.',
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: creation
 subtype: script
 title:
@@ -2474,7 +2439,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-reference-slip',
   null,
   true,
   'reference',
@@ -2570,7 +2534,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: slip
 title:
@@ -2597,7 +2560,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-reference-identity',
   null,
   true,
   'reference',
@@ -2693,7 +2655,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: identity
 title:
@@ -2718,7 +2679,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-reference-principle',
   null,
   true,
   'reference',
@@ -2814,7 +2774,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: principle
 title:
@@ -2843,7 +2802,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-reference-directive',
   null,
   true,
   'reference',
@@ -2939,7 +2897,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: directive
 title:
@@ -2969,7 +2926,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-reference-source',
   null,
   true,
   'reference',
@@ -3065,7 +3021,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: source
 title:
@@ -3106,7 +3061,6 @@ A 1-3 paragraph summary of the source in your own words.
   '[]'::jsonb
 ),
 (
-  'system-template-reference-literature',
   null,
   true,
   'reference',
@@ -3202,7 +3156,6 @@ A 1-3 paragraph summary of the source in your own words.
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: literature
 title:
@@ -3233,7 +3186,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-reference-quote',
   null,
   true,
   'reference',
@@ -3329,7 +3281,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: quote
 title:
@@ -3354,7 +3305,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-reference-guide',
   null,
   true,
   'reference',
@@ -3450,7 +3400,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: guide
 title:
@@ -3487,7 +3436,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-reference-offer',
   null,
   true,
   'reference',
@@ -3583,7 +3531,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: offer
 title:
@@ -3629,7 +3576,6 @@ How is this offer delivered?
   '[]'::jsonb
 ),
 (
-  'system-template-reference-asset',
   null,
   true,
   'reference',
@@ -3725,7 +3671,6 @@ How is this offer delivered?
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: asset
 title:
@@ -3753,7 +3698,6 @@ When and how to use this asset.',
   '[]'::jsonb
 ),
 (
-  'system-template-reference-software',
   null,
   true,
   'reference',
@@ -3849,7 +3793,6 @@ When and how to use this asset.',
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: software
 title:
@@ -3889,7 +3832,6 @@ What does this software do?
   '[]'::jsonb
 ),
 (
-  'system-template-reference-course',
   null,
   true,
   'reference',
@@ -3985,7 +3927,6 @@ What does this software do?
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: course
 title:
@@ -4031,7 +3972,6 @@ What is this course about?
   '[]'::jsonb
 ),
 (
-  'system-template-reference-module',
   null,
   true,
   'reference',
@@ -4127,7 +4067,6 @@ What is this course about?
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: reference
 subtype: module
 title:
@@ -4165,7 +4104,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-log-habit',
   null,
   true,
   'log',
@@ -4261,7 +4199,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: log
 subtype: habit
 title:
@@ -4291,7 +4228,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-log-goal',
   null,
   true,
   'log',
@@ -4387,7 +4323,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: log
 subtype: goal
 title:
@@ -4447,7 +4382,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-log-finance',
   null,
   true,
   'log',
@@ -4543,7 +4477,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: log
 subtype: finance
 title:
@@ -4589,7 +4522,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-log-contact',
   null,
   true,
   'log',
@@ -4685,7 +4617,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: log
 subtype: contact
 title:
@@ -4730,7 +4661,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-log-outreach',
   null,
   true,
   'log',
@@ -4826,7 +4756,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: log
 subtype: outreach
 title:
@@ -4860,7 +4789,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-review-weekly',
   null,
   true,
   'review',
@@ -4956,7 +4884,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: review
 subtype: weekly
 title:
@@ -5000,7 +4927,6 @@ What didn''t work and why?
   '[]'::jsonb
 ),
 (
-  'system-template-review-monthly',
   null,
   true,
   'review',
@@ -5096,7 +5022,6 @@ What didn''t work and why?
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: review
 subtype: monthly
 title:
@@ -5139,7 +5064,6 @@ What didn''t work and why?
   '[]'::jsonb
 ),
 (
-  'system-template-review-yearly',
   null,
   true,
   'review',
@@ -5235,7 +5159,6 @@ What didn''t work and why?
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: review
 subtype: yearly
 title:
@@ -5316,7 +5239,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-review-area',
   null,
   true,
   'review',
@@ -5412,7 +5334,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: review
 subtype: area
 title:
@@ -5472,7 +5393,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-action-task',
   null,
   true,
   'action',
@@ -5568,7 +5488,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: action
 subtype: task
 title:
@@ -5598,7 +5517,6 @@ tags:
   '[]'::jsonb
 ),
 (
-  'system-template-action-project',
   null,
   true,
   'action',
@@ -5694,7 +5612,6 @@ tags:
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: action
 subtype: project
 title:
@@ -5736,7 +5653,6 @@ What does done look like?
   '[]'::jsonb
 ),
 (
-  'system-template-inbox',
   null,
   true,
   'inbox',
@@ -5832,7 +5748,6 @@ What does done look like?
   null,
   null,
   '---
-cuid: "{{date:YYYYMMDD}}{{time:HHmmss}}"
 type: inbox
 subtype:
 title:
@@ -5855,107 +5770,6 @@ tags:
   null,
   '[]'::jsonb
 )
-on conflict (cuid) do update set
-  user_id = excluded.user_id,
-  is_template = excluded.is_template,
-  type = excluded.type,
-  subtype = excluded.subtype,
-  title = excluded.title,
-  status = excluded.status,
-  access = excluded.access,
-  area = excluded.area,
-  workbench = excluded.workbench,
-  resources = excluded.resources,
-  dependencies = excluded.dependencies,
-  blocked = excluded.blocked,
-  slug = excluded.slug,
-  published = excluded.published,
-  tier = excluded.tier,
-  growth = excluded.growth,
-  rating = excluded.rating,
-  series = excluded.series,
-  series_position = excluded.series_position,
-  format = excluded.format,
-  medium = excluded.medium,
-  genre = excluded.genre,
-  platform = excluded.platform,
-  collection = excluded.collection,
-  source = excluded.source,
-  chains = excluded.chains,
-  manuscript = excluded.manuscript,
-  project = excluded.project,
-  principle = excluded.principle,
-  course = excluded.course,
-  asset_type = excluded.asset_type,
-  contact_type = excluded.contact_type,
-  contact_status = excluded.contact_status,
-  contacted_last = excluded.contacted_last,
-  next_follow_up = excluded.next_follow_up,
-  deal_status = excluded.deal_status,
-  deal_value = excluded.deal_value,
-  institution = excluded.institution,
-  instructor = excluded.instructor,
-  url = excluded.url,
-  isbn = excluded.isbn,
-  bookmark = excluded.bookmark,
-  repo = excluded.repo,
-  stack = excluded.stack,
-  modules = excluded.modules,
-  be_and_feel = excluded.be_and_feel,
-  for_sale = excluded.for_sale,
-  price = excluded.price,
-  currency = excluded.currency,
-  sold = excluded.sold,
-  exhibited = excluded.exhibited,
-  dimensions = excluded.dimensions,
-  year = excluded.year,
-  outcome = excluded.outcome,
-  problem = excluded.problem,
-  solution = excluded.solution,
-  delivery = excluded.delivery,
-  lag_measure = excluded.lag_measure,
-  lag_target = excluded.lag_target,
-  lag_unit = excluded.lag_unit,
-  lag_actual = excluded.lag_actual,
-  score_overall = excluded.score_overall,
-  week = excluded.week,
-  month = excluded.month,
-  theme = excluded.theme,
-  date_delivered = excluded.date_delivered,
-  recording_link = excluded.recording_link,
-  attendees = excluded.attendees,
-  duration_target = excluded.duration_target,
-  episode = excluded.episode,
-  season = excluded.season,
-  cover_link = excluded.cover_link,
-  cover_alt_text = excluded.cover_alt_text,
-  certificate_link = excluded.certificate_link,
-  unit = excluded.unit,
-  target = excluded.target,
-  frequency = excluded.frequency,
-  total_sent = excluded.total_sent,
-  total_comments = excluded.total_comments,
-  total_responses = excluded.total_responses,
-  currency_primary = excluded.currency_primary,
-  currency_secondary = excluded.currency_secondary,
-  month_revenue_chf = excluded.month_revenue_chf,
-  month_expenses_chf = excluded.month_expenses_chf,
-  month_profit_chf = excluded.month_profit_chf,
-  date_field = excluded.date_field,
-  mood = excluded.mood,
-  chapter_count = excluded.chapter_count,
-  issue = excluded.issue,
-  author = excluded.author,
-  subtitle = excluded.subtitle,
-  description = excluded.description,
-  date_start = excluded.date_start,
-  date_end = excluded.date_end,
-  content = excluded.content,
-  frontmatter = excluded.frontmatter,
-  date_created = excluded.date_created,
-  date_modified = excluded.date_modified,
-  date_trashed = excluded.date_trashed,
-  tags = excluded.tags
 ;
 
 commit;

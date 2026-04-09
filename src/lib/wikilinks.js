@@ -93,7 +93,7 @@ function buildTargetsByNormalizedTitle(targetItems) {
   const targetsByNormalizedTitle = new Map();
 
   targetItems.forEach((item) => {
-    const resolvedLabel = getItemDisplayLabel(item, item.cuid);
+    const resolvedLabel = getItemDisplayLabel(item, item.id);
     const normalizedTitle = normalizeWikilinkLabel(resolvedLabel);
 
     if (!normalizedTitle) {
@@ -104,7 +104,7 @@ function buildTargetsByNormalizedTitle(targetItems) {
     currentTargets.push({
       id: item.id,
       subtype: item.subtype ?? null,
-      title: getItemDisplayLabel(item, item.cuid),
+      title: getItemDisplayLabel(item, item.id),
       type: item.type ?? null,
     });
     targetsByNormalizedTitle.set(normalizedTitle, currentTargets);
@@ -237,7 +237,7 @@ export function buildBacklinkGroups({
       mentionsGroup.push({
         itemId: item.id,
         subtype: item.subtype ?? null,
-        title: getItemDisplayLabel(item, item.cuid),
+        title: getItemDisplayLabel(item, item.id),
         type: item.type ?? null,
       });
       groupedBacklinks.set(WIKILINK_GROUP_BODY, mentionsGroup);
@@ -252,7 +252,7 @@ export function buildBacklinkGroups({
       propertyGroup.push({
         itemId: item.id,
         subtype: item.subtype ?? null,
-        title: getItemDisplayLabel(item, item.cuid),
+        title: getItemDisplayLabel(item, item.id),
         type: item.type ?? null,
       });
       groupedBacklinks.set(propertyName, propertyGroup);
