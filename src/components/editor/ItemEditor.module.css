@@ -22,6 +22,7 @@
   block-size: 100%;
   font-family: var(--font-family-mono);
   font-feature-settings: 'liga' 1, 'calt' 1;
+  font-weight: 300;
   font-variant-ligatures: common-ligatures contextual;
   min-block-size: 0;
   overflow: auto;
