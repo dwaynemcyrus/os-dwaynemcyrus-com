@@ -1,5 +1,6 @@
 import {
   createElement,
+  useCallback,
   useEffect,
   useEffectEvent,
   useMemo,
@@ -12,7 +13,7 @@ import { ItemEditor } from './ItemEditor';
 import { AppDialog } from '../ui/AppDialog';
 import { useAuth } from '../../lib/auth';
 import { useAppChrome } from '../../lib/app-chrome';
-import { useCommandContext } from '../../lib/command-context';
+import { useCommandContext, useRegisterCommands } from '../../lib/command-context';
 import {
   buildTitleFromFilename,
   formatFilenameForDisplay,
@@ -26,6 +27,7 @@ import {
   replaceEditorFrontmatterField,
 } from '../../lib/frontmatter';
 import {
+  buildMaterializedTemplateMarkdown,
   fetchEditorItem,
   fetchItemBacklinkGroups,
   fetchTagSuggestions,
@@ -74,10 +76,17 @@ function getFilenameDialogValue({ currentFilename, currentTitle }) {
   );
 }
 
+function formatTemplateLabel(item) {
+  return getItemDisplayLabel(
+    item,
+    item.subtype ? item.subtype.replaceAll('_', ' ') : 'Untitled template',
+  );
+}
+
 export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const auth = useAuth();
   const navigate = useNavigate();
-  const { setInsertTemplateTarget } = useCommandContext();
+  const { templateItems } = useCommandContext();
   const [item, setItem] = useState(null);
   const [draftValue, setDraftValue] = useState('');
   const [lastSavedValue, setLastSavedValue] = useState('');
@@ -484,51 +493,62 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     });
   }
 
-  useEffect(() => {
-    if (isReadOnlyTemplate) {
-      setInsertTemplateTarget(null);
-      return undefined;
+  const handleInsertTemplate = useCallback(async (templateItem) => {
+    if (!auth.user?.id) {
+      setSaveErrorMessage('Your session is missing a user id.');
+      return;
     }
 
-    setInsertTemplateTarget({
-      getTemplateContext() {
-        const draftDocument = parseEditorMarkdownDocument(draftValueRef.current, {
-          allowIncompleteFrontmatter: true,
-        });
-        const currentItem = itemRef.current;
-        const title = String(
-          draftDocument.frontmatter.title ?? currentItem?.title ?? '',
-        ).trim();
-        const filename = String(
-          pendingFilename
-            ?? draftDocument.frontmatter.filename
-            ?? currentItem?.filename
-            ?? '',
-        ).trim();
+    try {
+      const draftDocument = parseEditorMarkdownDocument(draftValueRef.current, {
+        allowIncompleteFrontmatter: true,
+      });
+      const currentItem = itemRef.current;
+      const title = String(
+        draftDocument.frontmatter.title ?? currentItem?.title ?? '',
+      ).trim();
+      const filename = String(
+        pendingFilename
+          ?? draftDocument.frontmatter.filename
+          ?? currentItem?.filename
+          ?? '',
+      ).trim();
+      const templateRawMarkdown = await buildMaterializedTemplateMarkdown({
+        templateItem,
+        titleValue: title || filename,
+        userId: auth.user.id,
+      });
 
-        return {
-          filename,
-          title: title || filename,
-        };
-      },
-      itemId,
-      onInsertTemplate(payload) {
-        try {
-          editorRef.current?.insertTemplate(payload.rawMarkdown);
-          setSaveErrorMessage('');
-          setSaveStatusMessage('');
-        } catch (error) {
-          setSaveErrorMessage(
-            error.message ?? 'Unable to insert that template right now.',
-          );
-        }
-      },
-    });
+      if (!templateRawMarkdown.trim()) {
+        setSaveErrorMessage('That template has no content to insert.');
+        return;
+      }
 
-    return () => {
-      setInsertTemplateTarget(null);
-    };
-  }, [pendingFilename, setInsertTemplateTarget, itemId, isReadOnlyTemplate]);
+      editorRef.current?.insertTemplate(templateRawMarkdown);
+      setSaveErrorMessage('');
+      setSaveStatusMessage('');
+    } catch (error) {
+      setSaveErrorMessage(
+        error.message ?? 'Unable to insert that template right now.',
+      );
+    }
+  }, [auth.user?.id, pendingFilename]);
+
+  const insertCommands = useMemo(() => {
+    if (isReadOnlyTemplate) {
+      return [];
+    }
+
+    return templateItems.map((t) => ({
+      id: `insert-${t.id}`,
+      label: `Insert ${formatTemplateLabel(t)}`,
+      group: 'Insert',
+      keywords: ['insert', 'template', t.type, t.subtype, t.filename].filter(Boolean),
+      action: () => handleInsertTemplate(t),
+    }));
+  }, [isReadOnlyTemplate, templateItems, handleInsertTemplate]);
+
+  useRegisterCommands(insertCommands);
 
   useEffect(() => {
     if (!saveStatusMessage) return;

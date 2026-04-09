@@ -1,8 +1,10 @@
 import {
+  useCallback,
   useDeferredValue,
   useEffect,
   useEffectEvent,
   useId,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -11,11 +13,9 @@ import { useAuth } from '../../lib/auth';
 import { CommandContext } from '../../lib/command-context';
 import { getItemDisplayLabel } from '../../lib/filenames';
 import {
-  buildMaterializedTemplateMarkdown,
   createInboxItemFromCapture,
   createItemFromTemplate,
   fetchCommandTemplates,
-  fetchRecentCommandItems,
   getCapturePreview,
   ITEMS_REFRESH_EVENT,
   searchCommandItemsByTitle,
@@ -23,80 +23,25 @@ import {
 import { FabButton } from './FabButton';
 import styles from './CommandSheet.module.css';
 
-const EMPTY_GROUP_LIMIT = 5;
-const RECENT_SKELETON_ROWS = ['recent-1', 'recent-2', 'recent-3'];
 const TEMPLATE_SKELETON_ROWS = ['template-1', 'template-2', 'template-3'];
 const CAPTURE_PLACEHOLDER = 'Capture something…';
 const PALETTE_PLACEHOLDER = 'Search items, views, and actions…';
 
 const JUMP_DESTINATIONS = [
-  {
-    id: 'now',
-    label: 'Now',
-    meta: 'Jump to the home screen.',
-    to: '/',
-  },
-  {
-    id: 'knowledge',
-    label: 'Knowledge',
-    meta: 'Open notes and sources.',
-    to: '/knowledge',
-  },
-  {
-    id: 'strategy',
-    label: 'Strategy',
-    meta: 'Open cycles, reviews, and planning placeholders.',
-    to: '/strategy',
-  },
-  {
-    id: 'execution',
-    label: 'Execution',
-    meta: 'Open today, backlog, and logbook placeholders.',
-    to: '/execution',
-  },
-  {
-    id: 'inbox',
-    label: 'Inbox',
-    meta: 'Review unprocessed captures.',
-    to: '/inbox',
-  },
-  {
-    id: 'capture-review',
-    label: 'Capture Review',
-    meta: 'Process inbox captures through the review wizard.',
-    to: '/wizard/capture',
-  },
-  {
-    id: 'notes',
-    label: 'Notes',
-    meta: 'Browse all notes.',
-    to: '/notes',
-  },
-  {
-    id: 'sources',
-    label: 'Sources',
-    meta: 'Open the sources inbox.',
-    to: '/sources',
-  },
-  {
-    id: 'library',
-    label: 'Library',
-    meta: 'Browse every saved item.',
-    to: '/items',
-  },
-  {
-    id: 'settings',
-    label: 'Settings',
-    meta: 'Open preferences and account settings.',
-    to: '/settings',
-  },
-  {
-    id: 'trash',
-    label: 'Trash',
-    meta: 'Open trash from settings.',
-    to: '/settings/trash',
-  },
+  { id: 'now', label: 'Now', to: '/' },
+  { id: 'knowledge', label: 'Knowledge', to: '/knowledge' },
+  { id: 'strategy', label: 'Strategy', to: '/strategy' },
+  { id: 'execution', label: 'Execution', to: '/execution' },
+  { id: 'inbox', label: 'Inbox', to: '/inbox' },
+  { id: 'capture-review', label: 'Capture Review', to: '/wizard/capture' },
+  { id: 'notes', label: 'Notes', to: '/notes' },
+  { id: 'sources', label: 'Sources', to: '/sources' },
+  { id: 'library', label: 'Library', to: '/items' },
+  { id: 'settings', label: 'Settings', to: '/settings' },
+  { id: 'trash', label: 'Trash', to: '/settings/trash' },
 ];
+
+const PALETTE_GROUP_ORDER = ['Navigate', 'Create', 'Insert'];
 
 function formatItemLabel(item) {
   return getItemDisplayLabel(item, 'Untitled item');
@@ -137,11 +82,7 @@ function formatItemMeta(item) {
 }
 
 function buildSearchableText(result) {
-  return [
-    result.label,
-    result.meta,
-    ...(result.keywords ?? []),
-  ]
+  return [result.label, result.meta, ...(result.keywords ?? [])]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
@@ -180,27 +121,30 @@ function getMatchScore(result, query) {
   return null;
 }
 
-function sliceGroupItems(items) {
-  return items.slice(0, EMPTY_GROUP_LIMIT);
-}
-
 export function CommandSheet({ children }) {
   const auth = useAuth();
   const navigate = useNavigate();
+
+  // Sheet state
   const [activeSheet, setActiveSheet] = useState(null);
   const [captureValue, setCaptureValue] = useState('');
   const [captureError, setCaptureError] = useState('');
   const [isSavingCapture, setIsSavingCapture] = useState(false);
-  const [insertTemplateTarget, setInsertTemplateTarget] = useState(null);
-  const [, setIsCreatingFromTemplate] = useState(false);
+  const isCreatingRef = useRef(false);
+
+  // Command registry
+  const [registeredCommands, setRegisteredCommands] = useState([]);
+  const [recentCommandIds, setRecentCommandIds] = useState([]);
+
+  // Palette data
   const [isLoadingPaletteDefaults, setIsLoadingPaletteDefaults] = useState(false);
   const [isLoadingItemSearch, setIsLoadingItemSearch] = useState(false);
   const [paletteError, setPaletteError] = useState('');
   const [paletteQuery, setPaletteQuery] = useState('');
-  const [recentItems, setRecentItems] = useState([]);
+  const [templateItems, setTemplateItems] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [selectedPaletteIndex, setSelectedPaletteIndex] = useState(0);
-  const [templateItems, setTemplateItems] = useState([]);
+
   const captureInputRef = useRef(null);
   const paletteInputRef = useRef(null);
   const captureInputId = useId();
@@ -211,39 +155,195 @@ export function CommandSheet({ children }) {
   const isCaptureOpen = activeSheet === 'capture';
   const isPaletteOpen = activeSheet === 'palette';
 
-  function resetCaptureState() {
-    setCaptureValue('');
-    setCaptureError('');
-  }
+  // --- Sheet open/close (stable callbacks) ---
 
-  function resetPaletteState() {
+  const closePalette = useCallback(() => {
+    setActiveSheet(null);
     setPaletteError('');
     setPaletteQuery('');
     setSearchResults([]);
     setSelectedPaletteIndex(0);
-  }
+  }, []);
 
-  function closeCaptureSheet() {
+  const closeCaptureSheet = useCallback(() => {
     setActiveSheet(null);
-    resetCaptureState();
-  }
-
-  function closePalette() {
-    setActiveSheet(null);
-    resetPaletteState();
-  }
-
-  function openCaptureSheet() {
-    resetPaletteState();
-    setActiveSheet('capture');
+    setCaptureValue('');
     setCaptureError('');
-  }
+  }, []);
 
-  function openPalette() {
-    resetCaptureState();
+  const openPalette = useCallback(() => {
+    setCaptureValue('');
+    setCaptureError('');
     setActiveSheet('palette');
     setPaletteError('');
-  }
+  }, []);
+
+  const openCaptureSheet = useCallback(() => {
+    setPaletteError('');
+    setPaletteQuery('');
+    setSearchResults([]);
+    setSelectedPaletteIndex(0);
+    setActiveSheet('capture');
+    setCaptureError('');
+  }, []);
+
+  // --- Command registry ---
+
+  const registerCommands = useCallback((commands) => {
+    setRegisteredCommands((prev) => [
+      ...prev.filter((c) => !commands.find((n) => n.id === c.id)),
+      ...commands,
+    ]);
+  }, []);
+
+  const unregisterCommands = useCallback((ids) => {
+    setRegisteredCommands((prev) => prev.filter((c) => !ids.includes(c.id)));
+  }, []);
+
+  const recordCommandExecution = useCallback((id) => {
+    setRecentCommandIds((prev) =>
+      [id, ...prev.filter((x) => x !== id)].slice(0, 5),
+    );
+  }, []);
+
+  // Converts a command to a palette result object
+  const commandToResult = useCallback((command) => ({
+    id: command.id,
+    label: command.label,
+    meta: '',
+    typeLabel: command.group,
+    keywords: command.keywords,
+    onSelect: async () => {
+      recordCommandExecution(command.id);
+      await command.action();
+    },
+  }), [recordCommandExecution]);
+
+  // --- Built-in navigate commands ---
+
+  const navigateCommands = useMemo(() =>
+    JUMP_DESTINATIONS.map((dest) => ({
+      id: `navigate-${dest.id}`,
+      label: `Go to ${dest.label}`,
+      group: 'Navigate',
+      keywords: ['go', 'open', 'view', dest.id, dest.to],
+      action: async () => {
+        closePalette();
+        await navigate({ to: dest.to });
+      },
+    })),
+  [closePalette, navigate]);
+
+  // --- Create from template ---
+
+  const handleCreateFromTemplate = useCallback(async (templateItem) => {
+    if (isCreatingRef.current) {
+      return;
+    }
+
+    if (!auth.user?.id) {
+      setPaletteError('Your session is missing a user id.');
+      return;
+    }
+
+    isCreatingRef.current = true;
+    setPaletteError('');
+
+    try {
+      const createdItem = await createItemFromTemplate({
+        templateId: templateItem.id,
+        userId: auth.user.id,
+      });
+
+      closePalette();
+      await navigate({
+        params: { id: createdItem.id },
+        to: '/items/$id',
+      });
+    } catch (error) {
+      setPaletteError(
+        error.message ?? 'Unable to create an item from that template.',
+      );
+    } finally {
+      isCreatingRef.current = false;
+    }
+  }, [auth.user?.id, closePalette, navigate]);
+
+  // --- Built-in create commands (from templates) ---
+
+  const createCommands = useMemo(() =>
+    templateItems.map((t) => ({
+      id: `create-${t.id}`,
+      label: `New ${formatTemplateLabel(t)}`,
+      group: 'Create',
+      keywords: ['create', 'new', t.type, t.subtype, t.filename].filter(Boolean),
+      action: async () => handleCreateFromTemplate(t),
+    })),
+  [templateItems, handleCreateFromTemplate]);
+
+  // --- All commands (built-ins + externally registered) ---
+
+  const allCommands = useMemo(() => [
+    ...navigateCommands,
+    ...createCommands,
+    ...registeredCommands,
+  ], [navigateCommands, createCommands, registeredCommands]);
+
+  // --- Capture input focus ---
+
+  const focusCaptureInput = useEffectEvent(() => {
+    const input = captureInputRef.current;
+
+    if (!input) {
+      return;
+    }
+
+    try {
+      input.focus({ preventScroll: true });
+    } catch {
+      input.focus();
+    }
+  });
+
+  const focusPaletteInput = useEffectEvent(() => {
+    const input = paletteInputRef.current;
+
+    if (!input) {
+      return;
+    }
+
+    try {
+      input.focus({ preventScroll: true });
+    } catch {
+      input.focus();
+    }
+  });
+
+  useEffect(() => {
+    if (isCaptureOpen) {
+      focusCaptureInput();
+      return;
+    }
+
+    if (isPaletteOpen) {
+      focusPaletteInput();
+    }
+  }, [focusCaptureInput, focusPaletteInput, isCaptureOpen, isPaletteOpen]);
+
+  // --- Capture textarea auto-grow ---
+
+  useEffect(() => {
+    const input = captureInputRef.current;
+
+    if (!isCaptureOpen || !(input instanceof HTMLTextAreaElement)) {
+      return;
+    }
+
+    input.style.height = '0px';
+    input.style.height = `${input.scrollHeight}px`;
+  }, [captureValue, isCaptureOpen]);
+
+  // --- Capture save ---
 
   async function saveCaptureAndClose() {
     const normalizedValue = captureValue.trim();
@@ -285,55 +385,7 @@ export function CommandSheet({ children }) {
     closePalette();
   });
 
-  const focusCaptureInput = useEffectEvent(() => {
-    const input = captureInputRef.current;
-
-    if (!input) {
-      return;
-    }
-
-    try {
-      input.focus({ preventScroll: true });
-    } catch {
-      input.focus();
-    }
-  });
-
-  const focusPaletteInput = useEffectEvent(() => {
-    const input = paletteInputRef.current;
-
-    if (!input) {
-      return;
-    }
-
-    try {
-      input.focus({ preventScroll: true });
-    } catch {
-      input.focus();
-    }
-  });
-
-  useEffect(() => {
-    if (isCaptureOpen) {
-      focusCaptureInput();
-      return;
-    }
-
-    if (isPaletteOpen) {
-      focusPaletteInput();
-    }
-  }, [focusCaptureInput, focusPaletteInput, isCaptureOpen, isPaletteOpen]);
-
-  useEffect(() => {
-    const input = captureInputRef.current;
-
-    if (!isCaptureOpen || !(input instanceof HTMLTextAreaElement)) {
-      return;
-    }
-
-    input.style.height = '0px';
-    input.style.height = `${input.scrollHeight}px`;
-  }, [captureValue, isCaptureOpen]);
+  // --- Sheet-level keyboard shortcuts (Escape + capture Enter) ---
 
   useEffect(() => {
     if (!isCaptureOpen && !isPaletteOpen) {
@@ -343,7 +395,7 @@ export function CommandSheet({ children }) {
     function handleKeyDown(event) {
       if (event.key === 'Escape') {
         if (isCaptureOpen) {
-          void requestCloseCapture();
+          closeCaptureSheet(); // discard — does NOT save
           return;
         }
 
@@ -356,7 +408,66 @@ export function CommandSheet({ children }) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isCaptureOpen, isPaletteOpen, requestCloseCapture, requestClosePalette]);
+  }, [isCaptureOpen, isPaletteOpen, closeCaptureSheet, requestClosePalette]);
+
+  // --- Global open/toggle shortcuts (Cmd+K / Cmd+Shift+K) ---
+
+  useEffect(() => {
+    function handleGlobalKeyDown(event) {
+      const isMod = event.metaKey || event.ctrlKey;
+
+      if (!isMod) {
+        return;
+      }
+
+      if (event.key === 'k' && !event.shiftKey) {
+        event.preventDefault();
+
+        if (isPaletteOpen) {
+          closePalette();
+          return;
+        }
+
+        if (isCaptureOpen) {
+          closeCaptureSheet();
+        }
+
+        openPalette();
+        return;
+      }
+
+      if (event.shiftKey && event.key === 'K') {
+        event.preventDefault();
+
+        if (isCaptureOpen) {
+          void requestCloseCapture(); // save and close
+          return;
+        }
+
+        if (isPaletteOpen) {
+          closePalette();
+        }
+
+        openCaptureSheet();
+      }
+    }
+
+    window.addEventListener('keydown', handleGlobalKeyDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+    };
+  }, [
+    isCaptureOpen,
+    isPaletteOpen,
+    closeCaptureSheet,
+    closePalette,
+    openCaptureSheet,
+    openPalette,
+    requestCloseCapture,
+  ]);
+
+  // --- Load templates when palette opens ---
 
   useEffect(() => {
     if (!isPaletteOpen || !auth.user?.id) {
@@ -368,17 +479,13 @@ export function CommandSheet({ children }) {
     setIsLoadingPaletteDefaults(true);
     setPaletteError('');
 
-    Promise.all([
-      fetchRecentCommandItems(auth.user.id),
-      fetchCommandTemplates(auth.user.id),
-    ])
-      .then(([nextRecentItems, nextTemplateItems]) => {
+    fetchCommandTemplates(auth.user.id)
+      .then((items) => {
         if (cancelled) {
           return;
         }
 
-        setRecentItems(nextRecentItems);
-        setTemplateItems(nextTemplateItems);
+        setTemplateItems(items);
       })
       .catch((error) => {
         if (cancelled) {
@@ -401,6 +508,8 @@ export function CommandSheet({ children }) {
       cancelled = true;
     };
   }, [auth.user?.id, isPaletteOpen]);
+
+  // --- Item search ---
 
   useEffect(() => {
     if (!isPaletteOpen || !auth.user?.id) {
@@ -448,274 +557,102 @@ export function CommandSheet({ children }) {
     };
   }, [auth.user?.id, isPaletteOpen, trimmedPaletteQuery]);
 
-  async function handleOpenItem(itemId) {
+  // --- Open item ---
+
+  const handleOpenItem = useCallback(async (itemId) => {
     closePalette();
-    await navigate({
-      params: {
-        id: itemId,
-      },
-      to: '/items/$id',
-    });
-  }
+    await navigate({ params: { id: itemId }, to: '/items/$id' });
+  }, [closePalette, navigate]);
 
-  async function handleOpenTemplate(templateId) {
-    closePalette();
-    await navigate({
-      params: {
-        id: templateId,
-      },
-      to: '/settings/templates/$id',
-    });
-  }
+  // --- Palette result arrays ---
 
-  async function handleCreateFromTemplate(templateItem) {
-    if (!auth.user?.id) {
-      setPaletteError('Your session is missing a user id.');
-      return;
+  // Recent: look up last-executed command IDs in allCommands
+  const defaultPaletteGroups = useMemo(() => {
+    const recentResults = recentCommandIds
+      .map((id) => allCommands.find((c) => c.id === id))
+      .filter(Boolean)
+      .map(commandToResult);
+
+    const groups = [
+      { id: 'recent', title: 'Recent', items: recentResults },
+      ...PALETTE_GROUP_ORDER.map((groupName) => ({
+        id: groupName.toLowerCase(),
+        title: groupName,
+        items: allCommands
+          .filter((c) => c.group === groupName)
+          .map(commandToResult),
+      })),
+    ];
+
+    return groups.filter((g) => g.items.length > 0);
+  }, [recentCommandIds, allCommands, commandToResult]);
+
+  // Flat list of all default results (for keyboard navigation)
+  const flattenedDefaultResults = useMemo(() =>
+    defaultPaletteGroups.flatMap((g) => g.items),
+  [defaultPaletteGroups]);
+
+  // Search: flat fuzzy list of commands + item search results
+  const paletteSearchResults = useMemo(() => {
+    if (!trimmedPaletteQuery) {
+      return [];
     }
 
-    setIsCreatingFromTemplate(true);
-    setPaletteError('');
+    const itemResults = searchResults.map((item) => ({
+      id: `item-${item.id}`,
+      label: formatItemLabel(item),
+      meta: formatItemMeta(item),
+      typeLabel: 'Item',
+      keywords: [item.type, item.subtype, item.filename].filter(Boolean),
+      onSelect: async () => handleOpenItem(item.id),
+    }));
 
-    try {
-      const createdItem = await createItemFromTemplate({
-        templateId: templateItem.id,
-        userId: auth.user.id,
-      });
+    const commandResults = allCommands.map(commandToResult);
+    const combined = [...commandResults, ...itemResults];
+    const dedupedResults = new Map();
 
-      setRecentItems((currentItems) =>
-        [createdItem, ...currentItems].slice(0, EMPTY_GROUP_LIMIT),
-      );
-      closePalette();
-      await navigate({
-        params: {
-          id: createdItem.id,
-        },
-        to: '/items/$id',
-      });
-    } catch (error) {
-      setPaletteError(
-        error.message ?? 'Unable to create an item from that template.',
-      );
-    } finally {
-      setIsCreatingFromTemplate(false);
-    }
-  }
+    combined.forEach((result) => {
+      const score = getMatchScore(result, trimmedPaletteQuery);
 
-  async function handleInsertTemplate(templateItem) {
-    if (!insertTemplateTarget?.onInsertTemplate) {
-      setPaletteError('Open an item before inserting a template.');
-      return;
-    }
-
-    if (!auth.user?.id) {
-      setPaletteError('Your session is missing a user id.');
-      return;
-    }
-
-    try {
-      const templateContext = insertTemplateTarget.getTemplateContext?.();
-      const templateRawMarkdown = await buildMaterializedTemplateMarkdown({
-        templateItem,
-        titleValue: templateContext?.title ?? '',
-        userId: auth.user.id,
-      });
-
-      if (!templateRawMarkdown.trim()) {
-        setPaletteError('That template has no content to insert.');
+      if (score == null) {
         return;
       }
 
-      insertTemplateTarget.onInsertTemplate({
-        rawMarkdown: templateRawMarkdown,
-        template: templateItem,
-      });
-      closePalette();
-    } catch (error) {
-      setPaletteError(
-        error.message ?? 'Unable to insert that template right now.',
-      );
-    }
-  }
+      const existing = dedupedResults.get(result.id);
 
-  const jumpResults = JUMP_DESTINATIONS.map((destination) => ({
-    id: `jump-${destination.id}`,
-    label: destination.label,
-    meta: destination.meta,
-    onSelect: async () => {
-      closePalette();
-      await navigate({ to: destination.to });
-    },
-    typeLabel: 'Jump',
-    keywords: ['jump', 'open', 'view', destination.to],
-  }));
-
-  const recentResults = recentItems.map((item) => ({
-    id: `recent-${item.id}`,
-    label: formatItemLabel(item),
-    meta: formatItemMeta(item),
-    onSelect: async () => {
-      await handleOpenItem(item.id);
-    },
-    typeLabel: 'Recent',
-    keywords: [item.type, item.subtype, item.filename].filter(Boolean),
-  }));
-
-  const createResults = templateItems.map((templateItem) => ({
-    id: `create-${templateItem.id}`,
-    label: `Create from template: ${formatTemplateLabel(templateItem)}`,
-    meta: formatItemMeta(templateItem),
-    onSelect: async () => {
-      await handleCreateFromTemplate(templateItem);
-    },
-    typeLabel: 'Create',
-    keywords: [
-      'create',
-      'new',
-      templateItem.type,
-      templateItem.subtype,
-      templateItem.filename,
-    ].filter(Boolean),
-  }));
-
-  const insertResults = !insertTemplateTarget?.onInsertTemplate
-    ? []
-    : templateItems.map((templateItem) => ({
-        id: `insert-${templateItem.id}`,
-        label: `Insert template: ${formatTemplateLabel(templateItem)}`,
-        meta: formatItemMeta(templateItem),
-        onSelect: async () => {
-          await handleInsertTemplate(templateItem);
-        },
-        typeLabel: 'Insert',
-        keywords: [
-          'insert',
-          'template',
-          templateItem.type,
-          templateItem.subtype,
-          templateItem.filename,
-        ].filter(Boolean),
-      }));
-
-  const templateResults = templateItems.map((templateItem) => ({
-    id: `template-${templateItem.id}`,
-    label: formatTemplateLabel(templateItem),
-    meta: formatItemMeta(templateItem),
-    onSelect: async () => {
-      await handleOpenTemplate(templateItem.id);
-    },
-    typeLabel: 'Templates',
-    keywords: [
-      'template',
-      'open',
-      templateItem.type,
-      templateItem.subtype,
-      templateItem.filename,
-    ].filter(Boolean),
-  }));
-
-  const emptyPaletteGroups = [
-    {
-      id: 'recent',
-      title: 'Recent',
-      items: sliceGroupItems(recentResults),
-    },
-    {
-      id: 'jump',
-      title: 'Jump',
-      items: jumpResults,
-    },
-    {
-      id: 'create',
-      title: 'Create',
-      items: sliceGroupItems(createResults),
-    },
-    {
-      id: 'templates',
-      title: 'Templates',
-      items: sliceGroupItems(templateResults),
-    },
-  ];
-
-  if (insertResults.length > 0) {
-    emptyPaletteGroups.splice(3, 0, {
-      id: 'insert',
-      title: 'Insert',
-      items: sliceGroupItems(insertResults),
+      if (!existing || score < existing.score) {
+        dedupedResults.set(result.id, { ...result, score });
+      }
     });
-  }
 
-  const visibleEmptyPaletteGroups = emptyPaletteGroups.filter(
-    (group) => group.items.length > 0,
-  );
+    return [...dedupedResults.values()].sort((a, b) => {
+      if (a.score !== b.score) {
+        return a.score - b.score;
+      }
 
-  const paletteSearchResults = !trimmedPaletteQuery
-    ? []
-    : (() => {
-        const itemResults = searchResults.map((item) => ({
-          id: `item-${item.id}`,
-          label: formatItemLabel(item),
-          meta: formatItemMeta(item),
-          onSelect: async () => {
-            await handleOpenItem(item.id);
-          },
-          typeLabel: 'Item',
-          keywords: [item.type, item.subtype, item.filename].filter(Boolean),
-        }));
-        const combinedResults = [
-          ...jumpResults,
-          ...createResults,
-          ...insertResults,
-          ...templateResults,
-          ...itemResults,
-        ];
-        const dedupedResults = new Map();
+      return a.label.localeCompare(b.label);
+    });
+  }, [trimmedPaletteQuery, searchResults, allCommands, commandToResult, handleOpenItem]);
 
-        combinedResults.forEach((result) => {
-          const score = getMatchScore(result, trimmedPaletteQuery);
-
-          if (score == null) {
-            return;
-          }
-
-          const existingResult = dedupedResults.get(result.id);
-
-          if (!existingResult || score < existingResult.score) {
-            dedupedResults.set(result.id, {
-              ...result,
-              score,
-            });
-          }
-        });
-
-        return [...dedupedResults.values()].sort((leftResult, rightResult) => {
-          if (leftResult.score !== rightResult.score) {
-            return leftResult.score - rightResult.score;
-          }
-
-          return leftResult.label.localeCompare(rightResult.label);
-        });
-      })();
-
-  const flattenedEmptyResults = visibleEmptyPaletteGroups.flatMap(
-    (group) => group.items,
-  );
   const visiblePaletteResults = trimmedPaletteQuery
     ? paletteSearchResults
-    : flattenedEmptyResults;
-  const selectedPaletteResult =
-    visiblePaletteResults[selectedPaletteIndex] ?? null;
+    : flattenedDefaultResults;
 
+  const selectedPaletteResult = visiblePaletteResults[selectedPaletteIndex] ?? null;
+
+  // Clamp selection index when results change
   useEffect(() => {
     if (visiblePaletteResults.length === 0) {
       setSelectedPaletteIndex(0);
       return;
     }
 
-    setSelectedPaletteIndex((currentIndex) =>
-      Math.min(currentIndex, visiblePaletteResults.length - 1),
+    setSelectedPaletteIndex((current) =>
+      Math.min(current, visiblePaletteResults.length - 1),
     );
   }, [visiblePaletteResults]);
+
+  // --- Sheet interaction ---
 
   function handleCloseActiveSheet() {
     if (isCaptureOpen) {
@@ -741,6 +678,8 @@ export function CommandSheet({ children }) {
     closePalette();
   }
 
+  // --- Render palette result ---
+
   function renderPaletteResult(result, isSelected) {
     return (
       <li className={styles.commandSheet__listItem} key={result.id}>
@@ -765,10 +704,15 @@ export function CommandSheet({ children }) {
     );
   }
 
-  const commandContextValue = {
-    isInsertTemplateAvailable: Boolean(insertTemplateTarget?.onInsertTemplate),
-    setInsertTemplateTarget,
-  };
+  // --- Context value ---
+
+  const commandContextValue = useMemo(() => ({
+    openCapture: openCaptureSheet,
+    openPalette,
+    registerCommands,
+    templateItems,
+    unregisterCommands,
+  }), [openCaptureSheet, openPalette, registerCommands, templateItems, unregisterCommands]);
 
   return (
     <CommandContext.Provider value={commandContextValue}>
@@ -844,12 +788,10 @@ export function CommandSheet({ children }) {
                   <footer className={styles.commandSheet__footer}>
                     <button
                       className={styles.commandSheet__cancelButton}
-                      onClick={() => {
-                        void requestCloseCapture();
-                      }}
+                      onClick={closeCaptureSheet}
                       type="button"
                     >
-                      Close
+                      Discard
                     </button>
 
                     <div className={styles.commandSheet__footerActions}>
@@ -881,9 +823,9 @@ export function CommandSheet({ children }) {
                       onKeyDown={(event) => {
                         if (event.key === 'ArrowDown') {
                           event.preventDefault();
-                          setSelectedPaletteIndex((currentIndex) =>
+                          setSelectedPaletteIndex((current) =>
                             Math.min(
-                              currentIndex + 1,
+                              current + 1,
                               Math.max(visiblePaletteResults.length - 1, 0),
                             ),
                           );
@@ -892,8 +834,8 @@ export function CommandSheet({ children }) {
 
                         if (event.key === 'ArrowUp') {
                           event.preventDefault();
-                          setSelectedPaletteIndex((currentIndex) =>
-                            Math.max(currentIndex - 1, 0),
+                          setSelectedPaletteIndex((current) =>
+                            Math.max(current - 1, 0),
                           );
                           return;
                         }
@@ -923,37 +865,37 @@ export function CommandSheet({ children }) {
 
                     {!trimmedPaletteQuery ? (
                       <>
-                        {isLoadingPaletteDefaults ? (
+                        {isLoadingPaletteDefaults && createCommands.length === 0 ? (
                           <section className={styles.commandSheet__section}>
                             <h3 className={styles.commandSheet__sectionTitle}>
-                              Recent
+                              Create
                             </h3>
                             <div className={styles.commandSheet__skeletonList}>
-                              {RECENT_SKELETON_ROWS.map((rowId) => (
+                              {TEMPLATE_SKELETON_ROWS.map((rowId) => (
                                 <div className={styles.commandSheet__skeletonRow} key={rowId} />
                               ))}
                             </div>
                           </section>
-                        ) : (
-                          visibleEmptyPaletteGroups.map((group) => (
-                            <section className={styles.commandSheet__section} key={group.id}>
-                              <h3 className={styles.commandSheet__sectionTitle}>
-                                {group.title}
-                              </h3>
-                              <ul
-                                className={styles.commandSheet__list}
-                                role="listbox"
-                              >
-                                {group.items.map((result) =>
-                                  renderPaletteResult(
-                                    result,
-                                    selectedPaletteResult?.id === result.id,
-                                  ),
-                                )}
-                              </ul>
-                            </section>
-                          ))
-                        )}
+                        ) : null}
+
+                        {defaultPaletteGroups.map((group) => (
+                          <section className={styles.commandSheet__section} key={group.id}>
+                            <h3 className={styles.commandSheet__sectionTitle}>
+                              {group.title}
+                            </h3>
+                            <ul
+                              className={styles.commandSheet__list}
+                              role="listbox"
+                            >
+                              {group.items.map((result) =>
+                                renderPaletteResult(
+                                  result,
+                                  selectedPaletteResult?.id === result.id,
+                                ),
+                              )}
+                            </ul>
+                          </section>
+                        ))}
                       </>
                     ) : isLoadingItemSearch && paletteSearchResults.length === 0 ? (
                       <div className={styles.commandSheet__skeletonList}>

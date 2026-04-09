@@ -1,26 +1,62 @@
 export const KEYBOARD_SHORTCUTS = [
+  // Capture
   {
-    description: 'Save the capture sheet input to inbox.',
+    group: 'Capture',
+    description: 'Open the capture sheet.',
+    keys: 'Cmd/Ctrl + Shift + K',
+  },
+  {
+    group: 'Capture',
+    description: 'Save capture to inbox.',
     keys: 'Enter',
   },
   {
-    description: 'Insert a newline in the capture sheet input.',
+    group: 'Capture',
+    description: 'Insert a newline in the capture input.',
     keys: 'Shift + Enter',
   },
   {
-    description: 'Close the active capture sheet or command palette.',
+    group: 'Capture',
+    description: 'Discard and close the capture sheet.',
     keys: 'Escape',
   },
+
+  // Command Palette
   {
-    description: 'Save the current editor draft explicitly.',
+    group: 'Command Palette',
+    description: 'Open the command palette.',
+    keys: 'Cmd/Ctrl + K',
+  },
+  {
+    group: 'Command Palette',
+    description: 'Navigate results.',
+    keys: '↑ / ↓',
+  },
+  {
+    group: 'Command Palette',
+    description: 'Execute the selected command.',
+    keys: 'Enter',
+  },
+  {
+    group: 'Command Palette',
+    description: 'Close the command palette.',
+    keys: 'Escape',
+  },
+
+  // Editor
+  {
+    group: 'Editor',
+    description: 'Save the current editor draft.',
     keys: 'Cmd/Ctrl + S',
   },
   {
-    description: 'Trigger wikilink autocomplete in the editor.',
+    group: 'Editor',
+    description: 'Trigger wikilink autocomplete.',
     keys: '[[',
   },
   {
-    description: 'Trigger tag autocomplete in the editor.',
+    group: 'Editor',
+    description: 'Trigger tag autocomplete.',
     keys: '#',
   },
 ];

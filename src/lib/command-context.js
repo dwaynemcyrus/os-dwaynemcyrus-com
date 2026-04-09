@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, useContext, useEffect } from 'react';
 
 export const CommandContext = createContext(null);
 
@@ -10,4 +10,22 @@ export function useCommandContext() {
   }
 
   return context;
+}
+
+export function useRegisterCommands(commands) {
+  const { registerCommands, unregisterCommands } = useCommandContext();
+
+  useEffect(() => {
+    if (commands.length === 0) {
+      return;
+    }
+
+    registerCommands(commands);
+
+    const ids = commands.map((c) => c.id);
+
+    return () => {
+      unregisterCommands(ids);
+    };
+  }, [commands, registerCommands, unregisterCommands]);
 }
