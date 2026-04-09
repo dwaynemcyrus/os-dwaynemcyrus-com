@@ -651,6 +651,13 @@ function shouldIncludeKnownField(key, item, storedFrontmatter) {
     return itemValue === true;
   }
 
+  if (
+    Object.prototype.hasOwnProperty.call(FRONTMATTER_DEFAULTS, key) &&
+    itemValue === FRONTMATTER_DEFAULTS[key]
+  ) {
+    return false;
+  }
+
   return itemValue != null && itemValue !== '';
 }
 
