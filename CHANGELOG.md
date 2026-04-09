@@ -2,6 +2,36 @@
 
 All notable changes to Personal OS will be documented in this file.
 
+## [0.11.0] - 2026-04-09
+
+Recommended release: `v0.11.0`
+
+### Added
+- A full GTD-based Capture Wizard with a step-by-step decision tree: actionable vs. non-actionable branches, project/area/workbench picker, journal/log/reference/someday routing, and a Stop button with history snapshots at each step.
+- A Sources system for tracking content origins, with URL deduplication and integration into the capture wizard.
+- Wizard entry points from Inbox items, so existing captures can be walked through the GTD flow.
+- Library link at the top of Settings, routing to `/items` for browsing and searching all content.
+- Notes view with live item counts per note type.
+- Pin toggle on items.
+- `/insert` slash command in the editor.
+- Scroll-past-end toggle in the editor.
+- Backlinks dialog accessible from the editor chrome.
+
+### Changed
+- Command sheet redesigned: header and description removed, controls moved into a bottom footer bar (Rapid Log toggle | Cancel | Save).
+- `cuid` fully removed as an identifier. Supabase UUID (`id`) is now the single stable item identifier across schema, runtime code, frontmatter, seed data, and all query builders. The client-side cuid generation library and all collision-retry loops are gone.
+
+### Fixed
+- FAB hold-to-open now works on desktop with mouse (was touch-only).
+- Wizard capture title input set to 16px to prevent iOS Safari auto-zoom.
+- Slash command crash and `/insert` command added.
+- Template token replacement now operates at the JS object level before YAML serialization.
+- Home screen live inbox count now reflects real-time data.
+
+### Notes
+- The Capture Wizard is the centrepiece of this milestone — it makes the GTD processing loop a first-class flow rather than a manual editor task.
+- cuid removal is a breaking schema change; run migration `20260409000001_drop_cuid_column.sql` against any existing database.
+
 ## [0.10.0] - 2026-04-06
 
 Recommended release: `v0.10.0`
