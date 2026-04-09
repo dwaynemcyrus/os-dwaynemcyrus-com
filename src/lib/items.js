@@ -2,6 +2,7 @@ import {
   buildEditorMarkdownDocument,
   buildEditorMarkdownDocumentFromParts,
   buildItemUpdatePayloadFromFrontmatter,
+  buildWikilinkCascadeUpdatePayload,
   createStoredAuthoredFrontmatter,
   normalizeFilenameValue,
   parseEditorMarkdownDocument,
@@ -18,7 +19,12 @@ import {
   fetchTemplateSettings,
 } from './settings';
 import { supabase } from './supabase';
-import { buildBacklinkGroups, resolveDocumentWikilinks } from './wikilinks';
+import {
+  buildBacklinkGroups,
+  normalizeWikilinkLabel,
+  renameWikilinksInMarkdown,
+  resolveDocumentWikilinks,
+} from './wikilinks';
 
 const RECENT_ITEMS_LIMIT = 8;
 const SEARCH_ITEMS_LIMIT = 8;
@@ -1414,6 +1420,77 @@ export async function saveEditorItem({
     item: savedItem,
     rawMarkdown: savedSnapshot,
   };
+}
+
+export async function cascadeRenameWikilinks({
+  excludeItemId,
+  newLabel,
+  oldLabel,
+  userId,
+}) {
+  if (!normalizeWikilinkLabel(oldLabel) || normalizeWikilinkLabel(oldLabel) === normalizeWikilinkLabel(newLabel)) {
+    return { failedItems: [] };
+  }
+
+  const { data, error } = await supabase
+    .from('items')
+    .select('*')
+    .eq('user_id', userId)
+    .is('date_trashed', null)
+    .neq('id', excludeItemId);
+
+  if (error) {
+    throw error;
+  }
+
+  const updates = [];
+
+  for (const candidateItem of (data ?? [])) {
+    const rawMarkdown = buildEditorMarkdownDocument(candidateItem);
+    const { hasChanges, updatedMarkdown } = renameWikilinksInMarkdown(
+      rawMarkdown,
+      oldLabel,
+      newLabel,
+    );
+
+    if (hasChanges) {
+      updates.push({ item: candidateItem, updatedMarkdown });
+    }
+  }
+
+  if (updates.length === 0) {
+    return { failedItems: [] };
+  }
+
+  const results = await Promise.allSettled(
+    updates.map(({ item, updatedMarkdown }) => {
+      const payload = buildWikilinkCascadeUpdatePayload({
+        existingItem: item,
+        updatedRawMarkdown: updatedMarkdown,
+      });
+
+      return supabase
+        .from('items')
+        .update(payload)
+        .eq('id', item.id)
+        .eq('user_id', userId)
+        .is('date_trashed', null);
+    }),
+  );
+
+  const failedItems = [];
+
+  results.forEach((result, index) => {
+    if (result.status === 'rejected' || result.value?.error) {
+      const { item } = updates[index];
+      failedItems.push({
+        filename: item.filename ?? '',
+        title: item.title ?? '',
+      });
+    }
+  });
+
+  return { failedItems };
 }
 
 export async function toggleItemPin({ itemId, userId }) {

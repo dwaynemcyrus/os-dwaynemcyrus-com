@@ -28,6 +28,7 @@ import {
 } from '../../lib/frontmatter';
 import {
   buildMaterializedTemplateMarkdown,
+  cascadeRenameWikilinks,
   fetchEditorItem,
   fetchItemBacklinkGroups,
   fetchTagSuggestions,
@@ -95,6 +96,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBacklinks, setIsLoadingBacklinks] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [cascadeFailures, setCascadeFailures] = useState(null);
   const [isBacklinksDialogOpen, setIsBacklinksDialogOpen] = useState(false);
   const [isFilenameDialogOpen, setIsFilenameDialogOpen] = useState(false);
   const [filenameDialogValue, setFilenameDialogValue] = useState('');
@@ -178,6 +180,8 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
       return;
     }
 
+    const oldLabel = getItemDisplayLabel(item);
+
     setIsSaving(true);
     setSaveErrorMessage('');
     setSaveStatusMessage('');
@@ -201,6 +205,23 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
       ]);
       setEditorSyncVersion((currentVersion) => currentVersion + 1);
       setSaveStatusMessage('Saved.');
+
+      const newLabel = getItemDisplayLabel(savedEditorItem.item);
+
+      if (oldLabel && newLabel && oldLabel !== newLabel) {
+        cascadeRenameWikilinks({
+          excludeItemId: itemId,
+          newLabel,
+          oldLabel,
+          userId: auth.user.id,
+        }).then(({ failedItems }) => {
+          if (failedItems.length > 0) {
+            setCascadeFailures(failedItems);
+          }
+        }).catch(() => {
+          // cascade errors don't surface as save errors
+        });
+      }
     } catch (error) {
       if (error.item && error.rawMarkdown) {
         setItem(error.item);
@@ -879,6 +900,82 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
               </button>
             </div>
           </form>
+        </>,
+      ) : null}
+
+      {cascadeFailures !== null ? createElement(
+        AppDialog,
+        {
+          ariaLabel: 'Close link update failures',
+          onClose() {
+            setCascadeFailures(null);
+          },
+          role: 'dialog',
+        },
+        <>
+          <header
+            style={{
+              display: 'grid',
+              gap: '0.5rem',
+            }}
+          >
+            <h2
+              style={{
+                fontSize: '1.1rem',
+                margin: 0,
+              }}
+            >
+              Link Update Failed
+            </h2>
+            <p
+              style={{
+                color: 'var(--color-text-secondary)',
+                lineHeight: 1.5,
+                margin: 0,
+              }}
+            >
+              {cascadeFailures.length} note{cascadeFailures.length !== 1 ? 's' : ''} could not be
+              updated. These notes still contain wikilinks pointing to the old name. Select the text
+              below to copy it.
+            </p>
+          </header>
+
+          <pre
+            style={{
+              background: 'var(--color-bg-surface)',
+              border: '1px solid var(--color-border-card)',
+              color: 'var(--color-text-secondary)',
+              fontFamily: 'var(--font-family-mono)',
+              fontSize: '0.85rem',
+              lineHeight: 1.6,
+              margin: 0,
+              maxBlockSize: '12rem',
+              overflowY: 'auto',
+              padding: '0.75rem 1rem',
+              userSelect: 'all',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-all',
+            }}
+          >
+            {cascadeFailures.map((f) => f.title || f.filename).join('\n')}
+          </pre>
+
+          <button
+            onClick={() => {
+              setCascadeFailures(null);
+            }}
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--color-border-card)',
+              color: 'var(--color-text-primary)',
+              cursor: 'pointer',
+              font: 'inherit',
+              minHeight: '3rem',
+            }}
+            type="button"
+          >
+            Dismiss
+          </button>
         </>,
       ) : null}
 

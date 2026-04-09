@@ -91,10 +91,10 @@ const CODE_LANGUAGES = [
 
 const editorHighlightStyle = HighlightStyle.define([
   // --- Markdown structure ---
-  { color: '#ffffff', fontWeight: '700', tag: tags.heading },
+  { color: '#ffffff', fontWeight: '500', tag: tags.heading },
   { color: '#89ddff', tag: [tags.link, tags.url] },
   { fontStyle: 'italic', tag: tags.emphasis },
-  { fontWeight: '700', tag: tags.strong },
+  { fontWeight: '500', tag: tags.strong },
   { textDecoration: 'line-through', tag: tags.strikethrough },
   // Markdown syntax characters (**, *, #, >, `, etc.)
   { color: 'rgba(255, 255, 255, 0.38)', tag: tags.processingInstruction },

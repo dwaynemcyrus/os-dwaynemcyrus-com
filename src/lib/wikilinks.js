@@ -7,7 +7,7 @@ import { getItemDisplayLabel } from './filenames';
 const WIKILINK_GROUP_BODY = 'Mentions';
 const WIKILINK_PATTERN = /\[\[([^\]\n]+?)\]\]/g;
 
-function normalizeWikilinkLabel(value) {
+export function normalizeWikilinkLabel(value) {
   return String(value ?? '').trim().toLowerCase();
 }
 
@@ -270,4 +270,32 @@ export function buildBacklinkGroups({
     group,
     items,
   }));
+}
+
+export function renameWikilinksInMarkdown(rawMarkdown, oldLabel, newLabel) {
+  const normalizedOld = normalizeWikilinkLabel(oldLabel);
+
+  if (!normalizedOld || normalizedOld === normalizeWikilinkLabel(newLabel)) {
+    return { hasChanges: false, updatedMarkdown: rawMarkdown };
+  }
+
+  let hasChanges = false;
+  const updatedMarkdown = String(rawMarkdown ?? '').replace(
+    cloneWikilinkPattern(),
+    (match, inner) => {
+      const fullLabel = inner.trim();
+      const hashIndex = fullLabel.indexOf('#');
+      const pageLabel = hashIndex >= 0 ? fullLabel.slice(0, hashIndex).trim() : fullLabel;
+      const fragment = hashIndex >= 0 ? fullLabel.slice(hashIndex) : '';
+
+      if (normalizeWikilinkLabel(pageLabel) !== normalizedOld) {
+        return match;
+      }
+
+      hasChanges = true;
+      return `[[${newLabel}${fragment}]]`;
+    },
+  );
+
+  return { hasChanges, updatedMarkdown };
 }

@@ -973,3 +973,12 @@ export function buildItemUpdatePayloadFromFrontmatter({
 
   return updatePayload;
 }
+
+export function buildWikilinkCascadeUpdatePayload({ existingItem, updatedRawMarkdown }) {
+  const { body, frontmatter: parsedFrontmatter } = parseEditorMarkdownDocument(updatedRawMarkdown);
+
+  return {
+    content: body,
+    frontmatter: buildStoredAuthoredFrontmatter({ existingItem, parsedFrontmatter }),
+  };
+}
