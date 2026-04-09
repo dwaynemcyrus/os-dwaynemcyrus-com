@@ -23,12 +23,12 @@
     'Segoe UI',
     sans-serif;
   --font-family-mono:
+    'Fira Code',
     ui-monospace,
     SFMono-Regular,
     Menlo,
     Monaco,
     Consolas,
-    'Liberation Mono',
     monospace;
 
   --font-size-page-date: 0.76rem;

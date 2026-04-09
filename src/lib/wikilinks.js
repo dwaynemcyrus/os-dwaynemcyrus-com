@@ -17,13 +17,20 @@ function cloneWikilinkPattern() {
 
 function createWikilinkMatch({
   end,
-  label,
+  fullLabel,
   raw,
   section,
   start,
 }) {
+  // Split [[Page Name#Section]] or [[Page Name#^block-id]] into page + fragment.
+  // Resolution and backlink matching always use the page name only.
+  const hashIndex = fullLabel.indexOf('#');
+  const label = hashIndex >= 0 ? fullLabel.slice(0, hashIndex).trim() : fullLabel;
+  const fragment = hashIndex >= 0 ? fullLabel.slice(hashIndex + 1).trim() || null : null;
+
   return {
     end,
+    fragment,
     label,
     normalizedLabel: normalizeWikilinkLabel(label),
     raw,
@@ -40,13 +47,13 @@ function extractWikilinksFromText(text, { offset = 0, section }) {
 
   while (match) {
     const raw = match[0];
-    const label = match[1].trim();
+    const fullLabel = match[1].trim();
 
-    if (label) {
+    if (fullLabel) {
       matches.push(
         createWikilinkMatch({
           end: offset + match.index + raw.length,
-          label,
+          fullLabel,
           raw,
           section,
           start: offset + match.index,
