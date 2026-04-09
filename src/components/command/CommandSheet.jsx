@@ -1,5 +1,4 @@
 import {
-  createElement,
   useDeferredValue,
   useEffect,
   useEffectEvent,
@@ -771,8 +770,9 @@ export function CommandSheet({ children }) {
     setInsertTemplateTarget,
   };
 
-  const sheetTree = (
-    <div className={styles.commandSheetShell}>
+  return (
+    <CommandContext.Provider value={commandContextValue}>
+      <div className={styles.commandSheetShell}>
         <div className={styles.commandSheetShell__content}>{children}</div>
 
         {activeSheet ? (
@@ -992,17 +992,13 @@ export function CommandSheet({ children }) {
           </div>
         ) : null}
 
-        {createElement(FabButton, {
-          isSheetOpen: Boolean(activeSheet),
-          onClose: handleCloseActiveSheet,
-          onOpen: openCaptureSheet,
-          onOpenContext: openPalette,
-        })}
+        <FabButton
+          isSheetOpen={Boolean(activeSheet)}
+          onClose={handleCloseActiveSheet}
+          onOpen={openCaptureSheet}
+          onOpenContext={openPalette}
+        />
       </div>
+    </CommandContext.Provider>
   );
-
-  return createElement(CommandContext.Provider, {
-    value: commandContextValue,
-    children: sheetTree,
-  });
 }

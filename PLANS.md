@@ -1600,3 +1600,39 @@
 
 **Open questions before execution:**
 - None. The user explicitly approved the dependency-based fix rather than weakening the gate.
+
+## Feature: Post-Lint JSX Cleanup
+
+**Summary:** Remove the temporary `createElement(...)` workaround introduced during the command-sheet refactor now that the lint gate understands JSX variable usage.
+
+**Build spec:** `docs/agents/build-spec.md`
+
+**Agents involved:** @frontend
+
+**Current-state analysis:**
+- The new JSX-aware ESLint configuration is in place, so the old `no-unused-vars` false positives for JSX component references are resolved.
+- The main temporary workaround left from that limitation is in `src/components/command/CommandSheet.jsx`, where `FabButton` and `CommandContext.Provider` still use `createElement(...)`.
+- Other `createElement(...)` usage in the repo predates this workaround and should not be broadened into this cleanup without separate approval.
+
+**Sequence:**
+
+### Phase 1 — Local JSX Reversion
+
+**Agent:** @frontend
+
+**Goal:** Convert the temporary command-sheet workaround back to direct JSX without changing behavior.
+
+**Chunks:**
+
+1. **Command sheet JSX cleanup**
+   - Files touched: `src/components/command/CommandSheet.jsx`
+   - Steps:
+     1. Remove the now-unneeded `createElement` import from the command sheet.
+     2. Replace the `FabButton` and `CommandContext.Provider` `createElement(...)` usage with plain JSX.
+     3. Keep the runtime behavior, focus handling, and palette/capture split unchanged.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: none beyond preserving the current command-sheet behavior while simplifying rendering syntax.
+   - Commit message: `refactor(command): restore jsx`
+
+**Open questions before execution:**
+- None. The user explicitly approved the JSX cleanup after the lint configuration change.
