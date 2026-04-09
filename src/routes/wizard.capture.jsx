@@ -214,9 +214,13 @@ const FIRST_STEP = 'review';
 export const wizardCaptureRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/wizard/capture',
+  validateSearch: (search) => ({
+    itemId: typeof search.itemId === 'string' ? search.itemId : undefined,
+  }),
   component: function WizardCaptureRoute() {
     const auth = useAuth();
     const navigate = wizardCaptureRoute.useNavigate();
+    const search = wizardCaptureRoute.useSearch();
     const [captures, setCaptures] = useState([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [step, setStep] = useState(FIRST_STEP);
@@ -262,7 +266,10 @@ export const wizardCaptureRoute = createRoute({
         .then((data) => {
           if (cancelled) return;
           setCaptures(data);
-          setCurrentIndex(0);
+          const startIndex = search.itemId
+            ? Math.max(0, data.findIndex((c) => c.id === search.itemId))
+            : 0;
+          setCurrentIndex(startIndex);
           setStep(FIRST_STEP);
           setStepHistory([]);
           setSelections(EMPTY_SELECTIONS);
