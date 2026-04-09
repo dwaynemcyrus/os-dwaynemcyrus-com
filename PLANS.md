@@ -1,5 +1,177 @@
 # PLANS.md
 
+## Feature: Link Inbox
+
+**Summary:** Add a Knowledge-tab link inbox for saving URLs to consume later, with metadata previews, tagging, source-type classification, and inbox/reading/archive views.
+
+**Build spec:** `docs/agents/link-inbox-build-spec.md`
+
+**Agents involved:** both
+
+**Current-state analysis:**
+- The live app shape differs from the template build spec: `src/lib/items.js` owns item queries and mutations, `src/lib/settings.js` owns `user_settings`, and the Knowledge surface is driven by `src/lib/navigation.js` plus `src/components/command/ContextSheet.jsx`.
+- `reference: source` is currently inconsistent across docs and seed data. `docs/agents/schema-reference.md` still documents source statuses as `unread | reading | complete | abandoned`, while the Link Inbox build spec requires `backlog | active | archived`.
+- `src/routes/notes.jsx`, `src/routes/notes.$filter.jsx`, and `fetchContextSheetCounts()` currently treat almost every non-action, non-inbox item as a note. Without an explicit exclusion, `reference: source` items will appear in both Notes and Link Inbox.
+- `src/routes/inbox.jsx` already processes inbox captures by mutating the original inbox row in place. The URL-only source flow should extend that existing behavior rather than create a parallel processing path.
+- There is no automated test script in `package.json`; required verification is currently `supabase db lint`, `npm run lint`, `npm run build`, plus manual route and metadata checks.
+
+**Sequence:**
+
+### Phase 1 — Schema Alignment And Approval Gate
+
+**Agent:** @architecture
+
+**Goal:** Align the database, seed template, and schema docs with the Link Inbox contract before any runtime code is written.
+
+**Chunks:**
+
+1. **Link schema and template alignment**
+   - Files touched: `supabase/migrations/[timestamp]_add_link_inbox_columns.sql`, `docs/agents/schema-reference.md`, `supabase/seed.sql`, `docs/agents/link-inbox-build-spec.md`
+   - Steps:
+     1. Add nullable `archived_at timestamptz`, `normalized_url text`, `site_name text`, `favicon_url text`, `og_image text`, and `source_type text` to `public.items`.
+     2. Add `link_template_id uuid references public.items(id) on delete set null` to `public.user_settings`.
+     3. Add a partial unique index on `(user_id, normalized_url)` where `user_id is not null and normalized_url is not null and date_trashed is null`.
+     4. Add a partial unique index on `(user_id, isbn)` where `user_id is not null and isbn is not null and date_trashed is null`.
+     5. Add list-query indexes for `(user_id, type, subtype, status, date_modified desc)` and `(user_id, type, subtype, archived_at desc)` scoped to active rows.
+     6. Update the seeded `reference: source` template and schema reference so the default source template, valid `source_type` values, and source status rules match the Link Inbox build spec.
+     7. Stop for schema approval before execution because this changes `items` and `user_settings`.
+   - Exit conditions: `supabase db lint` succeeds; `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: Existing duplicate `normalized_url` or `isbn` rows must be resolved before the unique indexes can be applied; `supabase/seed.sql` is positional and easy to break.
+   - Commit message: `feat(db): align link inbox schema`
+
+**Handoff to:** @architecture — implement link item helpers against the approved schema.
+
+### Phase 2 — Link Data Flows And Metadata Runtime
+
+**Agent:** @architecture
+
+**Goal:** Add server-confirmed link creation, dedupe, settings resolution, and metadata enrichment without changing the existing item ownership boundaries.
+
+**Chunks:**
+
+1. **Link item helpers and settings resolution**
+   - Files touched: `src/lib/items.js`, `src/lib/frontmatter.js`, `src/lib/settings.js`
+   - Steps:
+     1. Add URL normalization that lowercases protocol and host, removes hash fragments, strips the tracking params listed in the build spec, sorts remaining params, and preserves meaningful params by default.
+     2. Add duplicate lookups for `user_id + normalized_url` and `user_id + isbn`, excluding trashed items.
+     3. Add `fetchLinkItems({ view, userId })`, `createLinkInboxItem()`, `createManualSourceItem()`, `updateLinkStatus()`, and `refreshLinkMetadata()` inside `src/lib/items.js`, which is already the canonical item data layer.
+     4. Resolve `link_template_id` through `src/lib/settings.js`, restricting valid choices to user-owned `is_template = true`, `type = reference`, `subtype = source` items.
+     5. Add a built-in default source template fallback in runtime code so link capture still works when `link_template_id` is unset, missing, or trashed.
+     6. Extend frontmatter ordering and persistence for `archived_at`, `normalized_url`, `site_name`, `favicon_url`, `og_image`, and `source_type`.
+     7. Update context-sheet count queries to include Link Inbox, Reading, and Archive totals without folding them into unrelated note counts.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: `src/lib/items.js` is already large; keep helpers cohesive and avoid broad refactors while adding link-specific behavior.
+   - Commit message: `feat(links): add source helpers`
+
+2. **Metadata endpoint and fetch integration**
+   - Files touched: `api/link-metadata.js`, `src/lib/items.js`, `.env.example`
+   - Steps:
+     1. Add a Vercel Node function at `api/link-metadata.js` because client-side HTML fetching will fail on CORS for many targets.
+     2. Require an authenticated request, validate `http` and `https` only, block localhost and private-network targets, enforce a redirect limit, timeout, maximum response size, and HTML content-type checks.
+     3. Return only sanitized `title`, `description`, `favicon_url`, `og_image`, `site_name`, and inferred `source_type`.
+     4. Infer `x` for both `x.com` and `twitter.com` during classification without rewriting the stored URL.
+     5. Integrate the endpoint into create and refresh flows so metadata failure is non-blocking and the raw URL still persists.
+     6. Document any required server-side env usage in `.env.example`; if a metadata parsing dependency is needed, keep it server-only and request explicit approval before adding it.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds; manual metadata checks pass for an article URL, a YouTube URL, an X URL, and a forced metadata-failure case.
+   - Risks: This introduces the project’s first server runtime surface; local dev and deployment behavior must be verified on Vercel-compatible paths.
+   - Commit message: `feat(links): add metadata fetcher`
+
+3. **Inbox source-processing branch**
+   - Files touched: `src/lib/items.js`
+   - Steps:
+     1. Extend the existing inbox-processing path so `reference: source` processing stays inside the current `processInboxItem()` workflow instead of creating a second processor.
+     2. Detect URL-only captures, normalize and dedupe the URL, and either create or reopen the matching source item.
+     3. When the duplicate source is archived, move it back to inbox and return the archived-source notice.
+     4. When the duplicate source is active or backlog, return the existing source and the already-saved notice.
+     5. Trash the duplicate generic inbox capture after opening or reopening the source, per the current approved destructive-action decision.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds; manual duplicate tests pass for new URL, active duplicate, archived duplicate, trashed duplicate, and ISBN duplicate cases.
+   - Risks: The exact definition of a “URL-only” capture must stay narrow enough to avoid consuming mixed-text inbox notes by mistake.
+   - Commit message: `feat(inbox): process source captures`
+
+**Handoff to:** @frontend — wire the approved data helpers into routes, settings, and the Knowledge context sheet.
+
+### Phase 3 — Settings, Routes, And Knowledge Navigation
+
+**Agent:** @frontend
+
+**Goal:** Add the settings surface, routes, and Knowledge-tab navigation for Link Inbox without inventing new navigation patterns.
+
+**Chunks:**
+
+1. **Link Inbox settings route**
+   - Files touched: `src/app/router.jsx`, `src/routes/settings.index.jsx`, `src/routes/settings.link-inbox.jsx`, `src/lib/navigation.js`
+   - Steps:
+     1. Add `/settings/link-inbox` and a settings-index row for choosing the default source template.
+     2. Mirror the existing daily-note settings pattern: load valid source-template options, persist `link_template_id`, and clear invalid selections.
+     3. Add screen chrome and back-navigation rules for the new settings route in `src/lib/navigation.js`.
+     4. Show explicit copy that link capture falls back to the built-in default source template when no valid template is selected.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds; `/settings/link-inbox` resolves from the Settings screen and back-navigation works.
+   - Risks: This introduces a new settings page; keep it consistent with the existing `settings.daily-note.jsx` structure rather than inventing a new settings pattern.
+   - Commit message: `feat(settings): add link inbox prefs`
+
+2. **Link routes and route shell**
+   - Files touched: `src/app/router.jsx`, `src/routes/links.jsx`, `src/routes/links.$view.jsx`, `src/routes/LinksRoute.module.css`
+   - Steps:
+     1. Register `/links` for inbox and `/links/$view` for `reading` and `archive`.
+     2. Build a shared route shell that handles loading, empty, and error states consistently across all three views.
+     3. Keep styling mobile-first in `LinksRoute.module.css`, with explicit checks at 390px, 744px, and 1024px.
+     4. Route URL-less manual sources to `/items/$id` while rendering URL sources as normal external anchors.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds; `/links`, `/links/reading`, and `/links/archive` all resolve directly.
+   - Risks: Existing route naming in the repo already uses `notes.$filter.jsx`; keep the `links.$view.jsx` pattern consistent with that router convention.
+   - Commit message: `feat(links): add route shell`
+
+3. **Knowledge-tab integration**
+   - Files touched: `src/lib/navigation.js`, `src/components/command/ContextSheet.jsx`
+   - Steps:
+     1. Add a `Link Inbox` row under Knowledge with sub-rows for Inbox, Reading, and Archive.
+     2. Surface the new count keys returned by `fetchContextSheetCounts()`.
+     3. Update meta labels and path matching so the active Knowledge entry stays correct on `/links`, `/links/reading`, and `/links/archive`.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds; the context sheet opens the correct link routes and shows counts.
+   - Risks: If source items should stay visible under Notes too, the count and active-state rules will need a second pass.
+   - Commit message: `feat(nav): add link inbox entries`
+
+### Phase 4 — Link List And Inbox UI
+
+**Agent:** @frontend
+
+**Goal:** Build the actual list views, capture form, and inbox feedback on top of the new link data layer.
+
+**Chunks:**
+
+1. **Link list and capture experience**
+   - Files touched: `src/routes/links.jsx`, `src/routes/links.$view.jsx`, `src/routes/LinksRoute.module.css`
+   - Steps:
+     1. Render skeleton, empty, error, and populated states for inbox, reading, and archive.
+     2. Show thumbnail priority `og_image -> favicon_url -> source-type badge`.
+     3. Show title, site name, description, source type, tags, saved date, and `isbn` for book sources when present.
+     4. Add server-confirmed controls to move between inbox, reading, and archive.
+     5. Add URL capture and manual-source creation on `/links`, including tags and manual `source_type` override.
+     6. Allow metadata refresh after URL-source creation and route manual sources to the existing item editor after create.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds; manual checks pass for duplicate URL, metadata failure, manual book create, and view switching at 390px, 744px, and 1024px.
+   - Risks: Avoid optimistic UI and do not let route-level local state drift from server-confirmed status changes.
+   - Commit message: `feat(links): add link list ui`
+
+2. **Inbox processor feedback and routing**
+   - Files touched: `src/routes/inbox.jsx`
+   - Steps:
+     1. Surface the source-specific duplicate notices returned by the data layer.
+     2. When processing opens an existing or reopened source, route to the correct destination instead of always pushing to `/items/$id`.
+     3. Preserve the current generic inbox processing behavior for every non-source template.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds; manual URL-only inbox processing passes for new, active-duplicate, and archived-duplicate cases.
+   - Risks: The inbox processor currently assumes every processed item should open in the editor; link sources introduce a second destination type.
+   - Commit message: `feat(inbox): link source feedback`
+
+**Resolved execution decisions:**
+- Duplicate URL-only inbox captures should be trashed after opening or moving the existing source.
+- Add `link_template_id` to `user_settings`, similar to daily notes, with a built-in default source template fallback.
+- A small metadata parsing dependency is approved if it stays server-only.
+
+**Open questions before execution:**
+- Should `reference: source` items be excluded from `/notes` and the existing notes counts once Link Inbox ships? Recommended: yes, so the Knowledge tab does not show the same source items in two primary list surfaces.
+- When an archived duplicate is moved back to inbox, should `archived_at` be cleared or preserved as the last archive timestamp? Recommended: clear it when `status` leaves `archived`.
+- What is the exact threshold for a “URL-only” generic inbox capture? Recommended: treat it as URL-only only when the normalized capture resolves to a single URL token and no additional text.
+- Is a dedicated `/settings/link-inbox` page acceptable for choosing `link_template_id`? Recommended: yes, because it mirrors the existing daily-note settings pattern and keeps link capture preferences out of the template-management screen.
+
 ## Feature: Personal OS bootstrap (steps 1-3)
 
 **Summary:** Build the initial Vite/React application scaffold first, then author the initial Supabase schema SQL, then author the system-template seed SQL, with approval gates between each step.
