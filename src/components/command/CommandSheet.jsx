@@ -29,9 +29,7 @@ import styles from './CommandSheet.module.css';
 const RECENT_SKELETON_ROWS = ['recent-1', 'recent-2', 'recent-3'];
 const TEMPLATE_SKELETON_ROWS = ['template-1', 'template-2', 'template-3'];
 const SHEET_COPY = {
-  description: 'Search, capture, or run a slash command.',
   placeholder: 'Search or create…',
-  title: 'Command',
 };
 
 function formatItemLabel(item) {
@@ -108,9 +106,7 @@ export function CommandSheet({ children }) {
   const [isCreatingFromTemplate, setIsCreatingFromTemplate] = useState(false);
   const [insertTemplateTarget, setInsertTemplateTarget] = useState(null);
   const inputRef = useRef(null);
-  const titleId = useId();
   const inputId = useId();
-  const descriptionId = useId();
   const deferredQuery = useDeferredValue(query);
   const trimmedQuery = deferredQuery.trim();
   const capturePreview = query.trim().startsWith('/') ? null : getCapturePreview(query);
@@ -499,36 +495,11 @@ export function CommandSheet({ children }) {
           role="presentation"
         >
           <section
-            aria-describedby={descriptionId}
-            aria-labelledby={titleId}
+            aria-label="Command"
             aria-modal="true"
             className={styles.commandSheet__panel}
             role="dialog"
           >
-            <header className={styles.commandSheet__header}>
-              <div>
-                <p className={styles.commandSheet__eyebrow}>Personal OS</p>
-                <h2 className={styles.commandSheet__title} id={titleId}>
-                  {SHEET_COPY.title}
-                </h2>
-              </div>
-
-              <button
-                aria-label="Close command sheet"
-                className={styles.commandSheet__close}
-                onClick={() => {
-                  void requestClose();
-                }}
-                type="button"
-              >
-                Close
-              </button>
-            </header>
-
-            <p className={styles.commandSheet__description} id={descriptionId}>
-              {SHEET_COPY.description}
-            </p>
-
             <label className={styles.commandSheet__field} htmlFor={inputId}>
               <span className={styles.commandSheet__label}>Input</span>
               <textarea
@@ -587,37 +558,6 @@ export function CommandSheet({ children }) {
             </label>
 
             <div className={styles.commandSheet__body}>
-              <section className={styles.commandSheet__controls}>
-                <button
-                  aria-pressed={isRapidLogEnabled}
-                  className={`${styles.commandSheet__modeToggle} ${
-                    isRapidLogEnabled
-                      ? styles['commandSheet__modeToggle--active']
-                      : ''
-                  }`}
-                  onClick={() => {
-                    setIsRapidLogEnabled((currentValue) => !currentValue);
-                  }}
-                  type="button"
-                >
-                  Rapid log {isRapidLogEnabled ? 'On' : 'Off'}
-                </button>
-
-                <button
-                  className={styles.commandSheet__captureButton}
-                  disabled={!capturePreview || isSavingCapture || isSlashQuery}
-                  onClick={() => {
-                    void handleCapture(!isRapidLogEnabled);
-                  }}
-                  type="button"
-                >
-                  {isSavingCapture
-                    ? 'Saving...'
-                    : isRapidLogEnabled
-                      ? 'Capture and Keep Open'
-                      : 'Capture to Inbox'}
-                </button>
-              </section>
 
               {sheetError ? (
                 <p
@@ -895,6 +835,40 @@ export function CommandSheet({ children }) {
                 </>
               ) : null}
             </div>
+
+            <footer className={styles.commandSheet__footer}>
+              <button
+                aria-pressed={isRapidLogEnabled}
+                className={`${styles.commandSheet__modeToggle}${isRapidLogEnabled ? ` ${styles['commandSheet__modeToggle--active']}` : ''}`}
+                onClick={() => {
+                  setIsRapidLogEnabled((currentValue) => !currentValue);
+                }}
+                type="button"
+              >
+                Rapid log
+              </button>
+
+              <div className={styles.commandSheet__footerActions}>
+                <button
+                  className={styles.commandSheet__cancelButton}
+                  onClick={closeSheet}
+                  type="button"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  className={styles.commandSheet__saveButton}
+                  disabled={!capturePreview || isSavingCapture || isSlashQuery}
+                  onClick={() => {
+                    void handleCapture(!isRapidLogEnabled);
+                  }}
+                  type="button"
+                >
+                  {isSavingCapture ? 'Saving...' : 'Save'}
+                </button>
+              </div>
+            </footer>
           </section>
         </div>
       ) : null}

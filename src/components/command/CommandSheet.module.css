@@ -44,65 +44,20 @@
   width: 100%;
 }
 
-.commandSheet__header {
-  align-items: flex-start;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-}
-
-.commandSheet__eyebrow {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-section-label);
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  margin: 0 0 0.5rem;
-  text-transform: uppercase;
-}
-
-.commandSheet__title {
-  font-size: 1.25rem;
-  line-height: var(--line-height-tight);
-  margin: 0;
-}
-
-.commandSheet__close {
-  background: transparent;
-  border: none;
-  border-radius: 999px;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  font: inherit;
-  font-weight: 500;
-  min-height: 2.5rem;
-  padding: 0 0.25rem;
-}
-
-.commandSheet__close:focus-visible {
-  box-shadow: 0 0 0 3px var(--color-focus-ring);
-  outline: none;
-}
-
-.commandSheet__description {
-  color: var(--color-text-secondary);
-  flex: none;
-  line-height: 1.5;
-  margin: 0.75rem 0 1rem;
-}
-
 .commandSheet__field {
-  display: grid;
+  display: block;
   flex: none;
-  gap: 0.5rem;
   margin-bottom: 1rem;
 }
 
 .commandSheet__label {
-  color: var(--color-text-muted);
-  font-size: var(--font-size-section-label);
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .commandSheet__input {
@@ -126,14 +81,6 @@
   outline: none;
 }
 
-.commandSheet__controls {
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1rem;
-}
-
 .commandSheet__body {
   min-block-size: 0;
   overflow-x: hidden;
@@ -142,42 +89,85 @@
   padding-right: 0.25rem;
 }
 
-.commandSheet__modeToggle,
-.commandSheet__captureButton {
-  border: 1px solid var(--color-border-subtle);
-  border-radius: 999px;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 600;
-  min-height: 2.875rem;
-  padding: 0 1rem;
-}
-
 .commandSheet__modeToggle {
   background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
   color: var(--color-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
 }
 
 .commandSheet__modeToggle--active {
   background: var(--color-bg-surface-hover);
+  border-color: var(--color-text-primary);
   color: var(--color-text-primary);
 }
 
-.commandSheet__captureButton {
-  background: var(--color-accent);
-  border-color: var(--color-accent);
-  color: var(--color-bg-app);
-}
-
-.commandSheet__modeToggle:focus-visible,
-.commandSheet__captureButton:focus-visible {
+.commandSheet__modeToggle:focus-visible {
   box-shadow: 0 0 0 3px var(--color-focus-ring);
   outline: none;
 }
 
-.commandSheet__captureButton:disabled {
+.commandSheet__footer {
+  align-items: center;
+  border-top: 1px solid var(--color-border-subtle);
+  display: flex;
+  flex: none;
+  gap: 0.5rem;
+  justify-content: space-between;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+}
+
+.commandSheet__footerActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.commandSheet__cancelButton {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 999px;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 500;
+  min-height: 2.25rem;
+  padding: 0 1rem;
+}
+
+.commandSheet__cancelButton:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  outline: none;
+}
+
+.commandSheet__saveButton {
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  border-radius: 999px;
+  color: var(--color-bg-app);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  min-height: 2.25rem;
+  padding: 0 1rem;
+}
+
+.commandSheet__saveButton:disabled {
   cursor: not-allowed;
   opacity: 0.38;
+}
+
+.commandSheet__saveButton:focus-visible {
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+  outline: none;
 }
 
 .commandSheet__message {
