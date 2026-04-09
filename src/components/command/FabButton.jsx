@@ -19,11 +19,7 @@ export function FabButton({
     }
   }
 
-  function handlePointerDown(event) {
-    if (event.pointerType !== 'touch') {
-      return;
-    }
-
+  function handlePointerDown() {
     triggeredAlternateActionRef.current = false;
     clearLongPressTimeout();
 
@@ -43,6 +39,10 @@ export function FabButton({
   }
 
   function handlePointerCancel() {
+    clearLongPressTimeout();
+  }
+
+  function handlePointerLeave() {
     clearLongPressTimeout();
   }
 
@@ -89,6 +89,7 @@ export function FabButton({
       onContextMenu={handleContextMenu}
       onPointerCancel={handlePointerCancel}
       onPointerDown={handlePointerDown}
+      onPointerLeave={handlePointerLeave}
       onPointerUp={handlePointerUp}
       type="button"
     >
