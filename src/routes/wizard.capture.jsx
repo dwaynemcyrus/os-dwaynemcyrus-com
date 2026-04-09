@@ -560,6 +560,7 @@ export const wizardCaptureRoute = createRoute({
       return () => {
         cancelled = true;
       };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [auth.user?.id]);
 
     // Sync title draft when capture changes
