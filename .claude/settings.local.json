@@ -4,7 +4,19 @@
       "Bash(wc:*)",
       "Bash(grep -r \"export\" /Users/cyrus/Code/os-dwaynemcyrus-com/src/lib/*.js)",
       "Bash(grep -n \"z-index\\\\|--color\\\\|--font\" /Users/cyrus/Code/os-dwaynemcyrus-com/src/styles/*.css)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(node:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m ':*)",
+      "Bash(git push:*)",
+      "Bash(npm run:*)",
+      "Bash(ls /Users/cyrus/Code/os-dwaynemcyrus-com/eslint* /Users/cyrus/Code/os-dwaynemcyrus-com/.eslint*)",
+      "Bash(cat /Users/cyrus/Code/os-dwaynemcyrus-com/.eslintrc*)",
+      "Bash(grep -A2 \"sources\\\\.\\\\$\")",
+      "Bash(git commit:*)",
+      "Bash(grep -rn \"font-size\" src/routes/*.module.css src/components/**/*.module.css)",
+      "Bash(python3:*)",
+      "Bash(git tag:*)"
     ]
   }
 }
