@@ -500,8 +500,11 @@ export const wizardCaptureRoute = createRoute({
     const [authorDraft, setAuthorDraft] = useState('');
     const [selections, setSelections] = useState(EMPTY_SELECTIONS);
     const [areaItems, setAreaItems] = useState([]);
+    const [projectItems, setProjectItems] = useState([]);
+    const [projectSearch, setProjectSearch] = useState('');
     const [isLoading, setIsLoading] = useState(true);
     const [isLoadingAreas, setIsLoadingAreas] = useState(false);
+    const [isLoadingProjects, setIsLoadingProjects] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [actionMessage, setActionMessage] = useState('');
@@ -602,6 +605,31 @@ export const wizardCaptureRoute = createRoute({
       return () => { cancelled = true; };
     }, [step, auth.user?.id]);
 
+    // Load project items when entering project-picker step
+    useEffect(() => {
+      if (step !== 'project-picker' || !auth.user?.id) return;
+
+      let cancelled = false;
+      setIsLoadingProjects(true);
+      setProjectSearch('');
+
+      supabase
+        .from('items')
+        .select('id,title,filename')
+        .eq('user_id', auth.user.id)
+        .eq('type', 'action')
+        .eq('subtype', 'project')
+        .is('date_trashed', null)
+        .order('title', { ascending: true })
+        .then(({ data, error }) => {
+          if (cancelled) return;
+          if (!error) setProjectItems(data ?? []);
+          setIsLoadingProjects(false);
+        });
+
+      return () => { cancelled = true; };
+    }, [step, auth.user?.id]);
+
     useEffect(() => {
       if (!actionMessage) return;
       const t = window.setTimeout(() => setActionMessage(''), 2500);
@@ -635,6 +663,7 @@ export const wizardCaptureRoute = createRoute({
       setSelections(EMPTY_SELECTIONS);
       setUrlDraft('');
       setAuthorDraft('');
+      setProjectSearch('');
       setErrorMessage('');
     }
 
@@ -1442,6 +1471,16 @@ export const wizardCaptureRoute = createRoute({
 
       // ── Project picker ───────────────────────────────────────────────
       if (step === 'project-picker') {
+        const lowerSearch = projectSearch.toLowerCase();
+        const filteredProjects = lowerSearch
+          ? projectItems.filter((p) =>
+              (p.title || p.filename || '').toLowerCase().includes(lowerSearch),
+            )
+          : projectItems;
+        const hasExactMatch = projectItems.some(
+          (p) => (p.title || '').toLowerCase() === lowerSearch,
+        );
+
         return (
           <section className={styles.wizardCaptureRoute__step}>
             <header className={styles.wizardCaptureRoute__stepHeader}>
@@ -1456,48 +1495,87 @@ export const wizardCaptureRoute = createRoute({
             </header>
 
             <div className={styles.wizardCaptureRoute__titleField}>
-              <label className={styles.wizardCaptureRoute__titleLabel} htmlFor="new-project-name">
-                + Create new project
+              <label className={styles.wizardCaptureRoute__titleLabel} htmlFor="project-search">
+                Search or create
               </label>
               <input
+                autoFocus
                 className={styles.wizardCaptureRoute__titleInput}
-                id="new-project-name"
-                onChange={(e) => setSelections((p) => ({
-                  ...p,
-                  newProjectName: e.target.value,
-                  project: e.target.value.trim() ? null : p.project,
-                }))}
-                placeholder="Project name"
+                id="project-search"
+                onChange={(e) => {
+                  setProjectSearch(e.target.value);
+                  setSelections((p) => ({ ...p, project: null, newProjectName: '' }));
+                }}
+                placeholder="Project name…"
                 type="text"
-                value={selections.newProjectName}
+                value={projectSearch}
               />
             </div>
 
-            {selections.newProjectName.trim() ? (
-              <div className={styles.wizardCaptureRoute__inputActions}>
-                <button
-                  className={styles.wizardCaptureRoute__nextButton}
-                  disabled={isProcessing}
-                  onClick={() => advanceStep('task-when')}
-                  type="button"
-                >
-                  Next →
-                </button>
-              </div>
+            {isLoadingProjects ? (
+              <div className={styles.wizardCaptureRoute__skeleton} style={{ blockSize: '3rem' }} />
             ) : (
-              <div className={styles.wizardCaptureRoute__inputActions}>
-                <button
-                  className={styles.wizardCaptureRoute__skipButton}
-                  disabled={isProcessing}
-                  onClick={() => {
-                    setSelections((p) => ({ ...p, project: null, newProjectName: '' }));
-                    advanceStep('task-when');
-                  }}
-                  type="button"
-                >
-                  Skip — no project
-                </button>
-              </div>
+              <ul className={styles.wizardCaptureRoute__optionList}>
+                {filteredProjects.map((proj) => (
+                  <li key={proj.id}>
+                    <button
+                      className={`${styles.wizardCaptureRoute__option} ${
+                        selections.project?.id === proj.id
+                          ? styles['wizardCaptureRoute__option--primary']
+                          : ''
+                      }`}
+                      disabled={isProcessing}
+                      onClick={() => {
+                        setSelections((p) => ({ ...p, project: proj, newProjectName: '' }));
+                        advanceStep('task-when');
+                      }}
+                      type="button"
+                    >
+                      <span className={styles.wizardCaptureRoute__optionLabel}>
+                        {proj.title || proj.filename || 'Untitled project'}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+
+                {projectSearch.trim() && !hasExactMatch ? (
+                  <li>
+                    <button
+                      className={styles.wizardCaptureRoute__option}
+                      disabled={isProcessing}
+                      onClick={() => {
+                        setSelections((p) => ({
+                          ...p,
+                          newProjectName: projectSearch.trim(),
+                          project: null,
+                        }));
+                        advanceStep('task-when');
+                      }}
+                      type="button"
+                    >
+                      <span className={styles.wizardCaptureRoute__optionLabel}>
+                        + Create "{projectSearch.trim()}"
+                      </span>
+                    </button>
+                  </li>
+                ) : null}
+
+                <li>
+                  <button
+                    className={styles.wizardCaptureRoute__option}
+                    disabled={isProcessing}
+                    onClick={() => {
+                      setSelections((p) => ({ ...p, project: null, newProjectName: '' }));
+                      advanceStep('task-when');
+                    }}
+                    type="button"
+                  >
+                    <span className={styles.wizardCaptureRoute__optionLabel}>
+                      Skip — no project
+                    </span>
+                  </button>
+                </li>
+              </ul>
             )}
           </section>
         );
