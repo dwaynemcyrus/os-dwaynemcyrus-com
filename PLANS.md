@@ -1636,3 +1636,41 @@
 
 **Open questions before execution:**
 - None. The user explicitly approved the JSX cleanup after the lint configuration change.
+
+## Feature: Preserve Raw Filenames
+
+**Summary:** Stop normalizing and prettifying filenames so stored and displayed filenames stay exactly as the user writes them.
+
+**Build spec:** `docs/agents/build-spec.md`
+
+**Agents involved:** @frontend
+
+**Current-state analysis:**
+- Filenames are currently normalized on write in `src/lib/frontmatter.js` and `src/lib/items.js`, which lowercases, strips accents, and converts separators to hyphens.
+- Filenames are also prettified on display in `src/lib/filenames.js`, which converts stored values back into title-like labels.
+- The editor and capture flows still describe filenames as normalized values and sometimes regenerate them from titles.
+- Filename search currently slugifies the query before matching the stored filename, which will stop working correctly once filenames remain raw.
+
+**Sequence:**
+
+### Phase 1 — Raw Filename Preservation
+
+**Agent:** @frontend
+
+**Goal:** Preserve filenames as typed across save, display, and search behavior.
+
+**Chunks:**
+
+1. **Filename model cleanup**
+   - Files touched: `src/lib/frontmatter.js`, `src/lib/filenames.js`, `src/lib/items.js`, `src/components/editor/ItemEditorScreen.jsx`, `src/routes/wizard.capture.jsx`
+   - Steps:
+     1. Change the central filename normalizer to preserve the typed filename instead of slugifying it.
+     2. Update shared display helpers so filenames are shown raw rather than converted into prettified labels.
+     3. Keep search and title-sync logic coherent after raw filename preservation.
+     4. Remove stale UI copy and validation messages that still describe normalized filename behavior.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: uniqueness remains exact-string based, so filenames that previously collapsed into the same normalized slug may now coexist if their raw text differs.
+   - Commit message: `refactor(filename): preserve raw values`
+
+**Open questions before execution:**
+- None. The user explicitly asked to keep filenames as written.

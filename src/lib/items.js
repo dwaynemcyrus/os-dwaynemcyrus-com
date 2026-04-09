@@ -41,14 +41,7 @@ function escapeIlikePattern(value) {
 }
 
 function normalizeFilenameSearchValue(value) {
-  return String(value ?? '')
-    .trim()
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
+  return String(value ?? '').trim();
 }
 
 function buildFilenameAwareSearchFilter(query, { includeContent = false } = {}) {
@@ -1143,7 +1136,7 @@ export async function createItemFromTemplate({
 
   if (!materializedTemplatePayload.filename) {
     throw new Error(
-      'Add a title or filename with letters or numbers before creating this item.',
+      'Add a title or filename before creating this item.',
     );
   }
 
@@ -1279,7 +1272,7 @@ export async function processInboxItem({
 
   if (!materializedTemplatePayload.filename) {
     throw new Error(
-      'Add a title or filename with letters or numbers before processing this item.',
+      'Add a title or filename before processing this item.',
     );
   }
 
@@ -1364,7 +1357,7 @@ export async function saveEditorItem({
 
   if (existingItem.is_template !== true && !nextFilename) {
     throw new Error(
-      'Add a title or filename with letters or numbers before saving.',
+      'Add a title or filename before saving.',
     );
   }
 

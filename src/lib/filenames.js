@@ -1,11 +1,3 @@
-function capitalizeWord(value) {
-  if (!value) {
-    return '';
-  }
-
-  return value.charAt(0).toUpperCase() + value.slice(1);
-}
-
 function normalizeTextValue(value) {
   return String(value ?? '').trim();
 }
@@ -17,11 +9,7 @@ export function formatFilenameForDisplay(value, fallbackValue = '') {
     return normalizeTextValue(fallbackValue);
   }
 
-  return normalizedValue
-    .split(/[-_]+/g)
-    .filter(Boolean)
-    .map((part) => capitalizeWord(part))
-    .join(' ');
+  return normalizedValue;
 }
 
 export function buildTitleFromFilename(filename, fallbackValue = '') {

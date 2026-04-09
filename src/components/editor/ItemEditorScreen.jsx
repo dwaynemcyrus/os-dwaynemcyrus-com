@@ -803,7 +803,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
                 margin: 0,
               }}
             >
-              Enter a readable name. The app will normalize it to the stored filename format when you save.
+              Enter the filename exactly as you want it stored.
             </p>
           </header>
 

@@ -514,19 +514,7 @@ export function normalizeFilenameValue(value) {
     throw new Error('cannot use template tokens.');
   }
 
-  const safeFilename = normalizedInput
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-+|-+$/g, '');
-
-  if (!safeFilename) {
-    throw new Error('must include letters or numbers.');
-  }
-
-  return safeFilename;
+  return normalizedInput;
 }
 
 function hasExistingScalarValue(value) {
