@@ -45,6 +45,12 @@ const EMPTY_SELECTIONS = {
   author: '',
   area: null,
   workbench: false,
+  dateEnd: null,
+  frequency: [],
+  unit: '',
+  target: '',
+  project: null,
+  newProjectName: '',
 };
 
 // GTD decision tree — option-list steps only.
@@ -346,6 +352,131 @@ const STEP_TREE = {
       },
     ],
   },
+  'action-type': {
+    question: 'What kind of action is this?',
+    subtitle: null,
+    options: [
+      {
+        id: 'habit',
+        label: 'A recurring habit or behavior',
+        description: 'Something I want to do regularly.',
+        select: { type: 'action', subtype: 'habit', status: 'open' },
+        next: 'habit-setup',
+      },
+      {
+        id: 'review',
+        label: 'A scheduled review',
+        description: 'A weekly, monthly, or yearly review.',
+        select: { type: 'action', status: 'open' },
+        next: 'review-type',
+      },
+      {
+        id: 'creation',
+        label: 'Writing or creation',
+        description: 'An essay, framework, story, artwork, script.',
+        select: { type: 'action', status: 'open' },
+        next: 'creation-type',
+      },
+      {
+        id: 'task',
+        label: 'A single task',
+        description: 'One clear action to complete.',
+        select: { type: 'action', subtype: 'task', status: 'open' },
+        next: 'task-when',
+      },
+      {
+        id: 'project-task',
+        label: 'Part of a larger project',
+        description: 'Multiple steps needed to reach the outcome.',
+        select: { type: 'action', subtype: 'task', status: 'open' },
+        next: 'project-picker',
+      },
+    ],
+  },
+  'review-type': {
+    question: 'What kind of review?',
+    subtitle: null,
+    options: [
+      {
+        id: 'weekly',
+        label: 'Weekly review',
+        description: '',
+        select: { type: 'action', subtype: 'review-weekly', status: 'open' },
+        next: 'area-assign',
+      },
+      {
+        id: 'monthly',
+        label: 'Monthly review',
+        description: '',
+        select: { type: 'action', subtype: 'review-monthly', status: 'open' },
+        next: 'area-assign',
+      },
+      {
+        id: 'yearly',
+        label: 'Yearly review',
+        description: '',
+        select: { type: 'action', subtype: 'review-yearly', status: 'open' },
+        next: 'area-assign',
+      },
+      {
+        id: 'life-area',
+        label: 'Life area review',
+        description: '',
+        select: { type: 'action', subtype: 'review-area', status: 'open' },
+        next: 'area-assign',
+      },
+    ],
+  },
+  'creation-type': {
+    question: 'What kind of creation?',
+    subtitle: null,
+    options: [
+      { id: 'essay', label: 'Essay', description: '', select: { type: 'action', subtype: 'essay', status: 'open' }, next: 'area-assign' },
+      { id: 'framework', label: 'Framework', description: '', select: { type: 'action', subtype: 'framework', status: 'open' }, next: 'area-assign' },
+      { id: 'lesson', label: 'Lesson', description: '', select: { type: 'action', subtype: 'lesson', status: 'open' }, next: 'area-assign' },
+      { id: 'manuscript', label: 'Manuscript', description: '', select: { type: 'action', subtype: 'manuscript', status: 'open' }, next: 'area-assign' },
+      { id: 'comic', label: 'Comic', description: '', select: { type: 'action', subtype: 'comic', status: 'open' }, next: 'area-assign' },
+      { id: 'poem', label: 'Poem', description: '', select: { type: 'action', subtype: 'poem', status: 'open' }, next: 'area-assign' },
+      { id: 'story', label: 'Story', description: '', select: { type: 'action', subtype: 'story', status: 'open' }, next: 'area-assign' },
+      { id: 'artwork', label: 'Artwork', description: '', select: { type: 'action', subtype: 'artwork', status: 'open' }, next: 'area-assign' },
+      { id: 'case-study', label: 'Case study', description: '', select: { type: 'action', subtype: 'case-study', status: 'open' }, next: 'area-assign' },
+      { id: 'workshop', label: 'Workshop', description: '', select: { type: 'action', subtype: 'workshop', status: 'open' }, next: 'area-assign' },
+      { id: 'script', label: 'Script', description: '', select: { type: 'action', subtype: 'script', status: 'open' }, next: 'area-assign' },
+    ],
+  },
+  'task-when': {
+    question: 'When does this need to happen?',
+    subtitle: null,
+    options: [
+      {
+        id: 'today',
+        label: 'Today',
+        description: '',
+        select: { status: 'open', dateEnd: 'TODAY' },
+        next: 'area-assign',
+      },
+      {
+        id: 'specific-date',
+        label: 'Specific date',
+        description: '',
+        next: 'task-date',
+      },
+      {
+        id: 'anytime',
+        label: 'Anytime — no deadline',
+        description: '',
+        select: { status: 'open', dateEnd: null },
+        next: 'area-assign',
+      },
+      {
+        id: 'someday',
+        label: 'Someday',
+        description: '',
+        select: { status: 'someday', dateEnd: null },
+        next: 'area-assign',
+      },
+    ],
+  },
 };
 
 const FIRST_STEP = 'review';
@@ -575,6 +706,38 @@ export const wizardCaptureRoute = createRoute({
       }
     }
 
+    async function handleMarkDone() {
+      if (!auth.user?.id) return;
+
+      const capture = captures[currentIndex];
+      if (!capture) return;
+
+      setIsProcessing(true);
+
+      try {
+        const now = new Date().toISOString();
+        const { error } = await supabase
+          .from('items')
+          .update({ status: 'done', date_trashed: now, date_modified: now })
+          .eq('id', capture.id)
+          .eq('user_id', auth.user.id);
+
+        if (error) throw error;
+
+        writeItemHistory(capture.id, auth.user.id, capture.content, 'updated', {
+          status: 'done',
+        });
+
+        setActionMessage('Done.');
+        window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
+        advanceToNext();
+      } catch (error) {
+        setErrorMessage(error.message ?? 'Unable to mark as done.');
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+
     async function handleFinalSave() {
       if (!auth.user?.id) return;
 
@@ -604,6 +767,36 @@ export const wizardCaptureRoute = createRoute({
         if (selections.area) {
           updatePayload.area = `[[${selections.area.title}]]`;
         }
+
+        if (selections.dateEnd) updatePayload.date_end = selections.dateEnd;
+
+        if (selections.frequency?.length) updatePayload.frequency = selections.frequency;
+        if (selections.unit?.trim()) updatePayload.unit = selections.unit.trim();
+        const parsedTarget = parseFloat(selections.target);
+        if (!Number.isNaN(parsedTarget)) updatePayload.target = parsedTarget;
+
+        // Resolve project wikilink
+        let projectTitle = null;
+        if (selections.project) {
+          projectTitle = selections.project.title;
+        } else if (selections.newProjectName?.trim()) {
+          const projectName = selections.newProjectName.trim();
+          const { data: newProject, error: projectError } = await supabase
+            .from('items')
+            .insert({
+              user_id: auth.user.id,
+              type: 'action',
+              subtype: 'project',
+              title: projectName,
+              status: 'active',
+              date_created: now,
+              date_modified: now,
+            })
+            .select('id,title')
+            .single();
+          if (!projectError && newProject) projectTitle = newProject.title;
+        }
+        if (projectTitle) updatePayload.project = `[[${projectTitle}]]`;
 
         const { error } = await supabase
           .from('items')
@@ -636,7 +829,11 @@ export const wizardCaptureRoute = createRoute({
     function handleOption(option) {
       if (option.soon) return;
       if (option.select) {
-        setSelections((prev) => ({ ...prev, ...option.select }));
+        const resolved = { ...option.select };
+        if (resolved.dateEnd === 'TODAY') {
+          resolved.dateEnd = new Date().toISOString().split('T')[0];
+        }
+        setSelections((prev) => ({ ...prev, ...resolved }));
       }
       if (option.action === 'back') { goBack(); return; }
       if (option.action === 'delete') { void handleDelete(); return; }
@@ -1039,6 +1236,269 @@ export const wizardCaptureRoute = createRoute({
                 Stop processing
               </button>
             </div>
+          </section>
+        );
+      }
+
+      // ── Do it now (2-minute rule) ────────────────────────────────────
+      if (step === 'do-now') {
+        return (
+          <section className={styles.wizardCaptureRoute__step}>
+            <header className={styles.wizardCaptureRoute__stepHeader}>
+              {stepHistory.length > 0 ? (
+                <button className={styles.wizardCaptureRoute__backButton} onClick={goBack} type="button">
+                  ← Back
+                </button>
+              ) : null}
+              <h2 className={styles.wizardCaptureRoute__stepQuestion}>Go do it now.</h2>
+              <p className={styles.wizardCaptureRoute__stepSubtitle}>
+                Come back when you are done and mark it complete.
+              </p>
+            </header>
+            <ul className={styles.wizardCaptureRoute__optionList}>
+              <li>
+                <button
+                  className={`${styles.wizardCaptureRoute__option} ${styles['wizardCaptureRoute__option--primary']}`}
+                  disabled={isProcessing}
+                  onClick={() => void handleMarkDone()}
+                  type="button"
+                >
+                  <span className={styles.wizardCaptureRoute__optionLabel}>Mark as Done</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  className={styles.wizardCaptureRoute__option}
+                  disabled={isProcessing}
+                  onClick={() => advanceStep('action-type')}
+                  type="button"
+                >
+                  <span className={styles.wizardCaptureRoute__optionLabel}>
+                    Actually it takes longer →
+                  </span>
+                </button>
+              </li>
+            </ul>
+          </section>
+        );
+      }
+
+      // ── Habit setup ──────────────────────────────────────────────────
+      if (step === 'habit-setup') {
+        const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const UNITS = ['minutes', 'reps', 'pages', 'km', 'times', 'other'];
+        const isSpecificDays = selections.frequency.length > 0
+          && !selections.frequency.includes('daily')
+          && !selections.frequency.includes('weekly');
+
+        return (
+          <section className={styles.wizardCaptureRoute__step}>
+            <header className={styles.wizardCaptureRoute__stepHeader}>
+              {stepHistory.length > 0 ? (
+                <button className={styles.wizardCaptureRoute__backButton} onClick={goBack} type="button">
+                  ← Back
+                </button>
+              ) : null}
+              <h2 className={styles.wizardCaptureRoute__stepQuestion}>How often?</h2>
+            </header>
+
+            <div className={styles.wizardCaptureRoute__habitSection}>
+              <p className={styles.wizardCaptureRoute__titleLabel}>Frequency</p>
+              <div className={styles.wizardCaptureRoute__habitFreq}>
+                {[
+                  { id: 'daily', label: 'Daily' },
+                  { id: 'weekly', label: 'Weekly' },
+                  { id: 'specific', label: 'Specific days' },
+                ].map((f) => {
+                  const active = f.id === 'daily'
+                    ? selections.frequency.includes('daily')
+                    : f.id === 'weekly'
+                      ? selections.frequency.includes('weekly')
+                      : isSpecificDays;
+                  return (
+                    <button
+                      key={f.id}
+                      className={`${styles.wizardCaptureRoute__habitFreqBtn} ${active ? styles['wizardCaptureRoute__habitFreqBtn--active'] : ''}`}
+                      onClick={() => {
+                        if (f.id === 'daily') setSelections((p) => ({ ...p, frequency: ['daily'] }));
+                        else if (f.id === 'weekly') setSelections((p) => ({ ...p, frequency: ['weekly'] }));
+                        else setSelections((p) => ({ ...p, frequency: [] }));
+                      }}
+                      type="button"
+                    >
+                      {f.label}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {isSpecificDays || (!selections.frequency.includes('daily') && !selections.frequency.includes('weekly') && selections.frequency.length === 0) ? (
+                <div className={styles.wizardCaptureRoute__habitDays}>
+                  {DAYS.map((day) => {
+                    const key = day.toLowerCase();
+                    const active = selections.frequency.includes(key);
+                    return (
+                      <button
+                        key={day}
+                        className={`${styles.wizardCaptureRoute__habitDayBtn} ${active ? styles['wizardCaptureRoute__habitDayBtn--active'] : ''}`}
+                        onClick={() => {
+                          setSelections((p) => ({
+                            ...p,
+                            frequency: active
+                              ? p.frequency.filter((d) => d !== key)
+                              : [...p.frequency.filter((d) => d !== 'daily' && d !== 'weekly'), key],
+                          }));
+                        }}
+                        type="button"
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : null}
+            </div>
+
+            <div className={styles.wizardCaptureRoute__habitSection}>
+              <div className={styles.wizardCaptureRoute__habitRow}>
+                <div className={styles.wizardCaptureRoute__titleField}>
+                  <label className={styles.wizardCaptureRoute__titleLabel} htmlFor="habit-target">
+                    Target
+                  </label>
+                  <input
+                    className={styles.wizardCaptureRoute__titleInput}
+                    id="habit-target"
+                    inputMode="numeric"
+                    onChange={(e) => setSelections((p) => ({ ...p, target: e.target.value }))}
+                    placeholder="0"
+                    type="number"
+                    value={selections.target}
+                  />
+                </div>
+                <div className={styles.wizardCaptureRoute__titleField}>
+                  <label className={styles.wizardCaptureRoute__titleLabel} htmlFor="habit-unit">
+                    Unit
+                  </label>
+                  <select
+                    className={styles.wizardCaptureRoute__titleInput}
+                    id="habit-unit"
+                    onChange={(e) => setSelections((p) => ({ ...p, unit: e.target.value }))}
+                    value={selections.unit}
+                  >
+                    <option value="">—</option>
+                    {UNITS.map((u) => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <button
+              className={styles.wizardCaptureRoute__nextButton}
+              disabled={isProcessing || selections.frequency.length === 0}
+              onClick={() => advanceStep('area-assign')}
+              type="button"
+            >
+              Next →
+            </button>
+          </section>
+        );
+      }
+
+      // ── Task specific date ───────────────────────────────────────────
+      if (step === 'task-date') {
+        return (
+          <section className={styles.wizardCaptureRoute__step}>
+            <header className={styles.wizardCaptureRoute__stepHeader}>
+              {stepHistory.length > 0 ? (
+                <button className={styles.wizardCaptureRoute__backButton} onClick={goBack} type="button">
+                  ← Back
+                </button>
+              ) : null}
+              <h2 className={styles.wizardCaptureRoute__stepQuestion}>When?</h2>
+            </header>
+            <div className={styles.wizardCaptureRoute__titleField}>
+              <label className={styles.wizardCaptureRoute__titleLabel} htmlFor="task-date-input">
+                Date
+              </label>
+              <input
+                className={styles.wizardCaptureRoute__titleInput}
+                id="task-date-input"
+                onChange={(e) => setSelections((p) => ({ ...p, dateEnd: e.target.value || null }))}
+                type="date"
+                value={selections.dateEnd ?? ''}
+              />
+            </div>
+            <button
+              className={styles.wizardCaptureRoute__nextButton}
+              disabled={!selections.dateEnd}
+              onClick={() => advanceStep('area-assign')}
+              type="button"
+            >
+              Next →
+            </button>
+          </section>
+        );
+      }
+
+      // ── Project picker ───────────────────────────────────────────────
+      if (step === 'project-picker') {
+        return (
+          <section className={styles.wizardCaptureRoute__step}>
+            <header className={styles.wizardCaptureRoute__stepHeader}>
+              {stepHistory.length > 0 ? (
+                <button className={styles.wizardCaptureRoute__backButton} onClick={goBack} type="button">
+                  ← Back
+                </button>
+              ) : null}
+              <h2 className={styles.wizardCaptureRoute__stepQuestion}>
+                Which project does this belong to?
+              </h2>
+            </header>
+
+            <div className={styles.wizardCaptureRoute__titleField}>
+              <label className={styles.wizardCaptureRoute__titleLabel} htmlFor="new-project-name">
+                + Create new project
+              </label>
+              <input
+                className={styles.wizardCaptureRoute__titleInput}
+                id="new-project-name"
+                onChange={(e) => setSelections((p) => ({
+                  ...p,
+                  newProjectName: e.target.value,
+                  project: e.target.value.trim() ? null : p.project,
+                }))}
+                placeholder="Project name"
+                type="text"
+                value={selections.newProjectName}
+              />
+            </div>
+
+            {selections.newProjectName.trim() ? (
+              <div className={styles.wizardCaptureRoute__inputActions}>
+                <button
+                  className={styles.wizardCaptureRoute__nextButton}
+                  disabled={isProcessing}
+                  onClick={() => advanceStep('task-when')}
+                  type="button"
+                >
+                  Next →
+                </button>
+              </div>
+            ) : (
+              <div className={styles.wizardCaptureRoute__inputActions}>
+                <button
+                  className={styles.wizardCaptureRoute__skipButton}
+                  disabled={isProcessing}
+                  onClick={() => {
+                    setSelections((p) => ({ ...p, project: null, newProjectName: '' }));
+                    advanceStep('task-when');
+                  }}
+                  type="button"
+                >
+                  Skip — no project
+                </button>
+              </div>
+            )}
           </section>
         );
       }

@@ -315,6 +315,76 @@
   font-size: 0.95rem;
 }
 
+/* Habit setup */
+
+.wizardCaptureRoute__habitSection {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.wizardCaptureRoute__habitFreq {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.wizardCaptureRoute__habitFreqBtn {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  min-block-size: 2.25rem;
+  padding: 0 0.75rem;
+}
+
+.wizardCaptureRoute__habitFreqBtn--active {
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.wizardCaptureRoute__habitFreqBtn:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.wizardCaptureRoute__habitDays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.wizardCaptureRoute__habitDayBtn {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.8rem;
+  min-block-size: 2rem;
+  padding: 0 0.6rem;
+}
+
+.wizardCaptureRoute__habitDayBtn--active {
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.wizardCaptureRoute__habitDayBtn:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.wizardCaptureRoute__habitRow {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: 1fr 1fr;
+}
+
 /* Confirmation screen */
 
 .wizardCaptureRoute__confirm {
