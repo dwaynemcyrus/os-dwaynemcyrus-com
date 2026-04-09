@@ -1564,3 +1564,39 @@
 
 **Open questions before execution:**
 - None. Route scope, placeholder behavior, palette taxonomy, discoverability, and `trash` placement have all been explicitly confirmed.
+
+## Feature: JSX-Aware ESLint Gates
+
+**Summary:** Update the lint configuration so normal JSX component references are treated as used by ESLint, instead of forcing `createElement(...)` as the safe path through `no-unused-vars`.
+
+**Build spec:** `docs/agents/build-spec.md`
+
+**Agents involved:** @frontend
+
+**Current-state analysis:**
+- `eslint.config.js` currently enables JSX parsing but does not load any React JSX rules.
+- The repo gate therefore relies on `no-unused-vars` without `react/jsx-uses-vars`, which incorrectly flags component references used only in JSX.
+- The previous navigation/palette refactor had to work around that by favoring `createElement(...)`, which is not the intended long-term authoring model.
+
+**Sequence:**
+
+### Phase 1 — JSX Rule Support
+
+**Agent:** @frontend
+
+**Goal:** Add the minimum ESLint support needed for JSX variable usage to pass the gate cleanly.
+
+**Chunks:**
+
+1. **React JSX lint support**
+   - Files touched: `package.json`, `package-lock.json`, `eslint.config.js`
+   - Steps:
+     1. Add `eslint-plugin-react` as a dev dependency.
+     2. Register the plugin in the flat ESLint config.
+     3. Enable `react/jsx-uses-vars` so JSX component references satisfy `no-unused-vars`.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: keep the change narrow and avoid introducing a large new React rule surface without explicit approval.
+   - Commit message: `chore(lint): support jsx vars`
+
+**Open questions before execution:**
+- None. The user explicitly approved the dependency-based fix rather than weakening the gate.
