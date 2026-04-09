@@ -138,7 +138,7 @@ export const inboxRoute = createRoute({
           <div className={styles.inboxRoute__empty}>
             <p className={styles.inboxRoute__emptyTitle}>Inbox clear</p>
             <p className={styles.inboxRoute__emptyText}>
-              No unprocessed captures waiting. Use the command sheet to add something new.
+              No unprocessed captures waiting. Tap the capture button to add something new.
             </p>
           </div>
         )}

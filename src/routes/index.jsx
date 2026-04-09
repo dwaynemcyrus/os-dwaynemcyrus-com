@@ -64,6 +64,27 @@ function formatWorkbenchMeta(item) {
   return metaParts.join(' · ');
 }
 
+const OVERVIEW_ROWS = [
+  {
+    id: 'knowledge',
+    label: 'Knowledge',
+    meta: 'Notes, sources, and connected material.',
+    to: '/knowledge',
+  },
+  {
+    id: 'strategy',
+    label: 'Strategy',
+    meta: 'Cycles, reviews, areas, and planning placeholders.',
+    to: '/strategy',
+  },
+  {
+    id: 'execution',
+    label: 'Execution',
+    meta: 'Today, upcoming, backlog, someday, and logbook placeholders.',
+    to: '/execution',
+  },
+];
+
 export const indexRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: '/',
@@ -302,6 +323,41 @@ export const indexRoute = createRoute({
               Capture Review
             </button>
           </div>
+
+          <section className={styles.homeRoute__overviewSection}>
+            <p className={styles.homeRoute__overviewEyebrow}>Browse</p>
+            <p className={styles.homeRoute__overviewHint}>
+              Tap the capture button to save to inbox. Hold it for the command palette.
+            </p>
+            <ul className={styles.homeRoute__overviewList}>
+              {OVERVIEW_ROWS.map((row) => (
+                <li key={row.id}>
+                  <button
+                    className={styles.homeRoute__overviewRow}
+                    onClick={() => {
+                      void navigate({ to: row.to });
+                    }}
+                    type="button"
+                  >
+                    <span className={styles.homeRoute__overviewContent}>
+                      <span className={styles.homeRoute__overviewLabel}>
+                        {row.label}
+                      </span>
+                      <span className={styles.homeRoute__overviewMeta}>
+                        {row.meta}
+                      </span>
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className={styles.homeRoute__overviewArrow}
+                    >
+                      ›
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </section>
         </div>
 
         {isWorkbenchDialogOpen ? (

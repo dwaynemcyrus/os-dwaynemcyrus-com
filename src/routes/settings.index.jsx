@@ -31,12 +31,6 @@ const SETTINGS_ROWS = [
     to: '/settings/keyboard-shortcuts',
   },
   {
-    id: 'slash-commands',
-    label: 'Slash Commands',
-    meta: 'See the current command sheet actions.',
-    to: '/settings/slash-commands',
-  },
-  {
     id: 'trash',
     label: 'Trash',
     meta: 'Restore or permanently delete trashed items.',

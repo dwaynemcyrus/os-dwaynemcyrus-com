@@ -1,0 +1,103 @@
+.overviewRoute {
+  display: grid;
+  gap: 1.75rem;
+  inline-size: min(100%, 34rem);
+  margin-inline: auto;
+  min-block-size: 100%;
+}
+
+.overviewRoute__header {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.overviewRoute__eyebrow {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.overviewRoute__title {
+  font-size: clamp(2rem, 8vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1;
+  margin: 0;
+}
+
+.overviewRoute__description {
+  color: var(--color-text-secondary);
+  line-height: 1.5;
+  margin: 0;
+  max-inline-size: 28rem;
+}
+
+.overviewRoute__list {
+  display: grid;
+  gap: 0.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.overviewRoute__item {
+  align-items: center;
+  background: transparent;
+  border: none;
+  color: var(--color-text-primary);
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  min-block-size: 3.75rem;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.overviewRoute__item--link {
+  cursor: pointer;
+}
+
+.overviewRoute__item:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.overviewRoute__content {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.overviewRoute__label {
+  font-size: 1.06rem;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.overviewRoute__meta {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.overviewRoute__trail {
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.overviewRoute__badge {
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--space-chip-radius);
+  color: var(--color-text-badge);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  padding: 0.25rem 0.5rem;
+  text-transform: uppercase;
+}

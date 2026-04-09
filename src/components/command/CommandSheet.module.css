@@ -277,6 +277,10 @@
   outline: none;
 }
 
+.commandSheet__itemButton--selected {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .commandSheet__itemTitle,
 .commandSheet__templateTitle {
   font-size: 0.98rem;

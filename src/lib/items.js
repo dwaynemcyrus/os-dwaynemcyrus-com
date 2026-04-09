@@ -1018,73 +1018,6 @@ export async function fetchNotesIndex({ filter, userId }) {
   return data ?? [];
 }
 
-export async function fetchContextSheetCounts(userId) {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const baseQuery = () =>
-    supabase
-      .from('items')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('is_template', false)
-      .is('date_trashed', null)
-      .neq('type', 'action')
-      .neq('type', 'inbox');
-
-  const sourceBase = () =>
-    supabase
-      .from('items')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('type', 'reference')
-      .eq('subtype', 'source')
-      .eq('is_template', false)
-      .is('date_trashed', null);
-
-  const [
-    { count: notesCount, error: notesError },
-    { count: todoCount, error: todoError },
-    { count: todayCount, error: todayError },
-    { count: pinnedCount, error: pinnedError },
-    { count: trashCount, error: trashError },
-    { count: sourcesBacklogCount, error: sourcesBacklogError },
-    { count: sourcesActiveCount, error: sourcesActiveError },
-  ] = await Promise.all([
-    baseQuery(),
-    baseQuery().gt('todos_open', 0),
-    baseQuery().gte('date_modified', todayStart.toISOString()),
-    baseQuery().eq('is_pinned', true),
-    supabase
-      .from('items')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', userId)
-      .eq('is_template', false)
-      .not('date_trashed', 'is', null),
-    sourceBase().eq('status', 'backlog'),
-    sourceBase().eq('status', 'active'),
-  ]);
-
-  if (notesError) throw notesError;
-  if (todoError) throw todoError;
-  if (todayError) throw todayError;
-  if (pinnedError) throw pinnedError;
-  if (trashError) throw trashError;
-  if (sourcesBacklogError) throw sourcesBacklogError;
-  if (sourcesActiveError) throw sourcesActiveError;
-
-  return {
-    notes: notesCount ?? 0,
-    todo: todoCount ?? 0,
-    today: todayCount ?? 0,
-    pinned: pinnedCount ?? 0,
-    trash: trashCount ?? 0,
-    sources_backlog: sourcesBacklogCount ?? 0,
-    sources_active: sourcesActiveCount ?? 0,
-    sources: (sourcesBacklogCount ?? 0) + (sourcesActiveCount ?? 0),
-  };
-}
-
 export async function fetchUnprocessedInboxItems(userId) {
   const { data, error } = await supabase
     .from('items')
@@ -1116,7 +1049,11 @@ export async function searchCommandItemsByTitle(userId, query) {
     .eq('user_id', userId)
     .eq('is_template', false)
     .is('date_trashed', null)
-    .or(buildFilenameAwareSearchFilter(trimmedQuery))
+    .or(
+      buildFilenameAwareSearchFilter(trimmedQuery, {
+        includeContent: true,
+      }),
+    )
     .order('date_modified', { ascending: false, nullsFirst: false })
     .limit(SEARCH_ITEMS_LIMIT);
 

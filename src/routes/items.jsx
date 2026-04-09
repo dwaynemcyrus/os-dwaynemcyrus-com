@@ -362,7 +362,7 @@ export const itemsRoute = createRoute({
           ) : (
             <p className={styles.itemsRoute__emptyState}>
               No items match the current filters yet. Try broadening the search,
-              clearing a subtype, or creating a new item from the command sheet.
+              clearing a subtype, or creating a new item from the capture sheet or palette.
             </p>
           )}
         </section>

@@ -1,19 +1,14 @@
 export const KEYBOARD_SHORTCUTS = [
   {
-    description: 'Switch the command-sheet query into slash-command matching.',
-    keys: '/',
-  },
-  {
-    description: 'Capture the current command-sheet input to inbox.',
+    description: 'Save the capture sheet input to inbox.',
     keys: 'Enter',
   },
   {
-    description: 'Insert a newline in the command-sheet input.',
+    description: 'Insert a newline in the capture sheet input.',
     keys: 'Shift + Enter',
   },
   {
-    description:
-      'Close the command sheet. If unsaved input is present, it captures first.',
+    description: 'Close the active capture sheet or command palette.',
     keys: 'Escape',
   },
   {
@@ -29,21 +24,3 @@ export const KEYBOARD_SHORTCUTS = [
     keys: '#',
   },
 ];
-
-export function formatSlashCommandMeta(slashCommand) {
-  if (!slashCommand.template) {
-    return 'Create a matching template first';
-  }
-
-  const metaParts = [];
-
-  if (slashCommand.template.type) {
-    metaParts.push(slashCommand.template.type);
-  }
-
-  if (slashCommand.template.subtype) {
-    metaParts.push(slashCommand.template.subtype.replaceAll('_', ' '));
-  }
-
-  return metaParts.join(' · ');
-}

@@ -1,110 +1,16 @@
-const CONTEXT_SHEET_TABS = [
-  {
-    id: 'execution',
-    label: 'Execution',
-    rows: [
-      {
-        kind: 'link',
-        id: 'inbox',
-        label: 'Inbox',
-        to: '/inbox',
-      },
-    ],
-  },
-  {
-    id: 'strategy',
-    label: 'Strategy',
-    rows: [
-      {
-        kind: 'link',
-        id: 'now',
-        label: 'Now',
-        to: '/',
-      },
-    ],
-  },
-  {
-    id: 'knowledge',
-    label: 'Knowledge',
-    rows: [
-      {
-        kind: 'link',
-        id: 'notes',
-        label: 'Notes',
-        to: '/notes',
-        countKey: 'notes',
-        expandable: true,
-        subRows: [
-          {
-            kind: 'link',
-            id: 'notes-todo',
-            label: 'Todo',
-            to: '/notes/todo',
-            countKey: 'todo',
-          },
-          {
-            kind: 'link',
-            id: 'notes-today',
-            label: 'Today',
-            to: '/notes/today',
-            countKey: 'today',
-          },
-          {
-            kind: 'link',
-            id: 'notes-pinned',
-            label: 'Pinned',
-            to: '/notes/pinned',
-            countKey: 'pinned',
-          },
-          {
-            kind: 'soon',
-            id: 'notes-locked',
-            label: 'Locked',
-          },
-        ],
-      },
-      {
-        kind: 'link',
-        id: 'sources',
-        label: 'Sources',
-        to: '/sources/inbox',
-        countKey: 'sources',
-        expandable: true,
-        subRows: [
-          {
-            kind: 'link',
-            id: 'sources-inbox',
-            label: 'Inbox',
-            to: '/sources/inbox',
-            countKey: 'sources_backlog',
-          },
-          {
-            kind: 'link',
-            id: 'sources-reading',
-            label: 'Reading',
-            to: '/sources/reading',
-            countKey: 'sources_active',
-          },
-          {
-            kind: 'link',
-            id: 'sources-archive',
-            label: 'Archive',
-            to: '/sources/archive',
-          },
-        ],
-      },
-      {
-        kind: 'link',
-        id: 'trash',
-        label: 'Trash',
-        to: '/trash',
-        countKey: 'trash',
-      },
-    ],
-  },
-];
-
 const SCREEN_CHROME_RULES = [
+  {
+    metaText: 'Knowledge',
+    matches: (pathname) => pathname === '/knowledge',
+  },
+  {
+    metaText: 'Strategy',
+    matches: (pathname) => pathname === '/strategy',
+  },
+  {
+    metaText: 'Execution',
+    matches: (pathname) => pathname === '/execution',
+  },
   {
     metaText: 'Inbox',
     matches: (pathname) => pathname === '/inbox',
@@ -158,10 +64,6 @@ const SCREEN_CHROME_RULES = [
     matches: (pathname) => pathname === '/settings/keyboard-shortcuts',
   },
   {
-    metaText: 'Slash Commands',
-    matches: (pathname) => pathname === '/settings/slash-commands',
-  },
-  {
     metaText: 'Templates',
     matches: (pathname) => pathname === '/settings/templates',
   },
@@ -175,9 +77,25 @@ const BACK_NAVIGATION_RULES = [
   {
     label: 'Now',
     matches: (pathname) =>
-      pathname === '/inbox' ||
-      pathname === '/items' ||
+      pathname === '/knowledge' ||
+      pathname === '/strategy' ||
+      pathname === '/execution',
+    to: '/',
+  },
+  {
+    label: 'Knowledge',
+    matches: (pathname) =>
       pathname === '/notes',
+    to: '/knowledge',
+  },
+  {
+    label: 'Execution',
+    matches: (pathname) => pathname === '/inbox',
+    to: '/execution',
+  },
+  {
+    label: 'Now',
+    matches: (pathname) => pathname === '/items',
     to: '/',
   },
   {
@@ -194,6 +112,11 @@ const BACK_NAVIGATION_RULES = [
     to: '/items',
   },
   {
+    label: 'Knowledge',
+    matches: (pathname) => pathname === '/sources/inbox',
+    to: '/knowledge',
+  },
+  {
     label: 'Sources',
     matches: (pathname) =>
       pathname === '/sources/reading' ||
@@ -202,7 +125,11 @@ const BACK_NAVIGATION_RULES = [
   },
   {
     label: 'Sources',
-    matches: (pathname) => pathname.startsWith('/sources/') && pathname.split('/').length === 4,
+    matches: (pathname) =>
+      pathname.startsWith('/sources/') &&
+      pathname !== '/sources/inbox' &&
+      pathname !== '/sources/reading' &&
+      pathname !== '/sources/archive',
     to: '/sources/inbox',
   },
   {
@@ -220,7 +147,6 @@ const BACK_NAVIGATION_RULES = [
     matches: (pathname) =>
       pathname === '/settings/daily-note' ||
       pathname === '/settings/keyboard-shortcuts' ||
-      pathname === '/settings/slash-commands' ||
       pathname === '/settings/templates' ||
       pathname === '/settings/trash',
     to: '/settings',
@@ -231,30 +157,6 @@ const BACK_NAVIGATION_RULES = [
     to: '/settings/templates',
   },
 ];
-
-function matchesShortcutPath(pathname, shortcutTo) {
-  if (shortcutTo === '/') {
-    return pathname === '/';
-  }
-
-  return pathname === shortcutTo || pathname.startsWith(`${shortcutTo}/`);
-}
-
-function getAllTabPaths(tab) {
-  const paths = [];
-
-  for (const row of tab.rows) {
-    if (row.to) paths.push(row.to);
-
-    if (row.subRows) {
-      for (const subRow of row.subRows) {
-        if (subRow.to) paths.push(subRow.to);
-      }
-    }
-  }
-
-  return paths;
-}
 
 export function getBackNavigation(pathname) {
   const matchingRule = BACK_NAVIGATION_RULES.find((rule) =>
@@ -300,20 +202,4 @@ export function isSourceViewerPath(pathname) {
 
 export function isTemplateEditorPath(pathname) {
   return pathname.startsWith('/settings/templates/');
-}
-
-export function getContextSheetTabForPath(pathname) {
-  const matchingTab = CONTEXT_SHEET_TABS.find((tab) =>
-    getAllTabPaths(tab).some((path) => matchesShortcutPath(pathname, path)),
-  );
-
-  return matchingTab?.id ?? CONTEXT_SHEET_TABS[0].id;
-}
-
-export function getContextSheetTabs() {
-  return CONTEXT_SHEET_TABS;
-}
-
-export function isContextShortcutActive(pathname, shortcutTo) {
-  return matchesShortcutPath(pathname, shortcutTo);
 }

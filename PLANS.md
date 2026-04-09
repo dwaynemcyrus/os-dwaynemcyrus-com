@@ -1429,3 +1429,138 @@
 
 **Open questions before execution:**
 - None. The backlinks placement, chrome behavior, workbench scope, and inset pattern are now defined tightly enough to implement directly.
+
+## Feature: Capture Sheet, Command Palette, And Overview Routes
+
+**Summary:** Split the FAB into capture-only and command-palette behaviors, replace the navigation-only context sheet with real overview routes, and move navigation discovery into the palette plus the `Now` screen.
+
+**Build spec:** `docs/agents/build-spec.md`
+
+**Agents involved:** both
+
+**Current-state analysis:**
+- `src/components/command/CommandSheet.jsx` currently owns both tap and hold FAB behavior, plus mixed capture, search, slash-command, recent, and template flows.
+- `src/components/command/ContextSheet.jsx` is navigation-only and depends on `src/lib/navigation.js` tab definitions plus `fetchContextSheetCounts()` in `src/lib/items.js`.
+- The current app shell and back-navigation rules in `src/lib/navigation.js` assume the old context-sheet model and do not yet know about `/knowledge`, `/strategy`, or `/execution`.
+- `src/components/editor/ItemEditorScreen.jsx` depends on `CommandContext` for template insertion, so the new command palette must preserve the insert-template path after the current sheet is split.
+- `package.json` has no test script; required verification remains `npm run lint` and `npm run build`.
+
+**Sequence:**
+
+### Phase 1 — Route And Navigation Restructure
+
+**Agent:** @frontend
+
+**Goal:** Introduce the new overview routes and visible `Now` entry points while removing the old context-sheet navigation dependency.
+
+**Chunks:**
+
+1. **Overview routes and placeholders**
+   - Files touched: `src/app/router.jsx`, `src/routes/knowledge.jsx`, `src/routes/strategy.jsx`, `src/routes/execution.jsx`, `src/routes/OverviewRoute.module.css`
+   - Steps:
+     1. Register `/knowledge`, `/strategy`, and `/execution` as authenticated routes while keeping `/` as the existing `Now` route.
+     2. Build overview-page shells that render their confirmed entry lists.
+     3. Reuse existing knowledge destinations and render strategy/execution placeholders as non-navigating rows for now.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; `/knowledge`, `/strategy`, and `/execution` resolve directly.
+   - Risks: placeholder rows must be visually distinct from live route links so users do not expect navigation where none exists yet.
+   - Commit message: `feat(routes): add overview pages`
+
+2. **App chrome and back-navigation alignment**
+   - Files touched: `src/lib/navigation.js`, `src/components/layout/AppNav.jsx`
+   - Steps:
+     1. Remove context-sheet tab metadata and replace it with route/back-navigation rules for the new overview pages.
+     2. Add screen-chrome labels and back-navigation behavior for `/knowledge`, `/strategy`, and `/execution`.
+     3. Keep existing item, source, settings, and editor navigation behavior intact.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; the new overview pages show correct chrome and back-navigation.
+   - Risks: `src/lib/navigation.js` currently mixes multiple concerns, so the refactor should stay surgical and avoid broad renaming.
+   - Commit message: `feat(nav): align overview routing`
+
+3. **Visible `Now` entry points**
+   - Files touched: `src/routes/index.jsx`, `src/routes/HomeRoute.module.css`
+   - Steps:
+     1. Add visible links from the `Now` screen to `/knowledge`, `/strategy`, and `/execution`.
+     2. Keep the existing home actions for inbox, capture review, daily note, and workbench intact.
+     3. Ensure the new overview links feel like top-level destinations rather than temporary buttons.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; `Now` exposes visible entry points to the three overview pages.
+   - Risks: the home screen is already dense; new rows must not obscure the primary daily-note and inbox actions.
+   - Commit message: `feat(home): add overview entry points`
+
+### Phase 2 — Split Capture From Commands
+
+**Agent:** both
+
+**Goal:** Replace the current mixed command sheet with a capture-only sheet and a separate search-first command palette while preserving editor template insertion.
+
+**Chunks:**
+
+1. **Capture sheet extraction**
+   - Files touched: `src/components/command/CommandSheet.jsx`, `src/components/command/FabButton.jsx`, `src/components/command/CommandSheet.module.css`
+   - Steps:
+     1. Rework tap FAB behavior so it opens a capture-only sheet with focused input and explicit save behavior.
+     2. Remove search, slash-command, recent-list, and template-list rendering from the tap-open sheet.
+     3. Preserve rapid-log behavior only if it still materially supports fast capture; otherwise remove it as part of the simplification.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; tap FAB opens a pure capture flow with no command/search states.
+   - Risks: `requestClose()` currently auto-captures on dismiss; that behavior must remain coherent after the sheet is simplified.
+   - Commit message: `refactor(capture): isolate tap flow`
+
+2. **Command palette foundation**
+   - Files touched: `src/components/command/CommandSheet.jsx`, `src/components/command/CommandSheet.module.css`, `src/lib/items.js`, `src/lib/templates.js`
+   - Steps:
+     1. Replace the old hold-open context sheet with a search-first command palette.
+     2. Remove slash-command handling entirely.
+     3. Add a unified palette result model covering `Recent`, `Jump`, `Create`, `Insert`, and `Templates`.
+     4. Implement grouped empty-state rendering and a single ranked result stream when the user types.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; hold FAB opens the command palette and typed queries produce ranked results.
+   - Risks: result ranking will initially be heuristic rather than fully fuzzy unless a dedicated fuzzy matcher is introduced later.
+   - Commit message: `feat(palette): add search-first palette`
+
+3. **Palette actions and editor integration**
+   - Files touched: `src/components/command/CommandSheet.jsx`, `src/components/editor/ItemEditorScreen.jsx`, `src/lib/items.js`
+   - Steps:
+     1. Preserve item-open behavior and template-creation actions in the new command palette.
+     2. Preserve template insertion from the editor via `CommandContext` so `Insert` results still work while editing an item.
+     3. Route `Jump` results to real pages and `Create`/`Insert` results to the appropriate existing handlers.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; open-item, create-from-template, and insert-template flows still work from the new palette.
+   - Risks: editor-dependent insert actions must degrade cleanly when the user opens the palette outside an editor screen.
+   - Commit message: `feat(palette): wire actions`
+
+### Phase 3 — Retire Context Sheet And Final Polish
+
+**Agent:** @frontend
+
+**Goal:** Remove the old context sheet surface, finish palette discoverability, and verify that the new navigation model is coherent.
+
+**Chunks:**
+
+1. **Context sheet retirement**
+   - Files touched: `src/components/command/ContextSheet.jsx`, `src/lib/navigation.js`, `src/components/command/CommandSheet.jsx`
+   - Steps:
+     1. Remove the old navigation-only context sheet from runtime use.
+     2. Delete or reduce the now-obsolete tab/count helpers tied only to the old modal UI.
+     3. Keep any remaining shared utilities only if they still support the new overview pages or palette.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; no runtime path depends on the old context sheet.
+   - Risks: `fetchContextSheetCounts()` may become partially obsolete; avoid deleting shared count logic that still supports existing surfaces unless confirmed unused.
+   - Commit message: `refactor(nav): retire context sheet`
+
+2. **Discoverability and accessibility pass**
+   - Files touched: `src/components/command/FabButton.jsx`, `src/components/command/CommandSheet.module.css`, `src/routes/index.jsx`, `src/routes/HomeRoute.module.css`
+   - Steps:
+     1. Update FAB labels and copy so tap/hold behavior is understandable.
+     2. Ensure focus management, `Escape` handling, and keyboard navigation are coherent across capture sheet and command palette.
+     3. Verify the `Now` page entry points plus hold-open palette together make the new overview routes discoverable.
+   - Exit conditions: `npm run build` succeeds; `npm run lint` succeeds; touch targets, focus states, and modal close behavior remain correct.
+   - Risks: hold gestures are inherently hidden; copy and labels must carry more of the discoverability burden than before.
+   - Commit message: `fix(palette): polish discoverability`
+
+**Resolved execution decisions:**
+- `/` remains the current `Now` route.
+- `/knowledge`, `/strategy`, and `/execution` are added as new overview pages.
+- Strategy and execution entries are placeholders only for now; no child routes are created yet.
+- `trash` remains accessible only through settings for now.
+- The command palette removes slash commands entirely.
+- The command palette taxonomy is `Recent`, `Jump`, `Create`, `Insert`, and `Templates`.
+- Palette empty state is visually grouped; active query state is a single ranked result list.
+- The new overview pages must be discoverable from both the hold-open command palette and visible entry points on `Now`.
+
+**Open questions before execution:**
+- None. Route scope, placeholder behavior, palette taxonomy, discoverability, and `trash` placement have all been explicitly confirmed.

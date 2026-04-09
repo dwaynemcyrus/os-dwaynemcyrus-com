@@ -83,7 +83,11 @@ export function FabButton({
     <button
       aria-expanded={isSheetOpen}
       aria-haspopup="dialog"
-      aria-label={isSheetOpen ? 'Close active sheet' : 'Open command sheet'}
+      aria-label={
+        isSheetOpen
+          ? 'Close active sheet'
+          : 'Tap to capture. Hold for the command palette.'
+      }
       className={styles.fabButton}
       onClick={handleClick}
       onContextMenu={handleContextMenu}
@@ -91,6 +95,7 @@ export function FabButton({
       onPointerDown={handlePointerDown}
       onPointerLeave={handlePointerLeave}
       onPointerUp={handlePointerUp}
+      title={isSheetOpen ? 'Close active sheet' : 'Tap to capture. Hold for palette.'}
       type="button"
     >
       <span aria-hidden="true" className={styles.fabButton__icon} />

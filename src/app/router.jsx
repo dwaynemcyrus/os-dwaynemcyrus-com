@@ -5,21 +5,23 @@ import { signInRoute } from '../routes/auth/signin';
 import { signUpRoute } from '../routes/auth/signup';
 import { rootRoute } from '../routes/__root';
 import { authenticatedRoute } from '../routes/_authenticated';
+import { executionRoute } from '../routes/execution';
 import { inboxRoute } from '../routes/inbox';
 import { indexRoute } from '../routes/index';
 import { itemEditorRoute } from '../routes/items.$id';
 import { itemsRoute } from '../routes/items';
+import { knowledgeRoute } from '../routes/knowledge';
 import { notesRoute } from '../routes/notes';
 import { notesFilterRoute } from '../routes/notes.$filter';
 import { sourcesRoute } from '../routes/sources';
 import { sourcesFilterRoute } from '../routes/sources.$filter';
 import { sourcesIdRoute } from '../routes/sources.$id';
+import { strategyRoute } from '../routes/strategy';
 import { wizardCaptureRoute } from '../routes/wizard.capture';
 import { settingsDailyNoteRoute } from '../routes/settings.daily-note';
 import { settingsLibraryRoute } from '../routes/settings.library';
 import { settingsIndexRoute } from '../routes/settings.index';
 import { settingsKeyboardShortcutsRoute } from '../routes/settings.keyboard-shortcuts';
-import { settingsSlashCommandsRoute } from '../routes/settings.slash-commands';
 import { settingsTemplateEditorRoute } from '../routes/settings.templates.$id';
 import { templatesRoute } from '../routes/templates';
 import { trashRoute } from '../routes/trash';
@@ -29,6 +31,9 @@ const protectedRouteTree = authenticatedRoute.addChildren([
   inboxRoute,
   itemsRoute,
   itemEditorRoute,
+  knowledgeRoute,
+  strategyRoute,
+  executionRoute,
   notesRoute,
   notesFilterRoute,
   sourcesRoute,
@@ -39,7 +44,6 @@ const protectedRouteTree = authenticatedRoute.addChildren([
   settingsDailyNoteRoute,
   settingsLibraryRoute,
   settingsKeyboardShortcutsRoute,
-  settingsSlashCommandsRoute,
   templatesRoute,
   settingsTemplateEditorRoute,
   trashRoute,
