@@ -207,6 +207,12 @@ export function ContextSheet({ isOpen, onClose }) {
           </button>
         </header>
 
+        <div className={styles.contextSheet__body}>
+          <ul className={styles.contextSheet__rowList}>
+            {activeTab.rows.map((row) => renderRow(row))}
+          </ul>
+        </div>
+
         <div
           aria-label="Context groups"
           className={styles.contextSheet__tabs}
@@ -230,12 +236,6 @@ export function ContextSheet({ isOpen, onClose }) {
               {tab.label}
             </button>
           ))}
-        </div>
-
-        <div className={styles.contextSheet__body}>
-          <ul className={styles.contextSheet__rowList}>
-            {activeTab.rows.map((row) => renderRow(row))}
-          </ul>
         </div>
       </section>
     </div>

@@ -17,12 +17,15 @@
 }
 
 .contextSheet__panel {
+  align-self: stretch;
   background: #1a1816;
   border: 1px solid var(--color-border-card);
   color: var(--color-text-primary);
-  display: grid;
-  gap: 1rem;
+  display: flex;
+  flex-direction: column;
   max-inline-size: 32rem;
+  min-block-size: 0;
+  overflow: hidden;
   padding: 1rem;
   width: 100%;
 }
@@ -30,8 +33,10 @@
 .contextSheet__header {
   align-items: start;
   display: flex;
+  flex: none;
   gap: 1rem;
   justify-content: space-between;
+  margin-bottom: 1rem;
 }
 
 .contextSheet__headerCopy {
@@ -69,8 +74,10 @@
 
 .contextSheet__tabs {
   display: grid;
+  flex: none;
   gap: 0.5rem;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 1rem;
 }
 
 .contextSheet__tabButton {
@@ -83,7 +90,11 @@
 }
 
 .contextSheet__body {
+  flex: 1 1 auto;
   min-block-size: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 /* Row list */

@@ -197,14 +197,8 @@
   outline-offset: 0;
 }
 
-.wizardCaptureRoute__option--primary {
-  background: var(--color-text-primary);
-  border-color: var(--color-text-primary);
-  color: var(--color-surface-base);
-}
-
 .wizardCaptureRoute__option--primary:hover:not(:disabled) {
-  opacity: 0.85;
+  border-color: var(--color-border-card);
 }
 
 .wizardCaptureRoute__option--danger {
@@ -235,9 +229,6 @@
   opacity: 0.75;
 }
 
-.wizardCaptureRoute__option--primary .wizardCaptureRoute__optionDesc {
-  opacity: 0.8;
-}
 
 .wizardCaptureRoute__soonBadge {
   background: var(--color-surface-raised);
