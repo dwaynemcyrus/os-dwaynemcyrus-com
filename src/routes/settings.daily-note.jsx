@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useState } from 'react';
+import { createElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
@@ -176,6 +176,13 @@ export const settingsDailyNoteRoute = createRoute({
       };
     }, [auth.user?.id]);
 
+    useEffect(() => {
+      if (!dailyStatusMessage) return;
+
+      const id = window.setTimeout(() => setDailyStatusMessage(''), 2500);
+      return () => window.clearTimeout(id);
+    }, [dailyStatusMessage]);
+
     function updateFolderValue(nextFolderValue) {
       setDailySettings((currentSettings) => ({
         ...currentSettings,
@@ -193,9 +200,7 @@ export const settingsDailyNoteRoute = createRoute({
       setPendingBulkFolderValue(null);
     }
 
-    async function handleDailySettingsSubmit(event) {
-      event.preventDefault();
-
+    const saveDailySettings = useCallback(async (settingsToSave) => {
       if (!auth.user?.id) {
         setDailyErrorMessage('Your session is missing a user id.');
         return;
@@ -207,8 +212,8 @@ export const settingsDailyNoteRoute = createRoute({
 
       try {
         const savedSettings = await saveDailyNoteSettings({
-          dailyNoteFolder: dailySettings.folder,
-          dailyTemplateId: dailySettings.selectedTemplateId,
+          dailyNoteFolder: settingsToSave.folder,
+          dailyTemplateId: settingsToSave.selectedTemplateId,
           userId: auth.user.id,
         });
         const didFolderChange =
@@ -234,7 +239,7 @@ export const settingsDailyNoteRoute = createRoute({
             }),
           );
         });
-        setDailyStatusMessage('Daily note settings saved.');
+        setDailyStatusMessage('Saved.');
 
         if (didFolderChange) {
           setPendingBulkFolderValue(savedSettings.folder);
@@ -246,7 +251,7 @@ export const settingsDailyNoteRoute = createRoute({
       } finally {
         setIsSavingSettings(false);
       }
-    }
+    }, [auth.user?.id, savedDailySettings.folder]);
 
     async function handleBulkFolderUpdate() {
       if (!auth.user?.id || pendingBulkFolderValue === null) {
@@ -281,12 +286,7 @@ export const settingsDailyNoteRoute = createRoute({
           <h1 className={styles.settingsScreen__title}>Daily notes</h1>
         </header>
 
-        <form
-          className={styles.settingsScreen__form}
-          onSubmit={(event) => {
-            void handleDailySettingsSubmit(event);
-          }}
-        >
+        <div className={styles.settingsScreen__form}>
           <section className={styles.settingsScreen__panel}>
             <label className={styles.settingsScreen__settingLabel}>
               <span className={styles.settingsScreen__settingTitle}>
@@ -319,6 +319,10 @@ export const settingsDailyNoteRoute = createRoute({
                     window.setTimeout(() => {
                       setIsFolderFieldActive(false);
                     }, 100);
+
+                    if (isDailySettingsDirty && !isSavingSettings) {
+                      void saveDailySettings(dailySettings);
+                    }
                   }}
                   onChange={(event) => {
                     updateFolderValue(event.target.value);
@@ -402,12 +406,14 @@ export const settingsDailyNoteRoute = createRoute({
                   !hasDailyTemplateOptions
                 }
                 onChange={(event) => {
-                  setDailySettings((currentSettings) => ({
-                    ...currentSettings,
+                  const nextSettings = {
+                    ...dailySettings,
                     selectedTemplateId: event.target.value,
-                  }));
+                  };
+                  setDailySettings(nextSettings);
                   setDailyErrorMessage('');
                   setDailyStatusMessage('');
+                  void saveDailySettings(nextSettings);
                 }}
                 value={dailySettings.selectedTemplateId}
               >
@@ -425,14 +431,7 @@ export const settingsDailyNoteRoute = createRoute({
             </label>
           </section>
 
-          <button
-            className={styles.settingsScreen__actionButton}
-            disabled={isLoadingSettings || isSavingSettings || !isDailySettingsDirty}
-            type="submit"
-          >
-            {isSavingSettings ? 'Saving...' : 'Save'}
-          </button>
-        </form>
+        </div>
 
         <p className={styles.settingsScreen__copy}>
           {isLoadingSettings

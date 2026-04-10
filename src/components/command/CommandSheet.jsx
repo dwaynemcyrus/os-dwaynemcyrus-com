@@ -742,6 +742,11 @@ export function CommandSheet({ children }) {
                         setCaptureValue(event.target.value);
                         setCaptureError('');
                       }}
+                      onBlur={() => {
+                        if (captureValue.trim() && !isSavingCapture) {
+                          void saveCaptureAndClose();
+                        }
+                      }}
                       onKeyDown={(event) => {
                         if (event.key === 'Enter' && !event.shiftKey) {
                           event.preventDefault();

@@ -345,6 +345,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
     disabled = false,
     loadTagSuggestions,
     loadWikilinkSuggestions,
+    onBlur,
     onChange,
     onOpenWikilink = () => {},
     onSave,
@@ -363,6 +364,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
   const initialValueRef = useRef(value);
   const latestLoadTagSuggestionsRef = useRef(loadTagSuggestions);
   const latestLoadWikilinkSuggestionsRef = useRef(loadWikilinkSuggestions);
+  const latestOnBlurRef = useRef(onBlur);
   const latestOnChangeRef = useRef(onChange);
   const latestOnOpenWikilinkRef = useRef(onOpenWikilink);
   const latestOnSaveRef = useRef(onSave);
@@ -375,6 +377,7 @@ export const ItemEditor = forwardRef(function ItemEditor(
 
   latestLoadTagSuggestionsRef.current = loadTagSuggestions;
   latestLoadWikilinkSuggestionsRef.current = loadWikilinkSuggestions;
+  latestOnBlurRef.current = onBlur;
   latestOnChangeRef.current = onChange;
   latestOnOpenWikilinkRef.current = onOpenWikilink;
   latestOnSaveRef.current = onSave;
@@ -501,6 +504,11 @@ export const ItemEditor = forwardRef(function ItemEditor(
             }
 
             latestOnChangeRef.current(update.state.doc.toString());
+          }),
+          EditorView.domEventHandlers({
+            blur() {
+              latestOnBlurRef.current?.();
+            },
           }),
         ],
       }),

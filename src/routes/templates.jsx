@@ -1,4 +1,4 @@
-import { createElement, useEffect, useMemo, useState } from 'react';
+import { createElement, useCallback, useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
@@ -217,9 +217,14 @@ export const templatesRoute = createRoute({
       [templateSettings.timeFormat],
     );
 
-    async function handleTemplateSettingsSubmit(event) {
-      event.preventDefault();
+    useEffect(() => {
+      if (!settingsStatusMessage) return;
 
+      const id = window.setTimeout(() => setSettingsStatusMessage(''), 2500);
+      return () => window.clearTimeout(id);
+    }, [settingsStatusMessage]);
+
+    const saveCurrentTemplateSettings = useCallback(async (settingsToSave) => {
       if (!auth.user?.id) {
         setSettingsErrorMessage('Your session is missing a user id.');
         return;
@@ -231,15 +236,15 @@ export const templatesRoute = createRoute({
 
       try {
         const savedSettings = await saveTemplateSettings({
-          dateFormat: templateSettings.dateFormat,
-          folder: templateSettings.folder,
-          timeFormat: templateSettings.timeFormat,
+          dateFormat: settingsToSave.dateFormat,
+          folder: settingsToSave.folder,
+          timeFormat: settingsToSave.timeFormat,
           userId: auth.user.id,
         });
 
         setTemplateSettings(savedSettings);
         setSavedTemplateSettings(savedSettings);
-        setSettingsStatusMessage('Template settings saved.');
+        setSettingsStatusMessage('Saved.');
       } catch (error) {
         setSettingsErrorMessage(
           error.message ?? 'Unable to save template settings right now.',
@@ -247,7 +252,7 @@ export const templatesRoute = createRoute({
       } finally {
         setIsSavingSettings(false);
       }
-    }
+    }, [auth.user?.id]);
 
     async function openTemplate(templateId) {
       await navigate({
@@ -385,12 +390,7 @@ export const templatesRoute = createRoute({
             </h2>
           </header>
 
-          <form
-            className={styles.templatesRoute__settingsForm}
-            onSubmit={(event) => {
-              void handleTemplateSettingsSubmit(event);
-            }}
-          >
+          <div className={styles.templatesRoute__settingsForm}>
             <section className={styles.templatesRoute__settingBlock}>
               <label className={styles.templatesRoute__settingLabel}>
                 <span className={styles.templatesRoute__settingTitle}>
@@ -402,6 +402,11 @@ export const templatesRoute = createRoute({
                 <input
                   className={styles.templatesRoute__settingInput}
                   disabled={isLoading || isSavingSettings}
+                  onBlur={() => {
+                    if (isTemplateSettingsDirty && !isSavingSettings) {
+                      void saveCurrentTemplateSettings(templateSettings);
+                    }
+                  }}
                   onChange={(event) => {
                     setTemplateSettings((currentSettings) => ({
                       ...currentSettings,
@@ -446,6 +451,11 @@ export const templatesRoute = createRoute({
                 <input
                   className={styles.templatesRoute__settingInput}
                   disabled={isLoading || isSavingSettings}
+                  onBlur={() => {
+                    if (isTemplateSettingsDirty && !isSavingSettings) {
+                      void saveCurrentTemplateSettings(templateSettings);
+                    }
+                  }}
                   onChange={(event) => {
                     setTemplateSettings((currentSettings) => ({
                       ...currentSettings,
@@ -489,6 +499,11 @@ export const templatesRoute = createRoute({
                 <input
                   className={styles.templatesRoute__settingInput}
                   disabled={isLoading || isSavingSettings}
+                  onBlur={() => {
+                    if (isTemplateSettingsDirty && !isSavingSettings) {
+                      void saveCurrentTemplateSettings(templateSettings);
+                    }
+                  }}
                   onChange={(event) => {
                     setTemplateSettings((currentSettings) => ({
                       ...currentSettings,
@@ -503,14 +518,7 @@ export const templatesRoute = createRoute({
               </label>
             </section>
 
-            <button
-              className={`${sheetStyles.settingsScreen__actionButton} ${styles.templatesRoute__settingsButton}`}
-              disabled={isLoading || isSavingSettings || !isTemplateSettingsDirty}
-              type="submit"
-            >
-              {isSavingSettings ? 'Saving...' : 'Save Settings'}
-            </button>
-          </form>
+          </div>
 
           {settingsErrorMessage ? (
             <p className={getSheetMessageClassName('error')} role="alert">

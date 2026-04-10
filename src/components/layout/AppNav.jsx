@@ -49,6 +49,7 @@ export function AppNav({ children }) {
   ]
     .filter(Boolean)
     .join(' ');
+  const hasMetaArea = Boolean(resolvedChrome.metaInput ?? resolvedChrome.metaText);
 
   useEffect(() => {
     setIsInfoOpen(false);
@@ -89,29 +90,46 @@ export function AppNav({ children }) {
                 </button>
               ) : null}
 
-              {resolvedChrome.metaText ? (
-                resolvedChrome.onMetaActivate
+              {hasMetaArea ? (
+                resolvedChrome.metaInput
                   ? (
-                    <button
-                      aria-label={resolvedChrome.metaAriaLabel ?? resolvedChrome.metaText}
-                      className={metaStripeClassName}
-                      onClick={() => {
-                        resolvedChrome.onMetaActivate();
-                      }}
-                      type="button"
-                    >
-                      <span className={styles.appShell__metaText}>
-                        {resolvedChrome.metaText}
-                      </span>
-                    </button>
-                    )
-                  : (
                     <div className={metaStripeClassName}>
-                      <span className={styles.appShell__metaText}>
-                        {resolvedChrome.metaText}
-                      </span>
+                      <input
+                        aria-label={resolvedChrome.metaInput.ariaLabel}
+                        autoFocus
+                        className={styles.appShell__metaInput}
+                        onBlur={resolvedChrome.metaInput.onBlur}
+                        onChange={(event) => {
+                          resolvedChrome.metaInput.onChange(event.target.value);
+                        }}
+                        onKeyDown={resolvedChrome.metaInput.onKeyDown}
+                        placeholder={resolvedChrome.metaInput.placeholder}
+                        value={resolvedChrome.metaInput.value}
+                      />
                     </div>
                     )
+                  : resolvedChrome.onMetaActivate
+                    ? (
+                      <button
+                        aria-label={resolvedChrome.metaAriaLabel ?? resolvedChrome.metaText}
+                        className={metaStripeClassName}
+                        onClick={() => {
+                          resolvedChrome.onMetaActivate();
+                        }}
+                        type="button"
+                      >
+                        <span className={styles.appShell__metaText}>
+                          {resolvedChrome.metaText}
+                        </span>
+                      </button>
+                      )
+                    : (
+                      <div className={metaStripeClassName}>
+                        <span className={styles.appShell__metaText}>
+                          {resolvedChrome.metaText}
+                        </span>
+                      </div>
+                      )
               ) : null}
             </div>
 

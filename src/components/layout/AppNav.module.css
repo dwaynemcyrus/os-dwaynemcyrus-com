@@ -134,6 +134,22 @@
   white-space: nowrap;
 }
 
+.appShell__metaInput {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  inline-size: 100%;
+  outline: none;
+  padding: 0.1rem 0;
+}
+
+.appShell__metaInput:focus {
+  border-bottom-color: var(--color-text-secondary);
+}
+
 .appShell__iconButton {
   align-items: center;
   background: transparent;

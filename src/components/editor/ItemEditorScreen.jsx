@@ -11,6 +11,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { BacklinksPanel } from './BacklinksPanel';
 import { ItemEditor } from './ItemEditor';
 import { AppDialog } from '../ui/AppDialog';
+import { Toast } from '../ui/Toast';
 import { useAuth } from '../../lib/auth';
 import { useAppChrome } from '../../lib/app-chrome';
 import { useCommandContext, useRegisterCommands } from '../../lib/command-context';
@@ -110,8 +111,8 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const [isSaving, setIsSaving] = useState(false);
   const [cascadeFailures, setCascadeFailures] = useState(null);
   const [isBacklinksDialogOpen, setIsBacklinksDialogOpen] = useState(false);
-  const [isFilenameDialogOpen, setIsFilenameDialogOpen] = useState(false);
-  const [filenameDialogValue, setFilenameDialogValue] = useState('');
+  const [isEditingFilename, setIsEditingFilename] = useState(false);
+  const [filenameInputValue, setFilenameInputValue] = useState('');
   const [pendingFilename, setPendingFilename] = useState(null);
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [saveErrorMessage, setSaveErrorMessage] = useState('');
@@ -166,11 +167,10 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     currentTitle || editorHeading,
   );
   const chromeMetaText = useMemo(() => {
-    if (saveErrorMessage) return 'Save failed';
     if (saveStatusMessage) return saveStatusMessage;
     if (saveWarnings.length > 0) return 'Saved with warnings';
     return editorMetaText;
-  }, [editorMetaText, saveErrorMessage, saveStatusMessage, saveWarnings]);
+  }, [editorMetaText, saveStatusMessage, saveWarnings]);
   const savedLinkLabel = getItemDisplayLabel(item, '');
   const lastSavedText = item
     ? `Last saved ${formatEditorDate(item.date_modified ?? item.date_created)}`
@@ -269,33 +269,32 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     setSaveStatusMessage('');
   }
 
-  const openFilenameDialog = useEffectEvent(() => {
+  const startFilenameEdit = useEffectEvent(() => {
     if (isReadOnlyTemplate) {
       return;
     }
 
-    setFilenameDialogValue(getFilenameDialogValue({
+    setFilenameInputValue(getFilenameDialogValue({
       currentFilename,
       currentTitle,
     }));
-    setIsFilenameDialogOpen(true);
+    setIsEditingFilename(true);
   });
 
-  function closeFilenameDialog() {
-    setIsFilenameDialogOpen(false);
-    setFilenameDialogValue('');
-  }
+  const applyFilenameChange = useEffectEvent(() => {
+    if (!isEditingFilename) {
+      return;
+    }
 
-  function handleFilenameDialogSave(event) {
-    event.preventDefault();
+    setIsEditingFilename(false);
 
     try {
-      const normalizedNextFilename = normalizeFilenameValue(filenameDialogValue);
+      const normalizedNextFilename = normalizeFilenameValue(filenameInputValue);
       const nextPendingFilename =
         normalizedNextFilename === savedFilename ? null : normalizedNextFilename;
       const nextDerivedTitle = buildTitleFromFilename(
         normalizedNextFilename,
-        filenameDialogValue,
+        filenameInputValue,
       );
       const nextDraftValue = removeEditorFrontmatterField({
         key: 'filename',
@@ -315,7 +314,6 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
 
       setPendingFilename(nextPendingFilename);
       updateDraftValue(nextDraftValueWithTitle);
-      closeFilenameDialog();
 
       window.requestAnimationFrame(() => {
         editorRef.current?.focus();
@@ -325,6 +323,15 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
         error.message ?? 'Unable to update the filename right now.',
       );
     }
+  });
+
+  function cancelFilenameEdit() {
+    setIsEditingFilename(false);
+    setFilenameInputValue('');
+
+    window.requestAnimationFrame(() => {
+      editorRef.current?.focus();
+    });
   }
 
   useEffect(() => {
@@ -693,20 +700,42 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
       infoActions,
       infoText: lastSavedText,
       metaAriaLabel: 'Edit filename',
-      metaText: chromeMetaText,
+      metaInput: isEditingFilename && !isReadOnlyTemplate
+        ? {
+            ariaLabel: 'Edit filename',
+            onBlur: applyFilenameChange,
+            onChange: (value) => setFilenameInputValue(value),
+            onKeyDown(event) {
+              if (event.key === 'Enter') {
+                event.preventDefault();
+                applyFilenameChange();
+              } else if (event.key === 'Escape') {
+                event.preventDefault();
+                cancelFilenameEdit();
+              }
+            },
+            placeholder: 'filename',
+            value: filenameInputValue,
+          }
+        : undefined,
+      metaText: isEditingFilename ? undefined : chromeMetaText,
       moreActions,
-      onMetaActivate: isReadOnlyTemplate
+      onMetaActivate: isEditingFilename || isReadOnlyTemplate
         ? undefined
         : () => {
-            openFilenameDialog();
+            startFilenameEdit();
           },
     };
   }, [
+    applyFilenameChange,
+    cancelFilenameEdit,
     chromeMetaText,
+    filenameInputValue,
     handleSave,
     handleWorkbenchToggle,
     handlePinToggle,
     isDirty,
+    isEditingFilename,
     isLoading,
     isScrollPastEndEnabled,
     isTemplateEditor,
@@ -718,7 +747,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     item?.id,
     item?.is_pinned,
     item?.is_template,
-    openFilenameDialog,
+    startFilenameEdit,
     shouldShowWorkbenchToggle,
   ]));
 
@@ -846,6 +875,11 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
           disabled: isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate,
           loadTagSuggestions: loadTagOptions,
           loadWikilinkSuggestions: loadWikilinkOptions,
+          onBlur() {
+            if (isDirty) {
+              handleSave();
+            }
+          },
           onChange(nextValue) {
             updateDraftValue(nextValue);
           },
@@ -864,112 +898,11 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
         })}
       </div>
 
-      {isFilenameDialogOpen ? createElement(
-        AppDialog,
-        {
-          ariaLabel: 'Close filename editor',
-          onClose: closeFilenameDialog,
-          role: 'dialog',
-        },
-        <>
-          <header
-            style={{
-              display: 'grid',
-              gap: '0.5rem',
-            }}
-          >
-            <h2
-              style={{
-                fontSize: '1.1rem',
-                margin: 0,
-              }}
-            >
-              Change Filename
-            </h2>
-            <p
-              style={{
-                color: 'var(--color-text-secondary)',
-                lineHeight: 1.5,
-                margin: 0,
-              }}
-            >
-              Enter the filename exactly as you want it stored.
-            </p>
-          </header>
-
-          <form
-            onSubmit={handleFilenameDialogSave}
-            style={{
-              display: 'grid',
-              gap: '1rem',
-            }}
-          >
-            <label
-              style={{
-                color: 'var(--color-text-secondary)',
-                display: 'grid',
-                gap: '0.5rem',
-                fontSize: '0.9rem',
-                fontWeight: 600,
-              }}
-            >
-              <span>Filename</span>
-              <input
-                autoFocus
-                onChange={(event) => {
-                  setFilenameDialogValue(event.target.value);
-                }}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--color-border-card)',
-                  color: 'var(--color-text-primary)',
-                  font: 'inherit',
-                  minHeight: '3.25rem',
-                  padding: '0 1rem',
-                  width: '100%',
-                }}
-                type="text"
-                value={filenameDialogValue}
-              />
-            </label>
-
-            <div
-              style={{
-                display: 'grid',
-                gap: '0.75rem',
-              }}
-            >
-              <button
-                onClick={closeFilenameDialog}
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--color-border-card)',
-                  color: 'var(--color-text-primary)',
-                  cursor: 'pointer',
-                  font: 'inherit',
-                  minHeight: '3rem',
-                }}
-                type="button"
-              >
-                Cancel
-              </button>
-
-              <button
-                style={{
-                  background: 'transparent',
-                  border: '1px solid var(--color-border-card)',
-                  color: 'var(--color-text-primary)',
-                  cursor: 'pointer',
-                  font: 'inherit',
-                  minHeight: '3rem',
-                }}
-                type="submit"
-              >
-                Change/Save
-              </button>
-            </div>
-          </form>
-        </>,
+      {saveErrorMessage ? (
+        <Toast
+          message={saveErrorMessage}
+          onDismiss={() => setSaveErrorMessage('')}
+        />
       ) : null}
 
       {cascadeFailures !== null ? createElement(
