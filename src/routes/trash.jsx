@@ -4,6 +4,7 @@ import { useAuth } from '../lib/auth';
 import { getItemDisplayLabel } from '../lib/filenames';
 import {
   fetchTrashedItems,
+  ITEMS_REFRESH_EVENT,
   permanentlyDeleteTrashedItem,
   restoreTrashedItem,
 } from '../lib/items';
@@ -102,34 +103,40 @@ export const trashRoute = createRoute({
 
       let cancelled = false;
 
-      setIsLoading(true);
-      setErrorMessage('');
+      function loadTrash() {
+        setIsLoading(true);
+        setErrorMessage('');
 
-      fetchTrashedItems(auth.user.id)
-        .then((items) => {
-          if (cancelled) {
-            return;
-          }
+        fetchTrashedItems(auth.user.id)
+          .then((items) => {
+            if (cancelled) {
+              return;
+            }
 
-          setTrashedItems(items);
-        })
-        .catch((error) => {
-          if (cancelled) {
-            return;
-          }
+            setTrashedItems(items);
+          })
+          .catch((error) => {
+            if (cancelled) {
+              return;
+            }
 
-          setErrorMessage(error.message ?? 'Unable to load trash right now.');
-        })
-        .finally(() => {
-          if (cancelled) {
-            return;
-          }
+            setErrorMessage(error.message ?? 'Unable to load trash right now.');
+          })
+          .finally(() => {
+            if (cancelled) {
+              return;
+            }
 
-          setIsLoading(false);
-        });
+            setIsLoading(false);
+          });
+      }
+
+      loadTrash();
+      window.addEventListener(ITEMS_REFRESH_EVENT, loadTrash);
 
       return () => {
         cancelled = true;
+        window.removeEventListener(ITEMS_REFRESH_EVENT, loadTrash);
       };
     }, [auth.user?.id]);
 

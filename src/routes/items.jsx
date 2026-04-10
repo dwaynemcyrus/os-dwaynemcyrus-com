@@ -2,7 +2,7 @@ import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
 import { getItemDisplayLabel } from '../lib/filenames';
-import { fetchItemsFilters, fetchItemsIndex } from '../lib/items';
+import { fetchItemsFilters, fetchItemsIndex, ITEMS_REFRESH_EVENT } from '../lib/items';
 import styles from './ItemsRoute.module.css';
 import { authenticatedRoute } from './_authenticated';
 
@@ -178,42 +178,48 @@ export const itemsRoute = createRoute({
 
       let cancelled = false;
 
-      setIsLoadingItems(true);
-      setErrorMessage('');
+      function loadItems() {
+        setIsLoadingItems(true);
+        setErrorMessage('');
 
-      fetchItemsIndex({
-        query: normalizedQuery,
-        sort: selectedSort,
-        subtype: selectedSubtype,
-        type: selectedType,
-        userId: auth.user.id,
-      })
-        .then((nextItems) => {
-          if (cancelled) {
-            return;
-          }
-
-          setItems(nextItems);
+        fetchItemsIndex({
+          query: normalizedQuery,
+          sort: selectedSort,
+          subtype: selectedSubtype,
+          type: selectedType,
+          userId: auth.user.id,
         })
-        .catch((error) => {
-          if (cancelled) {
-            return;
-          }
+          .then((nextItems) => {
+            if (cancelled) {
+              return;
+            }
 
-          setErrorMessage(
-            error.message ?? 'Unable to load items right now.',
-          );
-        })
-        .finally(() => {
-          if (cancelled) {
-            return;
-          }
+            setItems(nextItems);
+          })
+          .catch((error) => {
+            if (cancelled) {
+              return;
+            }
 
-          setIsLoadingItems(false);
-        });
+            setErrorMessage(
+              error.message ?? 'Unable to load items right now.',
+            );
+          })
+          .finally(() => {
+            if (cancelled) {
+              return;
+            }
+
+            setIsLoadingItems(false);
+          });
+      }
+
+      loadItems();
+      window.addEventListener(ITEMS_REFRESH_EVENT, loadItems);
 
       return () => {
         cancelled = true;
+        window.removeEventListener(ITEMS_REFRESH_EVENT, loadItems);
       };
     }, [auth.user?.id, normalizedQuery, selectedSort, selectedSubtype, selectedType]);
 
