@@ -1791,3 +1791,101 @@
 
 **Open questions before execution:**
 - None. The warning-first save contract and persistent banner behavior are approved.
+
+## Feature: Strategy Areas
+
+**Summary:** Turn `Arenas / Areas` into the first real strategy feature by creating a dedicated areas route, a blank-area creation flow, and shared area helpers built on the existing `items` schema.
+
+**Build spec:** `docs/agents/build-spec.md`
+
+**Agents involved:** @planner, @architecture, @frontend
+
+**Current-state analysis:**
+- [src/routes/strategy.jsx](src/routes/strategy.jsx) is still a placeholder overview page with no real destination for `Arenas / Areas`.
+- The app already has an `area` field in frontmatter and the capture wizard already queries `items` where `type = review` and `subtype = area`.
+- There is no shared area fetch helper, no route for browsing areas, and no creation flow for a new area item.
+- The command palette only jumps to `/strategy`, not to a dedicated areas screen.
+
+**Database change disclosure:**
+- No schema changes planned.
+- The feature uses the existing `items` table with `type = review` and `subtype = area`.
+
+**Sequence:**
+
+### Phase 1 — Shared area helpers
+
+**Agent:** @architecture
+
+**Goal:** Add shared item helpers for listing and creating area items so route UI and capture flows use one canonical data path.
+
+**Chunks:**
+
+1. **Add strategy area helpers**
+   - Files touched: `src/lib/items.js`
+   - Steps:
+     1. Add a narrow fields query for area items and a `fetchStrategyAreas()` helper.
+     2. Add a `createBlankArea()` helper that inserts a new item using the existing `review/area` shape and returns the created record.
+     3. Keep the shape consistent with the editor and existing filename/title behavior.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: area items need a coherent blank-state label without introducing a new schema field.
+   - Commit message: `feat(strategy): add area helpers`
+
+### Phase 2 — Areas route
+
+**Agent:** @frontend
+
+**Goal:** Create the first real strategy sub-route for browsing and creating areas.
+
+**Chunks:**
+
+1. **Add `/strategy/areas`**
+   - Files touched: `src/routes/strategy.areas.jsx`, `src/routes/StrategyAreasRoute.module.css`, `src/app/router.jsx`
+   - Steps:
+     1. Create a dedicated route at `/strategy/areas`.
+     2. Render loading, empty, and populated states using existing route patterns.
+     3. Add a primary action to create a blank area and immediately open it in the item editor.
+     4. Allow existing areas to open in the editor from the list.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds; `/strategy/areas` resolves from the router.
+   - Risks: the route must stay lightweight and not turn into a second generic items index.
+   - Commit message: `feat(strategy): add areas route`
+
+### Phase 3 — Navigation and discoverability
+
+**Agent:** @frontend
+
+**Goal:** Make the new areas route reachable from the existing strategy surfaces and command palette.
+
+**Chunks:**
+
+1. **Wire overview and palette entry points**
+   - Files touched: `src/routes/strategy.jsx`, `src/lib/navigation.js`, `src/components/command/CommandSheet.jsx`
+   - Steps:
+     1. Convert the `Arenas / Areas` row on the strategy overview page into a real link button.
+     2. Add screen-chrome and back-navigation rules for `/strategy/areas`.
+     3. Register a `Go to Areas` jump destination in the command palette.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds; users can reach the route from both `/strategy` and the palette.
+   - Risks: naming should stay consistent between `Areas`, `Arenas / Areas`, and route labels.
+   - Commit message: `feat(strategy): wire areas nav`
+
+### Phase 4 — Capture-flow alignment
+
+**Agent:** @architecture, @frontend
+
+**Goal:** Keep the capture wizard aligned with the new canonical area helpers.
+
+**Chunks:**
+
+1. **Reuse shared area loading in capture**
+   - Files touched: `src/routes/wizard.capture.jsx`, `src/lib/items.js`
+   - Steps:
+     1. Replace the wizard’s inline Supabase query for area items with the shared helper.
+     2. Verify the existing `area-assign` step still shows current areas and writes the same `[[Area Title]]` frontmatter value.
+     3. Confirm area rename behavior still works through the existing wikilink cascade path.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: area assignments are title-based wikilinks, so rename behavior needs explicit regression verification.
+   - Commit message: `refactor(capture): share area helpers`
+
+**Open questions before execution:**
+- Assume `/strategy/areas` is the first real strategy child route and `area` remains the canonical internal term.
+- Assume the current `review/area` item shape is intentional and should not be renamed yet.
+- Follow-up after this feature: area-based filtering and summary counts across notes/sources/projects would be the next leverage layer, but they are out of scope for this first pass.
