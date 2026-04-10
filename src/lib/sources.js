@@ -309,6 +309,74 @@ export async function createSourceFromCapture({ captureId, rawText, userId, medi
   return { sourceId: data.id, duplicate: null };
 }
 
+export async function createSourceDirectly({ author, sourceType, title, url, userId }) {
+  const normalizedUrl = url?.trim() ? normalizeUrl(url.trim()) : null;
+  const resolvedUrl = url?.trim() || null;
+
+  if (normalizedUrl) {
+    const existing = await findExistingSourceByUrl(normalizedUrl, userId);
+
+    if (existing) {
+      if (existing.status === 'archived') {
+        await supabase
+          .from('items')
+          .update({ status: 'backlog', date_modified: new Date().toISOString() })
+          .eq('id', existing.id)
+          .eq('user_id', userId);
+
+        return { sourceId: existing.id, duplicate: 'archived' };
+      }
+
+      return { sourceId: existing.id, duplicate: 'existing' };
+    }
+  }
+
+  const resolvedType = sourceType
+    || (normalizedUrl ? detectSourceType(resolvedUrl) : 'other');
+
+  const payload = {
+    user_id: userId,
+    type: 'reference',
+    subtype: 'source',
+    status: 'backlog',
+    title: title?.trim() || resolvedUrl || 'Untitled source',
+    url: resolvedUrl,
+    normalized_url: normalizedUrl,
+    source_type: resolvedType,
+    is_template: false,
+    date_created: new Date().toISOString(),
+    date_modified: new Date().toISOString(),
+  };
+
+  if (author?.trim()) {
+    payload.author = author.trim();
+  }
+
+  const { data, error } = await supabase
+    .from('items')
+    .insert(payload)
+    .select('id')
+    .single();
+
+  if (error) throw error;
+
+  return { sourceId: data.id, duplicate: null };
+}
+
+export async function updateSourceType(id, userId, sourceType) {
+  const { data, error } = await supabase
+    .from('items')
+    .update({ source_type: sourceType, date_modified: new Date().toISOString() })
+    .eq('id', id)
+    .eq('user_id', userId)
+    .select(SOURCE_FIELDS)
+    .single();
+
+  if (error) throw error;
+
+  return data;
+}
+
 export async function enrichSourceWithMetadata(sourceId, userId, url) {
   let metadata = null;
 

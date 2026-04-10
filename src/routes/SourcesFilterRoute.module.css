@@ -164,3 +164,75 @@
   color: var(--color-text-muted);
   font-size: 0.78rem;
 }
+
+/* Add source dialog */
+
+.sourcesFilterRoute__status {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.sourcesFilterRoute__input {
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: 0.9rem;
+  min-block-size: 2.75rem;
+  padding: 0 0.875rem;
+  width: 100%;
+}
+
+.sourcesFilterRoute__input:focus {
+  border-color: var(--color-text-secondary);
+  outline: none;
+}
+
+.sourcesFilterRoute__typeChip {
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0.6rem;
+  text-transform: uppercase;
+  user-select: none;
+}
+
+.sourcesFilterRoute__typeChip--active {
+  border-color: var(--color-text-primary);
+  color: var(--color-text-primary);
+}
+
+.sourcesFilterRoute__actionButton {
+  background: var(--color-text-primary);
+  border: 1px solid var(--color-text-primary);
+  color: var(--color-bg-app);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  min-block-size: 2.75rem;
+}
+
+.sourcesFilterRoute__actionButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.sourcesFilterRoute__secondaryButton {
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  min-block-size: 2.75rem;
+}
+
+.sourcesFilterRoute__secondaryButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}

@@ -1,12 +1,15 @@
 import { createElement, useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
+import { AppDialog } from '../components/ui/AppDialog';
 import { useAuth } from '../lib/auth';
 import { useAppChrome } from '../lib/app-chrome';
 import { ITEMS_REFRESH_EVENT } from '../lib/items';
 import {
+  enrichSourceWithMetadata,
   fetchSourceById,
   SOURCE_TYPE_LABELS,
   updateSourceStatus,
+  updateSourceType,
   trashSource,
 } from '../lib/sources';
 import { ItemEditorScreen } from '../components/editor/ItemEditorScreen';
@@ -50,9 +53,45 @@ export const sourcesIdRoute = createRoute({
     const [isEditMode, setIsEditMode] = useState(false);
     const [statusMessage, setStatusMessage] = useState('');
     const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+    const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
+    const [isTypeDialogOpen, setIsTypeDialogOpen] = useState(false);
+    const [isUpdatingType, setIsUpdatingType] = useState(false);
 
     const handleToggleEdit = useEffectEvent(() => {
       setIsEditMode((v) => !v);
+    });
+
+    const handleRefreshMetadata = useEffectEvent(async () => {
+      if (!auth.user?.id || !source?.url || isRefreshingMetadata) return;
+
+      setIsRefreshingMetadata(true);
+
+      try {
+        await enrichSourceWithMetadata(id, auth.user.id, source.url);
+        window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
+        setStatusMessage('Metadata refreshed.');
+      } catch (error) {
+        setStatusMessage(error.message ?? 'Unable to refresh metadata right now.');
+      } finally {
+        setIsRefreshingMetadata(false);
+      }
+    });
+
+    const handleTypeChange = useEffectEvent(async (nextType) => {
+      if (!auth.user?.id || isUpdatingType) return;
+
+      setIsUpdatingType(true);
+
+      try {
+        const updated = await updateSourceType(id, auth.user.id, nextType);
+        setSource((prev) => ({ ...prev, ...updated }));
+        setIsTypeDialogOpen(false);
+        setStatusMessage('Type updated.');
+      } catch (error) {
+        setStatusMessage(error.message ?? 'Unable to update type right now.');
+      } finally {
+        setIsUpdatingType(false);
+      }
     });
 
     const handleTrashAction = useEffectEvent(async () => {
@@ -65,22 +104,45 @@ export const sourcesIdRoute = createRoute({
       }
     });
 
-    const moreActions = useMemo(() => [
-      {
-        id: 'edit',
-        label: 'Edit',
-        onSelect() {
-          handleToggleEdit();
+    const moreActions = useMemo(() => {
+      const actions = [
+        {
+          id: 'edit',
+          label: 'Edit',
+          onSelect() {
+            handleToggleEdit();
+          },
         },
-      },
-      {
+        {
+          id: 'change-type',
+          label: 'Change Type',
+          onSelect() {
+            setIsTypeDialogOpen(true);
+          },
+        },
+      ];
+
+      if (source?.url) {
+        actions.push({
+          id: 'refresh-metadata',
+          label: isRefreshingMetadata ? 'Refreshing…' : 'Refresh Metadata',
+          disabled: isRefreshingMetadata,
+          onSelect() {
+            void handleRefreshMetadata();
+          },
+        });
+      }
+
+      actions.push({
         id: 'trash',
         label: 'Move to Trash',
         onSelect() {
           void handleTrashAction();
         },
-      },
-    ], [handleToggleEdit, handleTrashAction]);
+      });
+
+      return actions;
+    }, [handleToggleEdit, handleRefreshMetadata, handleTrashAction, isRefreshingMetadata, source?.url]);
 
     useAppChrome(
       useMemo(
@@ -276,6 +338,46 @@ export const sourcesIdRoute = createRoute({
             Edit
           </button>
         </div>
+
+        {isTypeDialogOpen ? createElement(
+          AppDialog,
+          {
+            ariaLabel: 'Close type picker',
+            onClose() {
+              if (!isUpdatingType) setIsTypeDialogOpen(false);
+            },
+            role: 'dialog',
+          },
+          <>
+            <h2 style={{ fontSize: '1.1rem', margin: 0 }}>Change Type</h2>
+            <div style={{ display: 'grid', gap: '0.4rem' }}>
+              {Object.entries(SOURCE_TYPE_LABELS).map(([value, label]) => (
+                <button
+                  disabled={isUpdatingType}
+                  key={value}
+                  onClick={() => void handleTypeChange(value)}
+                  style={{
+                    background: source.source_type === value
+                      ? 'var(--color-border-card)'
+                      : 'transparent',
+                    border: '1px solid var(--color-border-card)',
+                    color: 'var(--color-text-primary)',
+                    cursor: isUpdatingType ? 'default' : 'pointer',
+                    font: 'inherit',
+                    minBlockSize: '2.75rem',
+                    opacity: isUpdatingType ? 0.5 : 1,
+                    padding: '0 1rem',
+                    textAlign: 'left',
+                  }}
+                  type="button"
+                >
+                  {label}
+                  {source.source_type === value ? ' ✓' : ''}
+                </button>
+              ))}
+            </div>
+          </>,
+        ) : null}
       </article>
     );
   },
