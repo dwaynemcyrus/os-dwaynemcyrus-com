@@ -1,0 +1,128 @@
+.executionIdRoute__editorWrap {
+  block-size: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.executionIdRoute {
+  display: grid;
+  gap: 1.5rem;
+  max-inline-size: 40rem;
+}
+
+.executionIdRoute__skeleton {
+  background: var(--color-surface-raised);
+  block-size: 8rem;
+  border: 1px solid var(--color-border-subtle);
+}
+
+.executionIdRoute__error {
+  color: var(--color-danger);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.executionIdRoute__statusMessage {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0.75rem 1rem;
+}
+
+.executionIdRoute__header {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.executionIdRoute__title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.executionIdRoute__badges {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.executionIdRoute__badge {
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-secondary);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.5rem;
+  text-transform: uppercase;
+}
+
+.executionIdRoute__meta {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.executionIdRoute__metaRow {
+  align-items: baseline;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.executionIdRoute__metaLabel {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.executionIdRoute__metaValue {
+  color: var(--color-text-secondary);
+  font-size: 0.875rem;
+  margin: 0;
+}
+
+.executionIdRoute__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.executionIdRoute__actionButton {
+  background: transparent;
+  border: 1px solid var(--color-border-card);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  min-block-size: 2.5rem;
+  padding: 0 1rem;
+}
+
+.executionIdRoute__actionButton:hover {
+  border-color: var(--color-text-primary);
+}
+
+.executionIdRoute__actionButton:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.executionIdRoute__actionButton:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.executionIdRoute__actionButton--primary {
+  background: var(--color-text-primary);
+  color: var(--color-bg-app);
+}
+
+.executionIdRoute__actionButton--primary:hover {
+  opacity: 0.85;
+}
