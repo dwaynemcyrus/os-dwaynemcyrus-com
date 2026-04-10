@@ -137,6 +137,10 @@ function buildHomeWorkbenchFieldsQuery() {
   return 'id,type,subtype,title,filename,content,workbench,date_created,date_modified';
 }
 
+function buildStrategyAreaFieldsQuery() {
+  return 'id,type,subtype,title,filename,content,date_created,date_modified';
+}
+
 function buildItemsIndexFieldsQuery() {
   return 'id,type,subtype,title,filename,content,status,workbench,date_created,date_modified';
 }
@@ -272,6 +276,25 @@ function buildBlankTemplatePayload({
     folder: folder || null,
     frontmatter: createStoredAuthoredFrontmatter(),
     is_template: true,
+    user_id: userId,
+  };
+}
+
+function buildBlankAreaPayload({ createdAt, userId }) {
+  const timestamp = createdAt.toISOString();
+
+  return {
+    content: '',
+    date_created: timestamp,
+    date_modified: timestamp,
+    date_trashed: null,
+    frontmatter: createStoredAuthoredFrontmatter({
+      subtype: 'area',
+      type: 'review',
+    }),
+    is_template: false,
+    subtype: 'area',
+    type: 'review',
     user_id: userId,
   };
 }
@@ -986,6 +1009,26 @@ export async function fetchItemsIndex({
   return data ?? [];
 }
 
+export async function fetchStrategyAreas(userId) {
+  const { data, error } = await supabase
+    .from('items')
+    .select(buildStrategyAreaFieldsQuery())
+    .eq('user_id', userId)
+    .eq('is_template', false)
+    .eq('type', 'review')
+    .eq('subtype', 'area')
+    .is('date_trashed', null)
+    .order('title', { ascending: true, nullsFirst: false })
+    .order('filename', { ascending: true, nullsFirst: false })
+    .order('date_modified', { ascending: false, nullsFirst: false });
+
+  if (error) {
+    throw error;
+  }
+
+  return data ?? [];
+}
+
 export async function fetchNotesIndex({ filter, userId }) {
   let request = supabase
     .from('items')
@@ -1196,6 +1239,24 @@ export async function createBlankTemplate({ userId }) {
       userId,
     }))
     .select(buildManagedTemplateFieldsQuery())
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
+}
+
+export async function createBlankArea({ userId }) {
+  const createdAt = new Date();
+  const { data, error } = await supabase
+    .from('items')
+    .insert(buildBlankAreaPayload({
+      createdAt,
+      userId,
+    }))
+    .select(buildEditorItemFieldsQuery())
     .single();
 
   if (error) {

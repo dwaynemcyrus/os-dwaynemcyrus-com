@@ -1,0 +1,134 @@
+.strategyAreasRoute {
+  display: grid;
+  gap: 1.25rem;
+  max-width: 42rem;
+}
+
+.strategyAreasRoute__header {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.strategyAreasRoute__eyebrow {
+  color: var(--color-text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.strategyAreasRoute__title {
+  color: var(--color-text-primary);
+  font-size: clamp(2rem, 8vw, 2.6rem);
+  font-weight: 600;
+  line-height: 1;
+  margin: 0;
+}
+
+.strategyAreasRoute__description {
+  color: var(--color-text-secondary);
+  line-height: 1.55;
+  margin: 0;
+  max-width: 34rem;
+}
+
+.strategyAreasRoute__toolbar {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.strategyAreasRoute__summary {
+  color: var(--color-text-secondary);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.strategyAreasRoute__createButton,
+.strategyAreasRoute__itemButton {
+  background: transparent;
+  border: 1px solid var(--color-border-subtle);
+  color: var(--color-text-primary);
+}
+
+.strategyAreasRoute__createButton {
+  cursor: pointer;
+  font: inherit;
+  min-height: 3.15rem;
+  padding: 0 1rem;
+  text-align: left;
+}
+
+.strategyAreasRoute__createButton:disabled {
+  cursor: default;
+}
+
+.strategyAreasRoute__createButton:hover,
+.strategyAreasRoute__itemButton:hover {
+  border-color: var(--color-border-card);
+}
+
+.strategyAreasRoute__createButton:focus-visible,
+.strategyAreasRoute__itemButton:focus-visible {
+  box-shadow: none;
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 0;
+}
+
+.strategyAreasRoute__error,
+.strategyAreasRoute__emptyState {
+  line-height: 1.55;
+  margin: 0;
+}
+
+.strategyAreasRoute__error {
+  color: var(--color-danger);
+}
+
+.strategyAreasRoute__emptyState {
+  color: var(--color-text-secondary);
+}
+
+.strategyAreasRoute__list,
+.strategyAreasRoute__skeletonList {
+  display: grid;
+  gap: 0.75rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.strategyAreasRoute__skeletonItem {
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-subtle);
+  min-height: 5rem;
+}
+
+.strategyAreasRoute__itemButton {
+  cursor: pointer;
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+  text-align: left;
+  width: 100%;
+}
+
+.strategyAreasRoute__itemTitle {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.strategyAreasRoute__itemMeta,
+.strategyAreasRoute__itemPreview {
+  color: var(--color-text-secondary);
+}
+
+.strategyAreasRoute__itemMeta {
+  font-size: 0.88rem;
+}
+
+.strategyAreasRoute__itemPreview {
+  line-height: 1.55;
+  margin: 0;
+}

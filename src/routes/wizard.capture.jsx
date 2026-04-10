@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
 import { useAppChrome } from '../lib/app-chrome';
-import { fetchUnprocessedInboxItems, ITEMS_REFRESH_EVENT } from '../lib/items';
+import {
+  fetchStrategyAreas,
+  fetchUnprocessedInboxItems,
+  ITEMS_REFRESH_EVENT,
+} from '../lib/items';
 import { normalizeFilenameValue } from '../lib/frontmatter';
 import {
   createSourceFromCapture,
@@ -593,17 +597,17 @@ export const wizardCaptureRoute = createRoute({
       let cancelled = false;
       setIsLoadingAreas(true);
 
-      supabase
-        .from('items')
-        .select('id,title,filename')
-        .eq('user_id', auth.user.id)
-        .eq('type', 'review')
-        .eq('subtype', 'area')
-        .is('date_trashed', null)
-        .order('title', { ascending: true })
-        .then(({ data, error }) => {
+      fetchStrategyAreas(auth.user.id)
+        .then((nextAreaItems) => {
           if (cancelled) return;
-          if (!error) setAreaItems(data ?? []);
+          setAreaItems(nextAreaItems);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setAreaItems([]);
+        })
+        .finally(() => {
+          if (cancelled) return;
           setIsLoadingAreas(false);
         });
 

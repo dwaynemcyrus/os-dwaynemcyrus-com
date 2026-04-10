@@ -6,6 +6,8 @@ import { signUpRoute } from '../routes/auth/signup';
 import { rootRoute } from '../routes/__root';
 import { authenticatedRoute } from '../routes/_authenticated';
 import { executionRoute } from '../routes/execution';
+import { executionFilterRoute } from '../routes/execution.$filter';
+import { executionIdRoute } from '../routes/execution.$id';
 import { inboxRoute } from '../routes/inbox';
 import { indexRoute } from '../routes/index';
 import { itemEditorRoute } from '../routes/items.$id';
@@ -17,6 +19,7 @@ import { sourcesRoute } from '../routes/sources';
 import { sourcesFilterRoute } from '../routes/sources.$filter';
 import { sourcesIdRoute } from '../routes/sources.$id';
 import { strategyRoute } from '../routes/strategy';
+import { strategyAreasRoute } from '../routes/strategy.areas';
 import { wizardCaptureRoute } from '../routes/wizard.capture';
 import { settingsDailyNoteRoute } from '../routes/settings.daily-note';
 import { settingsLibraryRoute } from '../routes/settings.library';
@@ -33,7 +36,10 @@ const protectedRouteTree = authenticatedRoute.addChildren([
   itemEditorRoute,
   knowledgeRoute,
   strategyRoute,
+  strategyAreasRoute,
   executionRoute,
+  executionFilterRoute,
+  executionIdRoute,
   notesRoute,
   notesFilterRoute,
   sourcesRoute,

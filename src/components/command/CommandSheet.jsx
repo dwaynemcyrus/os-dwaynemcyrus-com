@@ -31,6 +31,7 @@ const JUMP_DESTINATIONS = [
   { id: 'now', label: 'Now', to: '/' },
   { id: 'knowledge', label: 'Knowledge', to: '/knowledge' },
   { id: 'strategy', label: 'Strategy', to: '/strategy' },
+  { id: 'areas', label: 'Areas', to: '/strategy/areas' },
   { id: 'execution', label: 'Execution', to: '/execution' },
   { id: 'inbox', label: 'Inbox', to: '/inbox' },
   { id: 'capture-review', label: 'Capture Review', to: '/wizard/capture' },

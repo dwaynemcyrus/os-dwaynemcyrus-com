@@ -8,8 +8,32 @@ const SCREEN_CHROME_RULES = [
     matches: (pathname) => pathname === '/strategy',
   },
   {
+    metaText: 'Areas',
+    matches: (pathname) => pathname === '/strategy/areas',
+  },
+  {
     metaText: 'Execution',
     matches: (pathname) => pathname === '/execution',
+  },
+  {
+    metaText: 'Today',
+    matches: (pathname) => pathname === '/execution/today',
+  },
+  {
+    metaText: 'Upcoming',
+    matches: (pathname) => pathname === '/execution/upcoming',
+  },
+  {
+    metaText: 'Backlog',
+    matches: (pathname) => pathname === '/execution/backlog',
+  },
+  {
+    metaText: 'Someday',
+    matches: (pathname) => pathname === '/execution/someday',
+  },
+  {
+    metaText: 'Logbook',
+    matches: (pathname) => pathname === '/execution/logbook',
   },
   {
     metaText: 'Inbox',
@@ -81,6 +105,32 @@ const BACK_NAVIGATION_RULES = [
       pathname === '/strategy' ||
       pathname === '/execution',
     to: '/',
+  },
+  {
+    label: 'Execution',
+    matches: (pathname) =>
+      pathname === '/execution/today' ||
+      pathname === '/execution/upcoming' ||
+      pathname === '/execution/backlog' ||
+      pathname === '/execution/someday' ||
+      pathname === '/execution/logbook',
+    to: '/execution',
+  },
+  {
+    label: 'Execution',
+    matches: (pathname) =>
+      pathname.startsWith('/execution/') &&
+      pathname !== '/execution/today' &&
+      pathname !== '/execution/upcoming' &&
+      pathname !== '/execution/backlog' &&
+      pathname !== '/execution/someday' &&
+      pathname !== '/execution/logbook',
+    to: '/execution/today',
+  },
+  {
+    label: 'Strategy',
+    matches: (pathname) => pathname === '/strategy/areas',
+    to: '/strategy',
   },
   {
     label: 'Knowledge',
