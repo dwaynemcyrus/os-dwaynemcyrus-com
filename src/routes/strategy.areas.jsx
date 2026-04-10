@@ -1,4 +1,4 @@
-import { useEffect, useEffectEvent, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createRoute } from '@tanstack/react-router';
 import { useAuth } from '../lib/auth';
 import { getItemDisplayLabel } from '../lib/filenames';
@@ -62,38 +62,48 @@ export const strategyAreasRoute = createRoute({
       return `${areas.length} areas`;
     }, [areas.length]);
 
-    const loadAreas = useEffectEvent(async () => {
-      if (!auth.user?.id) {
-        return;
-      }
-
-      setIsLoading(true);
-      setErrorMessage('');
-
-      try {
-        const nextAreas = await fetchStrategyAreas(auth.user.id);
-        setAreas(nextAreas);
-      } catch (error) {
-        setErrorMessage(error.message ?? 'Unable to load areas right now.');
-      } finally {
-        setIsLoading(false);
-      }
-    });
-
     useEffect(() => {
       if (!auth.user?.id) {
         return;
+      }
+
+      let cancelled = false;
+
+      async function loadAreas() {
+        setIsLoading(true);
+        setErrorMessage('');
+
+        try {
+          const nextAreas = await fetchStrategyAreas(auth.user.id);
+
+          if (cancelled) {
+            return;
+          }
+
+          setAreas(nextAreas);
+        } catch (error) {
+          if (cancelled) {
+            return;
+          }
+
+          setErrorMessage(error.message ?? 'Unable to load areas right now.');
+        } finally {
+          if (!cancelled) {
+            setIsLoading(false);
+          }
+        }
       }
 
       void loadAreas();
       window.addEventListener(ITEMS_REFRESH_EVENT, loadAreas);
 
       return () => {
+        cancelled = true;
         window.removeEventListener(ITEMS_REFRESH_EVENT, loadAreas);
       };
-    }, [auth.user?.id, loadAreas]);
+    }, [auth.user?.id]);
 
-    const handleCreateArea = useEffectEvent(async () => {
+    async function handleCreateArea() {
       if (!auth.user?.id || isCreating) {
         return;
       }
@@ -120,7 +130,7 @@ export const strategyAreasRoute = createRoute({
       } finally {
         setIsCreating(false);
       }
-    });
+    }
 
     return (
       <section className={styles.strategyAreasRoute}>
