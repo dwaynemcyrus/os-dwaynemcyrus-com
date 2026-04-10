@@ -5,6 +5,7 @@ import { useAppChrome } from '../lib/app-chrome';
 import { fetchUnprocessedInboxItems, ITEMS_REFRESH_EVENT } from '../lib/items';
 import { normalizeFilenameValue } from '../lib/frontmatter';
 import {
+  createSourceFromCapture,
   enrichSourceWithMetadata,
   isLikelyUrl,
   normalizeUrl,
@@ -509,6 +510,8 @@ export const wizardCaptureRoute = createRoute({
     const [isProcessing, setIsProcessing] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [actionMessage, setActionMessage] = useState('');
+    const [savedSourceId, setSavedSourceId] = useState(null);
+    const [duplicateNotice, setDuplicateNotice] = useState(null);
     const [isListOpen, setIsListOpen] = useState(false);
 
     const moreActions = useMemo(() => [
@@ -666,6 +669,8 @@ export const wizardCaptureRoute = createRoute({
       setUrlDraft('');
       setAuthorDraft('');
       setProjectSearch('');
+      setSavedSourceId(null);
+      setDuplicateNotice(null);
       setErrorMessage('');
     }
 
@@ -822,13 +827,10 @@ export const wizardCaptureRoute = createRoute({
               .eq('id', capture.id)
               .eq('user_id', auth.user.id);
 
-            setActionMessage(
-              existing.status === 'archived'
-                ? 'Already archived — moved back to Sources inbox.'
-                : 'Already in Sources.',
-            );
+            setSavedSourceId(existing.id);
+            setDuplicateNotice(existing.status === 'archived' ? 'archived' : 'existing');
             window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
-            advanceToNext();
+            advanceStep('source-confirm');
             return;
           }
         }
@@ -894,9 +896,47 @@ export const wizardCaptureRoute = createRoute({
 
         window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
         setStepHistory([]);
-        setStep('confirm');
+
+        if (selections.subtype === 'source') {
+          setSavedSourceId(capture.id);
+          setStep('source-confirm');
+        } else {
+          setStep('confirm');
+        }
       } catch (error) {
         setErrorMessage(error.message ?? 'Unable to save.');
+      } finally {
+        setIsProcessing(false);
+      }
+    }
+
+    async function handleSaveToSources() {
+      if (!auth.user?.id) return;
+
+      const capture = captures[currentIndex];
+      if (!capture) return;
+
+      setIsProcessing(true);
+      setErrorMessage('');
+
+      try {
+        const rawText = (capture.content ?? '').trim();
+        const { sourceId, duplicate } = await createSourceFromCapture({
+          captureId: capture.id,
+          rawText,
+          userId: auth.user.id,
+        });
+
+        if (!duplicate) {
+          enrichSourceWithMetadata(sourceId, auth.user.id, rawText).catch(() => {});
+        }
+
+        setSavedSourceId(sourceId);
+        setDuplicateNotice(duplicate);
+        window.dispatchEvent(new Event(ITEMS_REFRESH_EVENT));
+        advanceStep('source-confirm');
+      } catch (error) {
+        setErrorMessage(error.message ?? 'Unable to save to Sources.');
       } finally {
         setIsProcessing(false);
       }
@@ -954,6 +994,9 @@ export const wizardCaptureRoute = createRoute({
     function renderStepSection() {
       // ── Review (Step 0) ──────────────────────────────────────────────
       if (step === 'review') {
+        const captureContent = (currentCapture?.content ?? '').trim();
+        const isUrlOnly = Boolean(captureContent && normalizeUrl(captureContent));
+
         return (
           <section className={styles.wizardCaptureRoute__step}>
             <header className={styles.wizardCaptureRoute__stepHeader}>
@@ -983,9 +1026,24 @@ export const wizardCaptureRoute = createRoute({
             </div>
 
             <ul className={styles.wizardCaptureRoute__optionList}>
+              {isUrlOnly ? (
+                <li>
+                  <button
+                    className={`${styles.wizardCaptureRoute__option} ${styles['wizardCaptureRoute__option--primary']}`}
+                    disabled={isProcessing}
+                    onClick={() => void handleSaveToSources()}
+                    type="button"
+                  >
+                    <span className={styles.wizardCaptureRoute__optionLabel}>Save to Sources</span>
+                    <span className={styles.wizardCaptureRoute__optionDesc}>
+                      Add this URL to your Sources inbox.
+                    </span>
+                  </button>
+                </li>
+              ) : null}
               <li>
                 <button
-                  className={`${styles.wizardCaptureRoute__option} ${styles['wizardCaptureRoute__option--primary']}`}
+                  className={`${styles.wizardCaptureRoute__option} ${isUrlOnly ? '' : styles['wizardCaptureRoute__option--primary']}`}
                   disabled={isProcessing}
                   onClick={() => void handleKeep()}
                   type="button"
@@ -1265,6 +1323,46 @@ export const wizardCaptureRoute = createRoute({
             >
               Save and continue →
             </button>
+          </section>
+        );
+      }
+
+      // ── Source confirmation screen ───────────────────────────────────
+      if (step === 'source-confirm') {
+        const noticeText = duplicateNotice === 'archived'
+          ? 'Already archived — moved back to Sources inbox.'
+          : duplicateNotice === 'existing'
+          ? 'Already in your Sources.'
+          : 'Saved to Sources inbox.';
+
+        return (
+          <section className={styles.wizardCaptureRoute__confirm}>
+            <p className={styles.wizardCaptureRoute__confirmTitle}>✓ {noticeText}</p>
+            <div className={styles.wizardCaptureRoute__confirmActions}>
+              {savedSourceId ? (
+                <button
+                  className={styles.wizardCaptureRoute__nextButton}
+                  onClick={() => void navigate({ to: '/sources/$id', params: { id: savedSourceId } })}
+                  type="button"
+                >
+                  View Source →
+                </button>
+              ) : null}
+              <button
+                className={savedSourceId ? styles.wizardCaptureRoute__skipButton : styles.wizardCaptureRoute__nextButton}
+                onClick={advanceToNext}
+                type="button"
+              >
+                Next item →
+              </button>
+              <button
+                className={styles.wizardCaptureRoute__skipButton}
+                onClick={() => void navigate({ to: '/sources/$filter', params: { filter: 'inbox' } })}
+                type="button"
+              >
+                Stop processing
+              </button>
+            </div>
           </section>
         );
       }
