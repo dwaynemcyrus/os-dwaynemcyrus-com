@@ -85,6 +85,7 @@ const FRONTMATTER_DEFAULTS = {
 };
 
 const AUTHORED_FRONTMATTER_STORAGE_KEY = '__personal_os_authored_frontmatter';
+const RAW_MARKDOWN_DOCUMENT_STORAGE_KEY = '__personal_os_raw_markdown_document';
 
 const UNIVERSAL_FRONTMATTER_FIELDS = [
   'type',
@@ -249,21 +250,49 @@ function stripStorageMarker(frontmatter) {
 
   const nextFrontmatter = { ...frontmatter };
   delete nextFrontmatter[AUTHORED_FRONTMATTER_STORAGE_KEY];
+  delete nextFrontmatter[RAW_MARKDOWN_DOCUMENT_STORAGE_KEY];
   return nextFrontmatter;
 }
 
-export function createStoredAuthoredFrontmatter(frontmatter = {}) {
-  return {
+function readStoredRawMarkdownDocument(frontmatter) {
+  if (
+    !isObjectLike(frontmatter) ||
+    frontmatter[AUTHORED_FRONTMATTER_STORAGE_KEY] !== true ||
+    typeof frontmatter[RAW_MARKDOWN_DOCUMENT_STORAGE_KEY] !== 'string'
+  ) {
+    return null;
+  }
+
+  return frontmatter[RAW_MARKDOWN_DOCUMENT_STORAGE_KEY];
+}
+
+export function createStoredAuthoredFrontmatter(
+  frontmatter = {},
+  { rawMarkdownDocument = null } = {},
+) {
+  const storedFrontmatter = {
     [AUTHORED_FRONTMATTER_STORAGE_KEY]: true,
     ...stripStorageMarker(frontmatter),
   };
+
+  if (typeof rawMarkdownDocument === 'string' && rawMarkdownDocument.trim()) {
+    storedFrontmatter[RAW_MARKDOWN_DOCUMENT_STORAGE_KEY] = normalizeMarkdownText(
+      rawMarkdownDocument,
+    );
+  }
+
+  return storedFrontmatter;
 }
 
 function buildStoredAuthoredFrontmatter({
   existingItem,
   parsedFrontmatter,
+  rawMarkdownDocument = null,
 }) {
-  const storedFrontmatter = createStoredAuthoredFrontmatter();
+  const storedFrontmatter = createStoredAuthoredFrontmatter(
+    {},
+    { rawMarkdownDocument },
+  );
 
   Object.entries(parsedFrontmatter).forEach(([key, value]) => {
     if (key === 'filename') {
@@ -585,6 +614,15 @@ function normalizeFrontmatterValue(key, value) {
   }
 }
 
+function formatFrontmatterWarningMessage(key, error) {
+  const message = error?.message ?? 'has an invalid value.';
+  const errorPrefix = `Frontmatter "${key}" `;
+
+  return message.startsWith(errorPrefix)
+    ? message.slice(errorPrefix.length)
+    : message;
+}
+
 function parseFrontmatterText(
   frontmatterText,
   { allowInvalidDraft = false } = {},
@@ -739,9 +777,17 @@ function buildRawMarkdownDocumentParts({
   };
 }
 
-function buildPersistedFieldValue(key, parsedFrontmatter, existingItem, modifiedAt) {
+function buildPersistedFieldValueResult(
+  key,
+  parsedFrontmatter,
+  existingItem,
+  modifiedAt,
+) {
   if (key === 'date_trashed') {
-    return existingItem.date_trashed;
+    return {
+      value: existingItem.date_trashed,
+      warning: null,
+    };
   }
 
   if (
@@ -751,55 +797,114 @@ function buildPersistedFieldValue(key, parsedFrontmatter, existingItem, modified
     hasTemplateToken(parsedFrontmatter[key])
   ) {
     if (key === 'title') {
-      return null;
+      return {
+        value: null,
+        warning: null,
+      };
     }
 
     if (key === 'date_modified') {
-      return modifiedAt;
+      return {
+        value: modifiedAt,
+        warning: null,
+      };
     }
 
-    return existingItem[key] ?? null;
+    return {
+      value: existingItem[key] ?? null,
+      warning: null,
+    };
   }
 
   if (hasOwnValue(parsedFrontmatter, key)) {
-    return normalizeFrontmatterValue(key, parsedFrontmatter[key]);
+    try {
+      return {
+        value: normalizeFrontmatterValue(key, parsedFrontmatter[key]),
+        warning: null,
+      };
+    } catch (error) {
+      return {
+        value: existingItem[key] ?? null,
+        warning: {
+          key,
+          message: formatFrontmatterWarningMessage(key, error),
+        },
+      };
+    }
   }
 
   if (PRESERVED_WHEN_OMITTED_FIELDS.has(key)) {
-    return existingItem[key];
+    return {
+      value: existingItem[key],
+      warning: null,
+    };
   }
 
   if (hasOwnValue(FRONTMATTER_DEFAULTS, key)) {
-    return cloneDefaultValue(FRONTMATTER_DEFAULTS[key]);
+    return {
+      value: cloneDefaultValue(FRONTMATTER_DEFAULTS[key]),
+      warning: null,
+    };
   }
 
   if (key === 'date_created') {
-    return existingItem.date_created;
+    return {
+      value: existingItem.date_created,
+      warning: null,
+    };
   }
 
   if (key === 'date_modified') {
-    return modifiedAt;
+    return {
+      value: modifiedAt,
+      warning: null,
+    };
   }
 
   if (key === 'date_published') {
     if (existingItem.date_published != null) {
-      return existingItem.date_published;
+      return {
+        value: existingItem.date_published,
+        warning: null,
+      };
     }
 
-    const effectivePublishValue = hasOwnValue(parsedFrontmatter, 'publish')
-      ? normalizeFrontmatterValue('publish', parsedFrontmatter.publish)
-      : existingItem.publish;
-    const effectiveDateModifiedValue = hasOwnValue(parsedFrontmatter, 'date_modified')
-      ? normalizeFrontmatterValue(
+    let effectivePublishValue = existingItem.publish;
+
+    if (hasOwnValue(parsedFrontmatter, 'publish')) {
+      try {
+        effectivePublishValue = normalizeFrontmatterValue(
+          'publish',
+          parsedFrontmatter.publish,
+        );
+      } catch {
+        effectivePublishValue = existingItem.publish;
+      }
+    }
+
+    let effectiveDateModifiedValue = modifiedAt;
+
+    if (hasOwnValue(parsedFrontmatter, 'date_modified')) {
+      try {
+        effectiveDateModifiedValue = normalizeFrontmatterValue(
           'date_modified',
           parsedFrontmatter.date_modified,
-        )
-      : modifiedAt;
+        );
+      } catch {
+        effectiveDateModifiedValue = existingItem.date_modified ?? modifiedAt;
+      }
+    }
 
-    return effectivePublishValue ? effectiveDateModifiedValue : null;
+    return {
+      value: effectivePublishValue ? effectiveDateModifiedValue : null,
+      warning: null,
+    };
   }
 
-  return null;
+  return {
+    value: null,
+    warning: null,
+  };
 }
 
 export function buildEditorMarkdownDocumentFromParts({ body, frontmatter }) {
@@ -811,6 +916,12 @@ export function buildEditorMarkdownDocument(item) {
 
   if (legacyDocument.hasFrontmatter) {
     return legacyDocument.normalizedRawMarkdown;
+  }
+
+  const storedRawMarkdownDocument = readStoredRawMarkdownDocument(item.frontmatter);
+
+  if (storedRawMarkdownDocument) {
+    return normalizeMarkdownText(storedRawMarkdownDocument);
   }
 
   const authoredFrontmatter = readStoredAuthoredFrontmatter(item.frontmatter);
@@ -950,28 +1061,77 @@ export function parseEditorMarkdownDocument(
   };
 }
 
+export function parseEditorMarkdownDocumentForSave(rawMarkdown) {
+  const splitDocument = splitMarkdownDocument(rawMarkdown, {
+    allowIncompleteFrontmatter: true,
+  });
+  const warnings = [];
+  let parsedFrontmatter = {};
+
+  if (splitDocument.hasFrontmatter) {
+    if (splitDocument.isFrontmatterIncomplete) {
+      warnings.push({
+        key: null,
+        message: 'The frontmatter block is incomplete.',
+      });
+    } else {
+      try {
+        parsedFrontmatter = parseFrontmatterText(splitDocument.frontmatterText);
+      } catch (error) {
+        warnings.push({
+          key: null,
+          message: error?.message ?? 'The frontmatter YAML is invalid.',
+        });
+      }
+    }
+  }
+
+  return {
+    body: splitDocument.body,
+    bodyStartIndex: splitDocument.bodyStartIndex,
+    frontmatter: parsedFrontmatter,
+    frontmatterText: splitDocument.frontmatterText,
+    isFrontmatterIncomplete: splitDocument.isFrontmatterIncomplete === true,
+    normalizedRawMarkdown: splitDocument.normalizedRawMarkdown,
+    warnings,
+  };
+}
+
 export function buildItemUpdatePayloadFromFrontmatter({
   existingItem,
+  initialWarnings = [],
   modifiedAt,
   parsedFrontmatter,
+  rawMarkdownDocument = null,
 }) {
-  const updatePayload = {
-    frontmatter: buildStoredAuthoredFrontmatter({
-      existingItem,
-      parsedFrontmatter,
-    }),
-  };
+  const warnings = [...initialWarnings];
+  const updatePayload = {};
 
   FRONTMATTER_FIELD_ORDER.forEach((key) => {
-    updatePayload[key] = buildPersistedFieldValue(
+    const fieldResult = buildPersistedFieldValueResult(
       key,
       parsedFrontmatter,
       existingItem,
       modifiedAt,
     );
+
+    updatePayload[key] = fieldResult.value;
+
+    if (fieldResult.warning) {
+      warnings.push(fieldResult.warning);
+    }
   });
 
-  return updatePayload;
+  updatePayload.frontmatter = buildStoredAuthoredFrontmatter({
+    existingItem,
+    parsedFrontmatter,
+    rawMarkdownDocument: warnings.length > 0 ? rawMarkdownDocument : null,
+  });
+
+  return {
+    updatePayload,
+    warnings,
+  };
 }
 
 export function buildWikilinkCascadeUpdatePayload({ existingItem, updatedRawMarkdown }) {

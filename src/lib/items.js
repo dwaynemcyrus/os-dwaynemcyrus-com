@@ -6,6 +6,7 @@ import {
   createStoredAuthoredFrontmatter,
   normalizeFilenameValue,
   parseEditorMarkdownDocument,
+  parseEditorMarkdownDocumentForSave,
   replaceEditorFrontmatterField,
 } from './frontmatter';
 import {
@@ -1333,12 +1334,22 @@ export async function saveEditorItem({
     throw existingItemError;
   }
 
-  const { body, frontmatter } = parseEditorMarkdownDocument(rawMarkdown);
+  const {
+    body,
+    frontmatter,
+    normalizedRawMarkdown,
+    warnings: frontmatterWarnings,
+  } = parseEditorMarkdownDocumentForSave(rawMarkdown);
   const modifiedAt = new Date().toISOString();
-  const frontmatterPayload = buildItemUpdatePayloadFromFrontmatter({
+  const {
+    updatePayload: frontmatterPayload,
+    warnings,
+  } = buildItemUpdatePayloadFromFrontmatter({
     existingItem,
+    initialWarnings: frontmatterWarnings,
     modifiedAt,
     parsedFrontmatter: frontmatter,
+    rawMarkdownDocument: normalizedRawMarkdown,
   });
   const normalizedFilenameOverride = normalizeFilenameValue(filenameOverride);
   const hasDraftFilename = Object.prototype.hasOwnProperty.call(
@@ -1361,12 +1372,6 @@ export async function saveEditorItem({
     buildTitleFromFilename(nextFilename) ||
     null;
 
-  if (existingItem.is_template !== true && !nextFilename) {
-    throw new Error(
-      'Add a title or filename before saving.',
-    );
-  }
-
   await ensureFilenameIsUnique({
     excludeItemId: itemId,
     filename: nextFilename,
@@ -1380,7 +1385,6 @@ export async function saveEditorItem({
     ...frontmatterPayload,
     content: body,
     filename: nextFilename,
-    date_modified: modifiedAt,
     title: nextTitle,
     todos_open,
     todos_done,
@@ -1419,6 +1423,7 @@ export async function saveEditorItem({
   return {
     item: savedItem,
     rawMarkdown: savedSnapshot,
+    warnings,
   };
 }
 

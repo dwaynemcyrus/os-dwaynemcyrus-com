@@ -84,6 +84,18 @@ function formatTemplateLabel(item) {
   );
 }
 
+function formatSaveWarningMessage(warning) {
+  if (!warning?.message) {
+    return null;
+  }
+
+  if (!warning.key) {
+    return warning.message;
+  }
+
+  return `${warning.key}: ${warning.message}`;
+}
+
 export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const auth = useAuth();
   const navigate = useNavigate();
@@ -104,6 +116,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const [loadErrorMessage, setLoadErrorMessage] = useState('');
   const [saveErrorMessage, setSaveErrorMessage] = useState('');
   const [saveStatusMessage, setSaveStatusMessage] = useState('');
+  const [saveWarnings, setSaveWarnings] = useState([]);
   const [isWorkbenchEnabled, setIsWorkbenchEnabled] = useState(false);
   const [isScrollPastEndEnabled, setIsScrollPastEndEnabled] = useState(() => {
     if (typeof window === 'undefined') {
@@ -155,8 +168,9 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
   const chromeMetaText = useMemo(() => {
     if (saveErrorMessage) return 'Save failed';
     if (saveStatusMessage) return saveStatusMessage;
+    if (saveWarnings.length > 0) return 'Saved with warnings';
     return editorMetaText;
-  }, [saveErrorMessage, saveStatusMessage, editorMetaText]);
+  }, [editorMetaText, saveErrorMessage, saveStatusMessage, saveWarnings]);
   const savedLinkLabel = getItemDisplayLabel(item, '');
   const lastSavedText = item
     ? `Last saved ${formatEditorDate(item.date_modified ?? item.date_created)}`
@@ -204,7 +218,13 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
         buildWikilinkTargetRecord(savedEditorItem.item),
       ]);
       setEditorSyncVersion((currentVersion) => currentVersion + 1);
-      setSaveStatusMessage('Saved.');
+      setSaveWarnings(savedEditorItem.warnings ?? []);
+
+      if ((savedEditorItem.warnings ?? []).length > 0) {
+        setSaveStatusMessage('');
+      } else {
+        setSaveStatusMessage('Saved.');
+      }
 
       const newLabel = getItemDisplayLabel(savedEditorItem.item);
 
@@ -236,6 +256,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
         setEditorSyncVersion((currentVersion) => currentVersion + 1);
       }
 
+      setSaveWarnings([]);
       setSaveErrorMessage(error.message ?? 'Unable to save this item right now.');
     } finally {
       setIsSaving(false);
@@ -317,6 +338,7 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
     setLoadErrorMessage('');
     setSaveErrorMessage('');
     setSaveStatusMessage('');
+    setSaveWarnings([]);
 
     Promise.allSettled([
       fetchEditorItem({
@@ -772,6 +794,53 @@ export function ItemEditorScreen({ editorKind = 'item', itemId }) {
           overflow: 'hidden',
         }}
       >
+        {saveWarnings.length > 0 ? (
+          <div
+            role="alert"
+            style={{
+              background: 'color-mix(in srgb, var(--color-bg-surface) 86%, #8a6a00 14%)',
+              borderBottom: '1px solid var(--color-border-card)',
+              color: 'var(--color-text-primary)',
+              display: 'grid',
+              gap: '0.5rem',
+              padding: '0.9rem 1rem',
+            }}
+          >
+            <strong style={{ fontSize: '0.95rem', fontWeight: 600 }}>
+              Saved with warnings
+            </strong>
+            <p
+              style={{
+                color: 'var(--color-text-secondary)',
+                lineHeight: 1.5,
+                margin: 0,
+              }}
+            >
+              Invalid frontmatter fields kept their previous database values.
+            </p>
+            <ul
+              style={{
+                display: 'grid',
+                gap: '0.35rem',
+                margin: 0,
+                paddingInlineStart: '1.1rem',
+              }}
+            >
+              {saveWarnings
+                .map((warning, index) => ({
+                  id: `${warning.key ?? 'frontmatter'}-${index}`,
+                  text: formatSaveWarningMessage(warning),
+                }))
+                .filter((warning) => Boolean(warning.text))
+                .map((warning) => (
+                  <li key={warning.id}>
+                    {warning.text}
+                  </li>
+                ))}
+            </ul>
+          </div>
+        ) : null}
+
         {createElement(ItemEditor, {
           autocompleteCacheKey: `${auth.user?.id ?? 'anonymous'}:${itemId}`,
           disabled: isLoading || Boolean(loadErrorMessage) || isReadOnlyTemplate,

@@ -1674,3 +1674,120 @@
 
 **Open questions before execution:**
 - None. The user explicitly asked to keep filenames as written.
+
+## Feature: Lighter Editor Fira Code
+
+**Summary:** Load Fira Code `300` and apply it to the editor so the markdown surface renders with a lighter monospace weight.
+
+**Build spec:** `docs/agents/build-spec.md`
+
+**Agents involved:** @frontend
+
+**Current-state analysis:**
+- The app currently imports Fira Code `400` and `500` in `src/main.jsx`.
+- The editor uses `var(--font-family-mono)` in `src/components/editor/ItemEditor.module.css`, but it does not request a lighter weight.
+- Because `300` is not loaded, simply changing the CSS weight would not reliably affect the editor surface.
+
+**Sequence:**
+
+### Phase 1 — Editor Font Weight
+
+**Agent:** @frontend
+
+**Goal:** Make the editor use Fira Code at `300` weight.
+
+**Chunks:**
+
+1. **Load and apply Fira Code 300**
+   - Files touched: `src/main.jsx`, `src/components/editor/ItemEditor.module.css`
+   - Steps:
+     1. Import the `300` face for Fira Code in the app entry point.
+     2. Set the editor scroller to request `font-weight: 300`.
+     3. Keep the change scoped to the editor surface only.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: none beyond the expected visual shift to a lighter editor weight.
+   - Commit message: `style(editor): lighten mono weight`
+
+**Open questions before execution:**
+- None. The requested weight is explicitly `300`.
+
+## Feature: Prepare Editor Bold Variant
+
+**Summary:** Load the real Fira Code bold weight for editor use, while documenting that the installed package does not provide italic assets.
+
+**Build spec:** `docs/agents/build-spec.md`
+
+**Agents involved:** @frontend
+
+**Current-state analysis:**
+- `@fontsource/fira-code` is installed locally and exposes weights `300` through `700`.
+- The package metadata lists only `styles: ["normal"]`, so true italic files are not available from the current source.
+- The editor can still synthesize italic in the browser, but only bold can be prepared as a real imported face with the current package.
+
+**Sequence:**
+
+### Phase 1 — Real Bold Import
+
+**Agent:** @frontend
+
+**Goal:** Import the real Fira Code bold face that the editor may request.
+
+**Chunks:**
+
+1. **Load Fira Code 700**
+   - Files touched: `src/main.jsx`
+   - Steps:
+     1. Import the `700` face for Fira Code in the app entry point.
+     2. Leave italic unchanged because the installed package does not ship italic assets.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: none beyond a slightly larger font payload.
+   - Commit message: `style(editor): load mono bold`
+
+**Open questions before execution:**
+- None. True italic imports are not available from the current package.
+
+## Feature: Editor Save Warnings
+
+**Summary:** Save raw editor markdown even when frontmatter contains invalid typed values, keep previous DB values for invalid fields, and show a persistent warning banner that names the affected fields.
+
+**Build spec:** `docs/agents/build-spec.md`
+
+**Agents involved:** @planner, @architecture, @frontend
+
+**Current-state analysis:**
+- Editor saves currently fail hard when known frontmatter fields do not normalize cleanly.
+- The save path overwrites valid manual frontmatter date overrides in some cases instead of preserving bi-directional sync.
+- The editor only exposes transient save status text today, so there is no persistent warning surface after a partial-sync save.
+
+**Sequence:**
+
+### Phase 1 — Warning-first save path
+
+**Agent:** @architecture
+
+**Goal:** Keep editor saves non-blocking when frontmatter cannot fully sync to typed DB fields.
+
+**Chunks:**
+
+1. **Preserve raw markdown on warning saves**
+   - Files touched: `src/lib/frontmatter.js`, `src/lib/items.js`
+   - Steps:
+     1. Parse editor markdown with warning collection instead of hard-failing on incomplete or invalid YAML frontmatter.
+     2. Keep previous DB values for invalid typed fields while preserving the exact authored markdown for warning saves.
+     3. Return structured save warnings to the editor save caller.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: invalid frontmatter must not break valid bi-directional sync for manual date overrides.
+   - Commit message: `feat(editor): save with warnings`
+
+2. **Show persistent editor warnings**
+   - Files touched: `src/components/editor/ItemEditorScreen.jsx`
+   - Steps:
+     1. Add a persistent `Saved with warnings` banner to the editor screen.
+     2. List field-specific warning messages and explain that invalid fields kept their previous DB values.
+     3. Keep the existing hard save error behavior for true save failures.
+   - Exit conditions: `npm run lint` succeeds; `npm run build` succeeds.
+   - Risks: warning state must not conflict with existing save status and error states.
+   - Commit message: `feat(editor): show save warnings`
+
+**Open questions before execution:**
+- None. The warning-first save contract and persistent banner behavior are approved.
